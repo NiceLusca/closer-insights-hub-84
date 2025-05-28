@@ -9,6 +9,13 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
   });
   
   const filtered = leads.filter(lead => {
+    // PRIMEIRO: Excluir leads com status vazio ou inválido
+    const leadStatus = lead.Status?.trim();
+    if (!leadStatus || leadStatus === '') {
+      console.log('Lead excluído por status vazio:', lead.Nome);
+      return false;
+    }
+    
     // Filter by date range
     if (lead.parsedDate) {
       const leadDate = lead.parsedDate;
@@ -18,28 +25,26 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
     } else {
       console.log('Lead sem data parseada:', lead.data, lead.Nome);
       // Se não tem data parseada, incluir no filtro (pode ser um lead novo/inválido)
-      // Você pode mudar essa lógica se preferir excluir leads sem data
     }
     
-    // Filter by status - tratar strings vazias
+    // Filter by status
     if (filters.status.length > 0) {
-      const leadStatus = lead.Status || '';
       if (!filters.status.includes(leadStatus)) {
         return false;
       }
     }
     
-    // Filter by closer - tratar strings vazias
+    // Filter by closer
     if (filters.closer.length > 0) {
-      const leadCloser = lead.Closer || '';
+      const leadCloser = lead.Closer?.trim() || '';
       if (!filters.closer.includes(leadCloser)) {
         return false;
       }
     }
     
-    // Filter by origem - tratar strings vazias
+    // Filter by origem
     if (filters.origem.length > 0) {
-      const leadOrigem = lead.origem || '';
+      const leadOrigem = lead.origem?.trim() || '';
       if (!filters.origem.includes(leadOrigem)) {
         return false;
       }
@@ -48,6 +53,6 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
     return true;
   });
   
-  console.log(`Filtrado: ${filtered.length} de ${leads.length} leads`);
+  console.log(`Filtrado: ${filtered.length} de ${leads.length} leads (excluindo status vazios)`);
   return filtered;
 }

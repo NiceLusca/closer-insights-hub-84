@@ -25,6 +25,14 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     };
   }
 
+  // PRIMEIRO: Filtrar apenas leads com status válido (não vazio)
+  const validLeads = leads.filter(lead => {
+    const status = lead.Status?.trim();
+    return status && status !== '';
+  });
+
+  console.log(`📈 Processando ${validLeads.length} leads com status válido de ${leads.length} total`);
+
   // Contadores básicos
   let agendamentos = 0;
   let noShows = 0;
@@ -40,7 +48,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
   let receitaCompleta = 0;
   let receitaRecorrente = 0;
 
-  leads.forEach(lead => {
+  validLeads.forEach(lead => {
     const status = lead.Status?.trim() || '';
     
     switch (status) {
@@ -84,21 +92,22 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     }
   });
 
-  const totalLeads = leads.length;
+  const totalLeads = validLeads.length; // Apenas leads com status válido
   const receitaTotal = receitaCompleta + receitaRecorrente;
   
-  // Cálculos de taxas (seguindo as definições do briefing)
-  // Taxa de Comparecimento = Agendados ÷ (Agendados + No-Shows)
-  const baseComparecimento = agendamentos + noShows;
-  const taxaComparecimento = baseComparecimento > 0 ? (agendamentos / baseComparecimento) * 100 : 0;
+  // Cálculos de taxas CORRIGIDOS
+  // Taxa de Comparecimento = Confirmados + Agendados ÷ (Confirmados + Agendados + No-Shows)
+  const baseComparecimento = confirmados + agendamentos + noShows;
+  const compareceram = confirmados + agendamentos;
+  const taxaComparecimento = baseComparecimento > 0 ? (compareceram / baseComparecimento) * 100 : 0;
   
-  // Taxa de Fechamento = Fechou ÷ Total de Apresentações
-  // Considerando apresentações como leads que não são mentorados
+  // Taxa de Fechamento = Fechou ÷ Total de Apresentações (excluindo Mentorados)
   const totalApresentacoes = totalLeads - mentorados;
   const taxaFechamento = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
   
-  // Taxa de Desmarque = Desmarcou ÷ Agendados
-  const taxaDesmarque = agendamentos > 0 ? (desmarcados / agendamentos) * 100 : 0;
+  // Taxa de Desmarque = Desmarcou ÷ (Agendados + Confirmados + Desmarcados)
+  const baseDesmarque = agendamentos + confirmados + desmarcados;
+  const taxaDesmarque = baseDesmarque > 0 ? (desmarcados / baseDesmarque) * 100 : 0;
   
   // Aproveitamento Geral = Fechamentos / (Total de Leads - Mentorados) * 100
   const aproveitamentoGeral = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
@@ -122,6 +131,6 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     receitaCompleta
   };
 
-  console.log('📈 Métricas calculadas:', metrics);
+  console.log('📈 Métricas calculadas (apenas status válidos):', metrics);
   return metrics;
 }

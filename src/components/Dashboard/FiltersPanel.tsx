@@ -52,14 +52,14 @@ export function FiltersPanel({
   console.log('tempFilters:', tempFilters);
 
   return (
-    <Card className="mb-8 bg-white/90 backdrop-blur-sm shadow-lg border-0">
-      <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+    <Card className="mb-8 bg-gray-800/90 backdrop-blur-sm shadow-lg border border-gray-700/50">
+      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
         <CardTitle className="text-xl font-bold">Filtros do Dashboard</CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
           <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Período de Análise
             </label>
             <DatePickerWithRange 
@@ -97,7 +97,7 @@ export function FiltersPanel({
           />
         </div>
         
-        <div className="flex justify-between items-center border-t pt-4">
+        <div className="flex justify-between items-center border-t border-gray-700 pt-4">
           <FilterActions
             hasPendingFilters={hasPendingFilters}
             isLoading={isLoading}

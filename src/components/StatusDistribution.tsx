@@ -10,13 +10,13 @@ interface StatusDistributionProps {
 }
 
 const COLORS = [
-  '#3b82f6', // blue
+  '#60a5fa', // blue
   '#ef4444', // red
-  '#f59e0b', // yellow
-  '#10b981', // green
-  '#8b5cf6', // purple
-  '#06b6d4', // cyan
-  '#f97316', // orange
+  '#fbbf24', // yellow
+  '#34d399', // green
+  '#a78bfa', // purple
+  '#22d3ee', // cyan
+  '#fb7185', // orange
   '#84cc16'  // lime
 ];
 
@@ -47,9 +47,9 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
   };
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-lg font-semibold text-gray-100">
           Distribuição por Status (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
@@ -72,10 +72,11 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
             </Pie>
             <Tooltip 
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                color: '#f3f4f6'
               }}
               formatter={(value, name) => [`${value} leads (${statusData.find(d => d.name === name)?.percentage}%)`, name]}
             />

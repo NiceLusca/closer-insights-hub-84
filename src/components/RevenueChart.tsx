@@ -46,32 +46,33 @@ export function RevenueChart({ leads }: RevenueChartProps) {
   };
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-lg font-semibold text-gray-100">
           Receita por Dia (Últimos 30 dias)
         </CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="date" 
-              stroke="#64748b"
+              stroke="#9ca3af"
               fontSize={12}
             />
             <YAxis 
-              stroke="#64748b" 
+              stroke="#9ca3af" 
               fontSize={12}
               tickFormatter={formatCurrency}
             />
             <Tooltip 
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                color: '#f3f4f6'
               }}
               formatter={(value: number) => formatCurrency(value)}
             />
@@ -79,18 +80,18 @@ export function RevenueChart({ leads }: RevenueChartProps) {
             <Line 
               type="monotone" 
               dataKey="receita" 
-              stroke="#059669" 
+              stroke="#10b981" 
               strokeWidth={3}
               name="Receita Total"
-              dot={{ fill: '#059669', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
             />
             <Line 
               type="monotone" 
               dataKey="recorrente" 
-              stroke="#7c3aed" 
+              stroke="#8b5cf6" 
               strokeWidth={2}
               name="Receita Recorrente"
-              dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>

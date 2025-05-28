@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
@@ -49,7 +48,7 @@ const Index = () => {
     origem: []
   });
 
-  const [showFilters, setShowFilters] = useState(true); // Mostrar filtros por padrão
+  const [showFilters, setShowFilters] = useState(true);
 
   // Função para buscar dados do webhook
   const fetchLeadsData = async () => {
@@ -78,7 +77,6 @@ const Index = () => {
         toast({
           title: "⚠️ Usando dados de demonstração",
           description: "Webhook retornou dados vazios. Usando dados mock para demonstração.",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -90,21 +88,18 @@ const Index = () => {
       toast({
         title: "❌ Erro ao carregar dados",
         description: "Erro na conexão com webhook. Usando dados de demonstração.",
-        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-      // Pequeno delay para garantir que o estado seja atualizado
       setTimeout(() => setDataReady(true), 200);
     }
   };
 
-  // Carregar dados iniciais
   useEffect(() => {
     fetchLeadsData();
   }, []);
 
-  // Filtrar dados baseado nos filtros aplicados
+  // Filtrar dados baseado nos filtros aplicados (já exclui status vazios)
   const filteredLeads = useMemo(() => {
     if (!allLeads || allLeads.length === 0) {
       return [];
@@ -121,16 +116,10 @@ const Index = () => {
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Gerar opções para os filtros de forma mais robusta
+  // Gerar opções para os filtros (APENAS leads com status válido)
   const filterOptions = useMemo(() => {
     console.log('🔧 Gerando opções de filtro...');
-    console.log('Estado:', { 
-      leadsLength: allLeads?.length || 0, 
-      isLoading, 
-      dataReady 
-    });
 
-    // Retornar arrays vazios se dados não estão prontos
     if (!dataReady || isLoading || !Array.isArray(allLeads) || allLeads.length === 0) {
       console.log('⏳ Dados não prontos, retornando opções vazias');
       return {
@@ -141,21 +130,25 @@ const Index = () => {
     }
 
     try {
+      // FILTRAR APENAS LEADS COM STATUS VÁLIDO para gerar opções
+      const validLeads = allLeads.filter(lead => {
+        const status = lead?.Status?.trim();
+        return status && status !== '';
+      });
+
+      console.log(`🔧 Processando ${validLeads.length} leads com status válido de ${allLeads.length} total`);
+
       // Processar Status
       const statusSet = new Set<string>();
-      allLeads.forEach(lead => {
-        if (lead?.Status && typeof lead.Status === 'string') {
-          const status = lead.Status.trim();
-          if (status !== '') {
-            statusSet.add(status);
-          }
-        }
+      validLeads.forEach(lead => {
+        const status = lead.Status.trim();
+        statusSet.add(status);
       });
       const statusOptions = Array.from(statusSet).sort();
       
       // Processar Closers
       const closerSet = new Set<string>();
-      allLeads.forEach(lead => {
+      validLeads.forEach(lead => {
         if (lead?.Closer && typeof lead.Closer === 'string') {
           const closer = lead.Closer.trim();
           if (closer !== '') {
@@ -167,7 +160,7 @@ const Index = () => {
       
       // Processar Origens
       const origemSet = new Set<string>();
-      allLeads.forEach(lead => {
+      validLeads.forEach(lead => {
         if (lead?.origem && typeof lead.origem === 'string') {
           const origem = lead.origem.trim();
           if (origem !== '') {
@@ -177,7 +170,7 @@ const Index = () => {
       });
       const origemOptions = Array.from(origemSet).sort();
       
-      console.log('✅ Opções de filtro geradas:');
+      console.log('✅ Opções de filtro geradas (apenas leads com status válido):');
       console.log('📈 Status:', statusOptions.length, 'opções:', statusOptions);
       console.log('👥 Closers:', closerOptions.length, 'opções:', closerOptions);
       console.log('🎯 Origens:', origemOptions.length, 'opções:', origemOptions);
@@ -237,13 +230,12 @@ const Index = () => {
     });
   };
 
-  // Verificar se existem filtros pendentes
   const hasPendingFilters = 
     JSON.stringify(filters) !== JSON.stringify(tempFilters) ||
     JSON.stringify(dateRange) !== JSON.stringify(tempDateRange);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
       <DashboardHeader
         isLoading={isLoading}
         lastUpdated={lastUpdated}
@@ -271,11 +263,11 @@ const Index = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-12">
-            <div className="bg-white rounded-lg shadow-lg p-8 flex items-center space-x-4">
-              <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-8 flex items-center space-x-4">
+              <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Carregando Dados</h3>
-                <p className="text-gray-600">Buscando leads do webhook...</p>
+                <h3 className="text-lg font-semibold text-gray-100">Carregando Dados</h3>
+                <p className="text-gray-400">Buscando leads do webhook...</p>
               </div>
             </div>
           </div>
