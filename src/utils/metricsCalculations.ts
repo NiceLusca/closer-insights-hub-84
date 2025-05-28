@@ -6,6 +6,7 @@ export interface ExtendedMetrics extends Metrics {
   vendasRecorrentes: number;
   receitaCompleta: number;
   mentorados: number;
+  aproveitamentoGeral: number; // Nova métrica
 }
 
 export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
@@ -66,6 +67,13 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     ? (desmarcacoes / totalAgendamentos) * 100 
     : 0;
   
+  // NOVA MÉTRICA: Aproveitamento Geral
+  // Todos os leads do período (excluindo mentorados) dividido pelo número de fechamentos
+  const leadsExcluindoMentorados = totalLeads - mentorados;
+  const aproveitamentoGeral = leadsExcluindoMentorados > 0 
+    ? (fechamentos / leadsExcluindoMentorados) * 100 
+    : 0;
+  
   console.log('Métricas calculadas:', {
     totalLeads,
     fechamentos,
@@ -77,7 +85,9 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     receitaRecorrente,
     receitaTotal,
     taxaComparecimento,
-    taxaFechamento
+    taxaFechamento,
+    aproveitamentoGeral,
+    leadsExcluindoMentorados
   });
   
   return {
@@ -95,6 +105,7 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     vendasCompletas,
     vendasRecorrentes,
     receitaCompleta,
-    mentorados
+    mentorados,
+    aproveitamentoGeral
   };
 }

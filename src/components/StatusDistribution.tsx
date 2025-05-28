@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { generateStatusDistributionData } from "@/utils/chartDataUtils";
 import type { Lead } from "@/types/lead";
 
 interface StatusDistributionProps {
@@ -20,19 +21,7 @@ const COLORS = [
 ];
 
 export function StatusDistribution({ leads }: StatusDistributionProps) {
-  const statusData = useMemo(() => {
-    const statusCount: Record<string, number> = {};
-    
-    leads.forEach(lead => {
-      statusCount[lead.Status] = (statusCount[lead.Status] || 0) + 1;
-    });
-
-    return Object.entries(statusCount).map(([status, count]) => ({
-      name: status,
-      value: count,
-      percentage: ((count / leads.length) * 100).toFixed(1)
-    }));
-  }, [leads]);
+  const statusData = useMemo(() => generateStatusDistributionData(leads), [leads]);
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     if (percent < 0.05) return null; // Don't show labels for slices less than 5%
@@ -61,7 +50,7 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
     <Card className="bg-white/80 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900">
-          Distribuição por Status
+          Distribuição por Status (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
       <CardContent>

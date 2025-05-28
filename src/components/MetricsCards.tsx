@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw, Users } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw, Users, Zap } from "lucide-react";
 import { calculateMetrics } from "@/utils/metricsCalculations";
 import type { Lead } from "@/types/lead";
 
@@ -33,6 +33,15 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       iconColor: "text-blue-600",
       borderColor: "border-blue-200",
       tooltip: "Número total de leads recebidos no período selecionado"
+    },
+    {
+      title: "Aproveitamento Geral",
+      value: formatPercentage(metrics.aproveitamentoGeral),
+      icon: Zap,
+      bgColor: "bg-indigo-50",
+      iconColor: "text-indigo-600",
+      borderColor: "border-indigo-200",
+      tooltip: "Percentual de fechamentos em relação ao total de leads (excluindo mentorados): Fechamentos / (Total de Leads - Mentorados) * 100"
     },
     {
       title: "Receita Total",
@@ -78,15 +87,6 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       iconColor: "text-orange-600",
       borderColor: "border-orange-200",
       tooltip: "% de fechamentos entre quem pode comprar: Fechou / (Fechou + Não Apareceu). Mentorados são excluídos pois já são clientes."
-    },
-    {
-      title: "Mentorados",
-      value: metrics.mentorados.toLocaleString(),
-      icon: Users,
-      bgColor: "bg-yellow-50",
-      iconColor: "text-yellow-600",
-      borderColor: "border-yellow-200",
-      tooltip: "Clientes existentes que compareceram às apresentações. Não contam como vendas pois já eram clientes."
     },
     {
       title: "No-Shows",

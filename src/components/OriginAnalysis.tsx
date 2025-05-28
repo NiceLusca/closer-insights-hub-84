@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { generateOriginAnalysisData } from "@/utils/chartDataUtils";
 import type { Lead } from "@/types/lead";
 
 interface OriginAnalysisProps {
@@ -9,33 +10,7 @@ interface OriginAnalysisProps {
 }
 
 export function OriginAnalysis({ leads }: OriginAnalysisProps) {
-  const originData = useMemo(() => {
-    const originStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
-    
-    leads.forEach(lead => {
-      if (!originStats[lead.origem]) {
-        originStats[lead.origem] = { leads: 0, vendas: 0, receita: 0 };
-      }
-      
-      originStats[lead.origem].leads++;
-      
-      if (lead.Status === 'Fechou') {
-        originStats[lead.origem].vendas++;
-        originStats[lead.origem].receita += lead['Venda Completa'] || 0;
-      }
-    });
-
-    return Object.entries(originStats)
-      .map(([origem, stats]) => ({
-        origem: origem.length > 12 ? origem.substring(0, 12) + '...' : origem,
-        leads: stats.leads,
-        vendas: stats.vendas,
-        conversao: stats.leads > 0 ? ((stats.vendas / stats.leads) * 100).toFixed(1) : '0',
-        receita: stats.receita,
-        roi: stats.receita / stats.leads // Simple ROI calculation
-      }))
-      .sort((a, b) => b.receita - a.receita);
-  }, [leads]);
+  const originData = useMemo(() => generateOriginAnalysisData(leads), [leads]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -49,7 +24,7 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
     <Card className="mb-8 bg-white/80 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900">
-          Análise por Origem de Campanha
+          Análise por Origem de Campanha (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
       <CardContent>

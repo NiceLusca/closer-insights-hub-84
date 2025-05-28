@@ -39,4 +39,5 @@ export interface Metrics {
   taxaDesmarque: number;
   confirmados: number;
   mentorados: number;
+  aproveitamentoGeral: number;
 }

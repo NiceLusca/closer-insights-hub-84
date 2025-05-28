@@ -1,9 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DatePickerWithRange } from "@/components/DatePickerWithRange";
-import { FilterSelect } from "@/components/FilterSelect";
+import { RefreshCw } from "lucide-react";
+import { generateMockData } from "@/utils/mockData";
+import { fetchLeadsFromWebhook } from "@/services/webhookService";
+import { filterLeads } from "@/utils/dataFilters";
+import { useToast } from "@/hooks/use-toast";
+import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
+import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { MetricsCards } from "@/components/MetricsCards";
 import { LeadsChart } from "@/components/LeadsChart";
 import { RevenueChart } from "@/components/RevenueChart";
@@ -11,11 +14,6 @@ import { StatusDistribution } from "@/components/StatusDistribution";
 import { CloserPerformance } from "@/components/CloserPerformance";
 import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { LeadsTable } from "@/components/LeadsTable";
-import { FilterIcon, RefreshCw } from "lucide-react";
-import { generateMockData } from "@/utils/mockData";
-import { fetchLeadsFromWebhook } from "@/services/webhookService";
-import { filterLeads } from "@/utils/dataFilters";
-import { useToast } from "@/hooks/use-toast";
 import type { Lead, DateRange, Filters } from "@/types/lead";
 
 const Index = () => {
@@ -68,7 +66,6 @@ const Index = () => {
         });
         console.log('Dados carregados com sucesso:', webhookLeads.length, 'leads');
       } else {
-        // Fallback para dados mock se webhook não retornar dados
         console.log('Webhook retornou dados vazios, usando dados mock');
         const mockLeads = generateMockData(500);
         setAllLeads(mockLeads);
@@ -81,7 +78,6 @@ const Index = () => {
       }
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
-      // Fallback para dados mock em caso de erro
       const mockLeads = generateMockData(500);
       setAllLeads(mockLeads);
       setLastUpdated(new Date());
@@ -111,7 +107,7 @@ const Index = () => {
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options - garantir que sempre retorne arrays válidos
+  // Get unique values for filter options
   const filterOptions = useMemo(() => {
     if (!allLeads || allLeads.length === 0) {
       return {
@@ -187,116 +183,27 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Closer Insights</h1>
-              <p className="text-gray-600 mt-1">
-                Dashboard Analytics para Gestão de Leads
-                {lastUpdated && (
-                  <span className="ml-2 text-sm">
-                    • Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2"
-              >
-                <FilterIcon className="w-4 h-4" />
-                <span>Filtros</span>
-                {hasPendingFilters && (
-                  <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                )}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={fetchLeadsData}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader
+        isLoading={isLoading}
+        lastUpdated={lastUpdated}
+        showFilters={showFilters}
+        hasPendingFilters={hasPendingFilters}
+        onToggleFilters={() => setShowFilters(!showFilters)}
+        onRefreshData={fetchLeadsData}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters Panel */}
-        {showFilters && (
-          <Card className="mb-8 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Filtros Globais</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Período
-                  </label>
-                  <DatePickerWithRange 
-                    dateRange={tempDateRange} 
-                    onDateRangeChange={setTempDateRange} 
-                  />
-                </div>
-                
-                <FilterSelect
-                  label="Status"
-                  options={filterOptions.statusOptions}
-                  selectedValues={tempFilters.status}
-                  onChange={(values) => handleTempFilterChange('status', values)}
-                  placeholder="Todos os status"
-                />
-                
-                <FilterSelect
-                  label="Closer"
-                  options={filterOptions.closerOptions}
-                  selectedValues={tempFilters.closer}
-                  onChange={(values) => handleTempFilterChange('closer', values)}
-                  placeholder="Todos os closers"
-                />
-                
-                <FilterSelect
-                  label="Origem"
-                  options={filterOptions.origemOptions}
-                  selectedValues={tempFilters.origem}
-                  onChange={(values) => handleTempFilterChange('origem', values)}
-                  placeholder="Todas as origens"
-                />
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex space-x-2">
-                  <Button 
-                    onClick={applyFilters}
-                    disabled={!hasPendingFilters}
-                    className={hasPendingFilters ? 'bg-orange-500 hover:bg-orange-600' : ''}
-                  >
-                    Aplicar Filtros
-                    {hasPendingFilters && (
-                      <span className="ml-2 w-2 h-2 bg-white rounded-full"></span>
-                    )}
-                  </Button>
-                  <Button variant="ghost" onClick={clearFilters}>
-                    Limpar Filtros
-                  </Button>
-                </div>
-                
-                {hasPendingFilters && (
-                  <span className="text-sm text-orange-600 font-medium">
-                    Existem filtros não aplicados
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <FiltersPanel
+          showFilters={showFilters}
+          tempDateRange={tempDateRange}
+          tempFilters={tempFilters}
+          filterOptions={filterOptions}
+          hasPendingFilters={hasPendingFilters}
+          onTempDateRangeChange={setTempDateRange}
+          onTempFilterChange={handleTempFilterChange}
+          onApplyFilters={applyFilters}
+          onClearFilters={clearFilters}
+        />
 
         {/* Loading State */}
         {isLoading && (

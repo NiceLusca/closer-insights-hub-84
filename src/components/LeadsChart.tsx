@@ -2,8 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { format, subDays, eachDayOfInterval } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { generateLeadsChartData } from "@/utils/chartDataUtils";
 import type { Lead } from "@/types/lead";
 
 interface LeadsChartProps {
@@ -11,35 +10,13 @@ interface LeadsChartProps {
 }
 
 export function LeadsChart({ leads }: LeadsChartProps) {
-  const chartData = useMemo(() => {
-    const last30Days = eachDayOfInterval({
-      start: subDays(new Date(), 29),
-      end: new Date()
-    });
-
-    return last30Days.map(date => {
-      const dayLeads = leads.filter(lead => {
-        if (!lead.parsedDate) return false;
-        return format(lead.parsedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
-      });
-
-      const agendados = dayLeads.filter(lead => lead.Status === 'Agendado').length;
-      const fechamentos = dayLeads.filter(lead => lead.Status === 'Fechou').length;
-
-      return {
-        date: format(date, 'dd/MM', { locale: ptBR }),
-        total: dayLeads.length,
-        agendados,
-        fechamentos
-      };
-    });
-  }, [leads]);
+  const chartData = useMemo(() => generateLeadsChartData(leads), [leads]);
 
   return (
     <Card className="bg-white/80 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900">
-          Leads por Dia (Últimos 30 dias)
+          Leads por Dia - Últimos 30 dias (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
       <CardContent>
