@@ -16,7 +16,8 @@ interface FiltersPanelProps {
     origemOptions: string[];
   };
   hasPendingFilters: boolean;
-  allLeads?: any[]; // Para passar para o DatePickerWithRange
+  allLeads?: any[];
+  isLoading?: boolean;
   onTempDateRangeChange: (dateRange: DateRange) => void;
   onTempFilterChange: (filterType: keyof Filters, values: string[]) => void;
   onApplyFilters: () => void;
@@ -30,12 +31,21 @@ export function FiltersPanel({
   filterOptions,
   hasPendingFilters,
   allLeads,
+  isLoading = false,
   onTempDateRangeChange,
   onTempFilterChange,
   onApplyFilters,
   onClearFilters
 }: FiltersPanelProps) {
   if (!showFilters) return null;
+
+  // Verificar se as opções são válidas
+  const hasValidOptions = filterOptions && 
+    Array.isArray(filterOptions.statusOptions) && 
+    Array.isArray(filterOptions.closerOptions) && 
+    Array.isArray(filterOptions.origemOptions);
+
+  const filtersReady = !isLoading && hasValidOptions;
 
   return (
     <Card className="mb-8 bg-white/80 backdrop-blur-sm">
@@ -57,26 +67,29 @@ export function FiltersPanel({
           
           <FilterSelect
             label="Status"
-            options={filterOptions.statusOptions}
-            selectedValues={tempFilters.status}
+            options={filterOptions?.statusOptions || []}
+            selectedValues={tempFilters?.status || []}
             onChange={(values) => onTempFilterChange('status', values)}
             placeholder="Todos os status"
+            isLoading={!filtersReady}
           />
           
           <FilterSelect
             label="Closer"
-            options={filterOptions.closerOptions}
-            selectedValues={tempFilters.closer}
+            options={filterOptions?.closerOptions || []}
+            selectedValues={tempFilters?.closer || []}
             onChange={(values) => onTempFilterChange('closer', values)}
             placeholder="Todos os closers"
+            isLoading={!filtersReady}
           />
           
           <FilterSelect
             label="Origem"
-            options={filterOptions.origemOptions}
-            selectedValues={tempFilters.origem}
+            options={filterOptions?.origemOptions || []}
+            selectedValues={tempFilters?.origem || []}
             onChange={(values) => onTempFilterChange('origem', values)}
             placeholder="Todas as origens"
+            isLoading={!filtersReady}
           />
         </div>
         
@@ -84,7 +97,7 @@ export function FiltersPanel({
           <div className="flex space-x-2">
             <Button 
               onClick={onApplyFilters}
-              disabled={!hasPendingFilters}
+              disabled={!hasPendingFilters || !filtersReady}
               className={hasPendingFilters ? 'bg-orange-500 hover:bg-orange-600' : ''}
             >
               Aplicar Filtros
@@ -92,13 +105,22 @@ export function FiltersPanel({
                 <span className="ml-2 w-2 h-2 bg-white rounded-full"></span>
               )}
             </Button>
-            <Button variant="ghost" onClick={onClearFilters}>
+            <Button 
+              variant="ghost" 
+              onClick={onClearFilters}
+              disabled={!filtersReady}
+            >
               Limpar Filtros
             </Button>
           </div>
           
           <div className="flex items-center">
-            {hasPendingFilters && (
+            {isLoading && (
+              <span className="text-sm text-gray-600">
+                Carregando filtros...
+              </span>
+            )}
+            {!isLoading && hasPendingFilters && (
               <span className="text-sm text-orange-600 font-medium">
                 Existem filtros não aplicados
               </span>

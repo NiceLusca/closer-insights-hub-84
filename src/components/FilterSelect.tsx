@@ -12,6 +12,7 @@ interface FilterSelectProps {
   selectedValues: string[];
   onChange: (values: string[]) => void;
   placeholder?: string;
+  isLoading?: boolean;
 }
 
 export function FilterSelect({
@@ -19,93 +20,97 @@ export function FilterSelect({
   options,
   selectedValues,
   onChange,
-  placeholder = "Selecione..."
+  placeholder = "Selecione...",
+  isLoading = false
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Garantir que sempre temos arrays válidos, mesmo se props chegarem como undefined/null
-  const safeOptions = React.useMemo(() => {
-    if (!options || !Array.isArray(options)) {
-      console.log(`FilterSelect ${label}: options inválidas, usando array vazio`, options);
-      return [];
-    }
-    return options.filter(option => option && typeof option === 'string' && option.trim() !== '');
-  }, [options, label]);
+  // Validação simples e direta
+  const validOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) return [];
+    return options.filter(option => 
+      option && 
+      typeof option === 'string' && 
+      option.trim() !== ''
+    );
+  }, [options]);
 
-  const safeSelectedValues = React.useMemo(() => {
-    if (!selectedValues || !Array.isArray(selectedValues)) {
-      console.log(`FilterSelect ${label}: selectedValues inválidos, usando array vazio`, selectedValues);
-      return [];
-    }
-    return selectedValues.filter(value => value && typeof value === 'string');
-  }, [selectedValues, label]);
+  const validSelectedValues = React.useMemo(() => {
+    if (!Array.isArray(selectedValues)) return [];
+    return selectedValues.filter(value => 
+      value && 
+      typeof value === 'string' && 
+      value.trim() !== ''
+    );
+  }, [selectedValues]);
 
   const handleSelect = (value: string) => {
     if (!value || typeof value !== 'string') return;
     
-    if (safeSelectedValues.includes(value)) {
-      onChange(safeSelectedValues.filter(v => v !== value));
-    } else {
-      onChange([...safeSelectedValues, value]);
-    }
+    const newValues = validSelectedValues.includes(value)
+      ? validSelectedValues.filter(v => v !== value)
+      : [...validSelectedValues, value];
+    
+    onChange(newValues);
   };
+
+  const isDisabled = isLoading || validOptions.length === 0;
 
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            disabled={safeOptions.length === 0}
-          >
-            {safeSelectedValues.length > 0
-              ? `${safeSelectedValues.length} selecionado(s)`
-              : placeholder}
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0">
-          {safeOptions.length > 0 ? (
+      
+      {isDisabled ? (
+        <Button
+          variant="outline"
+          disabled
+          className="w-full justify-between opacity-50"
+        >
+          {isLoading ? "Carregando..." : placeholder}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      ) : (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between"
+            >
+              {validSelectedValues.length > 0
+                ? `${validSelectedValues.length} selecionado(s)`
+                : placeholder}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0 bg-white shadow-lg border z-50">
             <Command>
               <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
               <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
               <CommandGroup>
-                {safeOptions.map((option) => {
-                  // Garantir que option é sempre uma string válida
-                  const validOption = option && typeof option === 'string' ? option.trim() : '';
-                  if (!validOption) return null;
-                  
-                  return (
-                    <CommandItem
-                      key={validOption}
-                      value={validOption}
-                      onSelect={() => handleSelect(validOption)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          safeSelectedValues.includes(validOption) ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {validOption}
-                    </CommandItem>
-                  );
-                })}
+                {validOptions.map((option) => (
+                  <CommandItem
+                    key={option}
+                    value={option}
+                    onSelect={() => handleSelect(option)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        validSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option}
+                  </CommandItem>
+                ))}
               </CommandGroup>
             </Command>
-          ) : (
-            <div className="p-4 text-center text-sm text-gray-500">
-              Nenhuma opção disponível
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+      )}
     </div>
   );
 }

@@ -109,8 +109,6 @@ const Index = () => {
   // Get unique values for filter options - ENHANCED VERSION
   const filterOptions = useMemo(() => {
     console.log('Gerando opções de filtro. AllLeads:', allLeads?.length || 0);
-    console.log('AllLeads é array?', Array.isArray(allLeads));
-    console.log('Primeiros 3 leads:', allLeads?.slice(0, 3));
     
     // Sempre retornar arrays válidos, mesmo quando allLeads está vazio ou undefined
     const defaultOptions = {
@@ -125,45 +123,44 @@ const Index = () => {
     }
 
     try {
-      const statusOptions = [...new Set(
-        allLeads
-          .filter(lead => lead && typeof lead === 'object')
-          .map(lead => lead.Status)
-          .filter(status => status && typeof status === 'string' && status.trim() !== '')
-      )].sort();
+      // Filtrar e processar status
+      const statusSet = new Set<string>();
+      allLeads.forEach(lead => {
+        if (lead?.Status && typeof lead.Status === 'string' && lead.Status.trim() !== '') {
+          statusSet.add(lead.Status.trim());
+        }
+      });
+      const statusOptions = Array.from(statusSet).sort();
       
-      const closerOptions = [...new Set(
-        allLeads
-          .filter(lead => lead && typeof lead === 'object')
-          .map(lead => lead.Closer)
-          .filter(closer => closer && typeof closer === 'string' && closer.trim() !== '')
-      )].sort();
+      // Filtrar e processar closers
+      const closerSet = new Set<string>();
+      allLeads.forEach(lead => {
+        if (lead?.Closer && typeof lead.Closer === 'string' && lead.Closer.trim() !== '') {
+          closerSet.add(lead.Closer.trim());
+        }
+      });
+      const closerOptions = Array.from(closerSet).sort();
       
-      const origemOptions = [...new Set(
-        allLeads
-          .filter(lead => lead && typeof lead === 'object')
-          .map(lead => lead.origem)
-          .filter(origem => origem && typeof origem === 'string' && origem.trim() !== '')
-      )].sort();
+      // Filtrar e processar origens
+      const origemSet = new Set<string>();
+      allLeads.forEach(lead => {
+        if (lead?.origem && typeof lead.origem === 'string' && lead.origem.trim() !== '') {
+          origemSet.add(lead.origem.trim());
+        }
+      });
+      const origemOptions = Array.from(origemSet).sort();
       
-      console.log('Opções de filtro geradas com sucesso:', { 
+      console.log('Opções de filtro geradas:', { 
         statusOptions: statusOptions.length, 
         closerOptions: closerOptions.length, 
         origemOptions: origemOptions.length 
       });
       
-      console.log('Status options:', statusOptions);
-      console.log('Closer options:', closerOptions);
-      console.log('Origem options:', origemOptions);
-      
-      const result = { 
-        statusOptions: statusOptions || [], 
-        closerOptions: closerOptions || [], 
-        origemOptions: origemOptions || [] 
+      return { 
+        statusOptions, 
+        closerOptions, 
+        origemOptions 
       };
-      
-      console.log('Resultado final das opções:', result);
-      return result;
     } catch (error) {
       console.error('Erro ao gerar opções de filtro:', error);
       return defaultOptions;
@@ -234,6 +231,7 @@ const Index = () => {
           filterOptions={filterOptions}
           hasPendingFilters={hasPendingFilters}
           allLeads={allLeads}
+          isLoading={isLoading}
           onTempDateRangeChange={setTempDateRange}
           onTempFilterChange={handleTempFilterChange}
           onApplyFilters={applyFilters}
