@@ -16,24 +16,58 @@ interface FilterSelectProps {
 
 export function FilterSelect({
   label,
-  options = [], // Default to empty array
-  selectedValues = [], // Default to empty array
+  options,
+  selectedValues,
   onChange,
   placeholder = "Selecione..."
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Ensure options is always an array
-  const safeOptions = Array.isArray(options) ? options : [];
-  const safeSelectedValues = Array.isArray(selectedValues) ? selectedValues : [];
+  // Garantir que sempre temos arrays válidos, mesmo se props chegarem como undefined/null
+  const safeOptions = React.useMemo(() => {
+    if (!options || !Array.isArray(options)) {
+      console.log(`FilterSelect ${label}: options inválidas, usando array vazio`, options);
+      return [];
+    }
+    return options.filter(option => option && typeof option === 'string' && option.trim() !== '');
+  }, [options, label]);
+
+  const safeSelectedValues = React.useMemo(() => {
+    if (!selectedValues || !Array.isArray(selectedValues)) {
+      console.log(`FilterSelect ${label}: selectedValues inválidos, usando array vazio`, selectedValues);
+      return [];
+    }
+    return selectedValues.filter(value => value && typeof value === 'string');
+  }, [selectedValues, label]);
 
   const handleSelect = (value: string) => {
+    if (!value || typeof value !== 'string') return;
+    
     if (safeSelectedValues.includes(value)) {
       onChange(safeSelectedValues.filter(v => v !== value));
     } else {
       onChange([...safeSelectedValues, value]);
     }
   };
+
+  // Se não há opções válidas, não renderizar o componente
+  if (safeOptions.length === 0) {
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+        <Button
+          variant="outline"
+          disabled
+          className="w-full justify-between opacity-50"
+        >
+          {placeholder}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div>

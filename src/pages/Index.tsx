@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
@@ -107,9 +106,11 @@ const Index = () => {
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options - FIXED VERSION
+  // Get unique values for filter options - ENHANCED VERSION
   const filterOptions = useMemo(() => {
     console.log('Gerando opções de filtro. AllLeads:', allLeads?.length || 0);
+    console.log('AllLeads é array?', Array.isArray(allLeads));
+    console.log('Primeiros 3 leads:', allLeads?.slice(0, 3));
     
     // Sempre retornar arrays válidos, mesmo quando allLeads está vazio ou undefined
     const defaultOptions = {
@@ -129,21 +130,21 @@ const Index = () => {
           .filter(lead => lead && typeof lead === 'object')
           .map(lead => lead.Status)
           .filter(status => status && typeof status === 'string' && status.trim() !== '')
-      )];
+      )].sort();
       
       const closerOptions = [...new Set(
         allLeads
           .filter(lead => lead && typeof lead === 'object')
           .map(lead => lead.Closer)
           .filter(closer => closer && typeof closer === 'string' && closer.trim() !== '')
-      )];
+      )].sort();
       
       const origemOptions = [...new Set(
         allLeads
           .filter(lead => lead && typeof lead === 'object')
           .map(lead => lead.origem)
           .filter(origem => origem && typeof origem === 'string' && origem.trim() !== '')
-      )];
+      )].sort();
       
       console.log('Opções de filtro geradas com sucesso:', { 
         statusOptions: statusOptions.length, 
@@ -151,11 +152,18 @@ const Index = () => {
         origemOptions: origemOptions.length 
       });
       
-      return { 
+      console.log('Status options:', statusOptions);
+      console.log('Closer options:', closerOptions);
+      console.log('Origem options:', origemOptions);
+      
+      const result = { 
         statusOptions: statusOptions || [], 
         closerOptions: closerOptions || [], 
         origemOptions: origemOptions || [] 
       };
+      
+      console.log('Resultado final das opções:', result);
+      return result;
     } catch (error) {
       console.error('Erro ao gerar opções de filtro:', error);
       return defaultOptions;
