@@ -107,44 +107,59 @@ const Index = () => {
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options
+  // Get unique values for filter options - FIXED VERSION
   const filterOptions = useMemo(() => {
     console.log('Gerando opções de filtro. AllLeads:', allLeads?.length || 0);
     
-    if (!allLeads || allLeads.length === 0) {
-      console.log('Retornando opções vazias');
-      return {
-        statusOptions: [],
-        closerOptions: [],
-        origemOptions: []
-      };
+    // Sempre retornar arrays válidos, mesmo quando allLeads está vazio ou undefined
+    const defaultOptions = {
+      statusOptions: [],
+      closerOptions: [],
+      origemOptions: []
+    };
+
+    if (!Array.isArray(allLeads) || allLeads.length === 0) {
+      console.log('Retornando opções vazias - allLeads não é um array válido ou está vazio');
+      return defaultOptions;
     }
 
-    const statusOptions = [...new Set(
-      allLeads
-        .map(lead => lead?.Status)
-        .filter(status => status && typeof status === 'string' && status.trim() !== '')
-    )];
-    
-    const closerOptions = [...new Set(
-      allLeads
-        .map(lead => lead?.Closer)
-        .filter(closer => closer && typeof closer === 'string' && closer.trim() !== '')
-    )];
-    
-    const origemOptions = [...new Set(
-      allLeads
-        .map(lead => lead?.origem)
-        .filter(origem => origem && typeof origem === 'string' && origem.trim() !== '')
-    )];
-    
-    console.log('Opções de filtro geradas:', { 
-      statusOptions: statusOptions.length, 
-      closerOptions: closerOptions.length, 
-      origemOptions: origemOptions.length 
-    });
-    
-    return { statusOptions, closerOptions, origemOptions };
+    try {
+      const statusOptions = [...new Set(
+        allLeads
+          .filter(lead => lead && typeof lead === 'object')
+          .map(lead => lead.Status)
+          .filter(status => status && typeof status === 'string' && status.trim() !== '')
+      )];
+      
+      const closerOptions = [...new Set(
+        allLeads
+          .filter(lead => lead && typeof lead === 'object')
+          .map(lead => lead.Closer)
+          .filter(closer => closer && typeof closer === 'string' && closer.trim() !== '')
+      )];
+      
+      const origemOptions = [...new Set(
+        allLeads
+          .filter(lead => lead && typeof lead === 'object')
+          .map(lead => lead.origem)
+          .filter(origem => origem && typeof origem === 'string' && origem.trim() !== '')
+      )];
+      
+      console.log('Opções de filtro geradas com sucesso:', { 
+        statusOptions: statusOptions.length, 
+        closerOptions: closerOptions.length, 
+        origemOptions: origemOptions.length 
+      });
+      
+      return { 
+        statusOptions: statusOptions || [], 
+        closerOptions: closerOptions || [], 
+        origemOptions: origemOptions || [] 
+      };
+    } catch (error) {
+      console.error('Erro ao gerar opções de filtro:', error);
+      return defaultOptions;
+    }
   }, [allLeads]);
 
   const handleTempFilterChange = (filterType: keyof Filters, values: string[]) => {

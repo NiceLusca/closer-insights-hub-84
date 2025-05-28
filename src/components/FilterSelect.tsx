@@ -16,18 +16,22 @@ interface FilterSelectProps {
 
 export function FilterSelect({
   label,
-  options,
-  selectedValues,
+  options = [], // Default to empty array
+  selectedValues = [], // Default to empty array
   onChange,
   placeholder = "Selecione..."
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : [];
+  const safeSelectedValues = Array.isArray(selectedValues) ? selectedValues : [];
+
   const handleSelect = (value: string) => {
-    if (selectedValues.includes(value)) {
-      onChange(selectedValues.filter(v => v !== value));
+    if (safeSelectedValues.includes(value)) {
+      onChange(safeSelectedValues.filter(v => v !== value));
     } else {
-      onChange([...selectedValues, value]);
+      onChange([...safeSelectedValues, value]);
     }
   };
 
@@ -44,8 +48,8 @@ export function FilterSelect({
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {selectedValues.length > 0
-              ? `${selectedValues.length} selecionado(s)`
+            {safeSelectedValues.length > 0
+              ? `${safeSelectedValues.length} selecionado(s)`
               : placeholder}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -55,7 +59,7 @@ export function FilterSelect({
             <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
             <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {safeOptions.map((option) => (
                 <CommandItem
                   key={option}
                   onSelect={() => handleSelect(option)}
@@ -63,7 +67,7 @@ export function FilterSelect({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValues.includes(option) ? "opacity-100" : "opacity-0"
+                      safeSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option}
