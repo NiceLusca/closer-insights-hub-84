@@ -1,9 +1,10 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { FilterSelect } from "@/components/FilterSelect";
+import { FilterActions } from "./FilterActions";
+import { FilterStatus } from "./FilterStatus";
 import type { DateRange, Filters } from "@/types/lead";
 
 interface FiltersPanelProps {
@@ -97,47 +98,19 @@ export function FiltersPanel({
         </div>
         
         <div className="flex justify-between items-center border-t pt-4">
-          <div className="flex space-x-3">
-            <Button 
-              onClick={onApplyFilters}
-              disabled={!hasPendingFilters || isLoading}
-              className={`px-6 py-2 font-medium transition-all ${
-                hasPendingFilters 
-                  ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg' 
-                  : 'bg-gray-300'
-              }`}
-            >
-              Aplicar Filtros
-              {hasPendingFilters && (
-                <span className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></span>
-              )}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={onClearFilters}
-              disabled={isLoading}
-              className="px-6 py-2 border-2 border-gray-300 hover:border-gray-400"
-            >
-              Limpar Tudo
-            </Button>
-          </div>
+          <FilterActions
+            hasPendingFilters={hasPendingFilters}
+            isLoading={isLoading}
+            onApplyFilters={onApplyFilters}
+            onClearFilters={onClearFilters}
+          />
           
           <div className="flex items-center space-x-4">
-            {isLoading && (
-              <span className="text-sm text-blue-600 font-medium">
-                🔄 Carregando filtros...
-              </span>
-            )}
-            {!isLoading && hasPendingFilters && (
-              <span className="text-sm text-orange-600 font-medium">
-                ⚠️ Filtros pendentes de aplicação
-              </span>
-            )}
-            {!isLoading && !hasPendingFilters && hasValidOptions && (
-              <span className="text-sm text-green-600 font-medium">
-                ✅ Filtros atualizados
-              </span>
-            )}
+            <FilterStatus
+              isLoading={isLoading}
+              hasPendingFilters={hasPendingFilters}
+              hasValidOptions={hasValidOptions}
+            />
           </div>
         </div>
       </CardContent>
