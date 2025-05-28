@@ -48,16 +48,12 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
               }}
               formatter={(value, name) => {
-                if (name === 'receita') return formatCurrency(value as number);
-                if (name === 'conversao') return `${value}%`;
-                return value;
-              }}
-              labelFormatter={(label) => `Origem: ${label}`}
-              formatter={(value, name, props) => {
                 if (name === 'leads') return [value, 'Total de Leads'];
                 if (name === 'vendas') return [value, 'Vendas'];
+                if (name === 'conversao') return [`${value}%`, 'Taxa de Conversão'];
                 return [value, name];
               }}
+              labelFormatter={(label) => `Origem: ${label}`}
               labelStyle={{ color: '#374151' }}
               separator=": "
               itemStyle={{ color: '#374151' }}
