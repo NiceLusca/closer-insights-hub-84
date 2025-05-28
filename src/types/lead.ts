@@ -7,7 +7,7 @@ export interface Lead {
   'e-mail': string;
   Whatsapp: string;
   origem: string;
-  Status: 'Agendado' | 'Não Apareceu' | 'Desmarcou' | 'Fechou' | 'Mentorado' | 'Remarcou' | 'Confirmado' | 'Aguardando resposta';
+  Status: 'Agendado' | 'Não Apareceu' | 'Desmarcou' | 'Fechou' | 'Mentorado' | 'Remarcou' | 'Confirmado' | 'Aguardando resposta' | 'Número errado';
   Closer: string;
   'Venda Completa': number;
   recorrente: number | string;
@@ -37,5 +37,5 @@ export interface Metrics {
   taxaComparecimento: number;
   taxaFechamento: number;
   taxaDesmarque: number;
-  ticketMedio: number;
+  confirmados: number;
 }

@@ -26,12 +26,12 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
+  // Filtros aplicados (usados para filtrar os dados)
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
   });
   
-  // Filtros aplicados (usados para filtrar os dados)
   const [filters, setFilters] = useState<Filters>({
     status: [],
     closer: [],
@@ -39,6 +39,11 @@ const Index = () => {
   });
 
   // Filtros temporários (modificados na UI antes de aplicar)
+  const [tempDateRange, setTempDateRange] = useState<DateRange>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date()
+  });
+
   const [tempFilters, setTempFilters] = useState<Filters>({
     status: [],
     closer: [],
@@ -117,6 +122,7 @@ const Index = () => {
   };
 
   const applyFilters = () => {
+    setDateRange(tempDateRange);
     setFilters(tempFilters);
     toast({
       title: "Filtros aplicados!",
@@ -130,8 +136,16 @@ const Index = () => {
       closer: [],
       origem: []
     };
+    const defaultDateRange = {
+      from: new Date(new Date().setDate(new Date().getDate() - 30)),
+      to: new Date()
+    };
+    
+    setDateRange(defaultDateRange);
     setFilters(emptyFilters);
+    setTempDateRange(defaultDateRange);
     setTempFilters(emptyFilters);
+    
     toast({
       title: "Filtros limpos",
       description: "Todos os filtros foram removidos.",
@@ -139,7 +153,9 @@ const Index = () => {
   };
 
   // Verificar se existem filtros pendentes de aplicar
-  const hasPendingFilters = JSON.stringify(filters) !== JSON.stringify(tempFilters);
+  const hasPendingFilters = 
+    JSON.stringify(filters) !== JSON.stringify(tempFilters) ||
+    JSON.stringify(dateRange) !== JSON.stringify(tempDateRange);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -197,8 +213,8 @@ const Index = () => {
                     Período
                   </label>
                   <DatePickerWithRange 
-                    dateRange={dateRange} 
-                    onDateRangeChange={setDateRange} 
+                    dateRange={tempDateRange} 
+                    onDateRangeChange={setTempDateRange} 
                   />
                 </div>
                 
