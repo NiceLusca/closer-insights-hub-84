@@ -10,7 +10,7 @@ export interface Lead {
   Status: 'Agendado' | 'Não Apareceu' | 'Desmarcou' | 'Fechou' | 'Mentorado' | 'Remarcou' | 'Confirmado' | 'Aguardando resposta' | 'Número errado' | 'Não Fechou' | '';
   Closer: string;
   'Venda Completa': number;
-  recorrente: number | string;
+  recorrente: number;
   'Coluna 1'?: string;
   parsedDate?: Date;
 }
