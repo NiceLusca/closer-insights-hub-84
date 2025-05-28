@@ -25,58 +25,37 @@ export function FilterSelect({
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // VALIDAÇÃO ULTRA RIGOROSA - não renderizar Command até ter certeza de dados válidos
+  // Ultra safe validation - never allow Command to render with bad data
   const safeOptions = React.useMemo(() => {
-    console.log(`FilterSelect ${label} - Validando opções:`, { 
-      isLoading,
-      optionsIsArray: Array.isArray(options),
-      optionsLength: options?.length || 0,
-      options: options?.slice(0, 3) // Mostrar apenas primeiras 3 para debug
-    });
-    
-    // Nunca retornar nada durante carregamento
-    if (isLoading) {
-      console.log(`FilterSelect ${label} - Retornando vazio (carregando)`);
+    // Always return empty array if loading or invalid data
+    if (isLoading || !Array.isArray(options)) {
       return [];
     }
     
-    // Verificação rigorosa do array
-    if (!Array.isArray(options)) {
-      console.log(`FilterSelect ${label} - Retornando vazio (não é array)`);
-      return [];
-    }
+    // Filter out any invalid entries
+    const filtered = options.filter(option => 
+      option !== null && 
+      option !== undefined && 
+      typeof option === 'string' && 
+      option.trim() !== ''
+    );
     
-    // Filtrar com validação extra
-    const filtered = options.filter(option => {
-      const isValid = option !== null && 
-                     option !== undefined && 
-                     typeof option === 'string' && 
-                     option.trim() !== '';
-      return isValid;
-    });
-    
-    console.log(`FilterSelect ${label} - Opções válidas:`, filtered.length);
     return filtered;
-  }, [options, isLoading, label]);
+  }, [options, isLoading]);
 
   const safeSelectedValues = React.useMemo(() => {
     if (!Array.isArray(selectedValues)) return [];
     
-    const filtered = selectedValues.filter(value => 
+    return selectedValues.filter(value => 
       value !== null && 
       value !== undefined && 
       typeof value === 'string' && 
       value.trim() !== ''
     );
-    
-    return filtered;
   }, [selectedValues]);
 
   const handleSelect = (value: string) => {
-    if (!value || typeof value !== 'string') {
-      console.warn('FilterSelect: valor inválido selecionado:', value);
-      return;
-    }
+    if (!value || typeof value !== 'string') return;
     
     const newValues = safeSelectedValues.includes(value)
       ? safeSelectedValues.filter(v => v !== value)
@@ -85,18 +64,13 @@ export function FilterSelect({
     onChange(newValues);
   };
 
-  // CONDIÇÕES ULTRA RIGOROSAS para renderizar o Command
-  const hasValidOptions = safeOptions.length > 0;
-  const canRenderCommand = !isLoading && hasValidOptions;
+  // NEVER render Command component unless we have 100% valid data
+  const canRenderCommand = !isLoading && 
+                          Array.isArray(safeOptions) && 
+                          safeOptions.length > 0 &&
+                          safeOptions.every(opt => typeof opt === 'string' && opt.trim() !== '');
 
-  console.log(`FilterSelect ${label} - Estado de renderização:`, { 
-    isLoading, 
-    hasValidOptions, 
-    canRenderCommand,
-    optionsCount: safeOptions.length
-  });
-
-  // Se não pode renderizar Command, mostrar apenas botão desabilitado
+  // Always show disabled button if can't render Command
   if (!canRenderCommand) {
     return (
       <div>
@@ -115,7 +89,7 @@ export function FilterSelect({
     );
   }
 
-  // Renderizar componente completo apenas quando dados estão 100% prontos
+  // Only render full component when data is completely safe
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
