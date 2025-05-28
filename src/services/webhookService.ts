@@ -1,5 +1,5 @@
 
-import { parseISO, parse, isValid } from 'date-fns';
+import { parseISO, parse, isValid, format } from 'date-fns';
 import type { Lead } from '@/types/lead';
 
 export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
@@ -29,7 +29,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
       let parsedDate: Date | undefined;
       
       if (item.data || item.Data) {
-        const dateString = item.data || item.Data;
+        const dateString = (item.data || item.Data).toString().trim();
         console.log(`📅 Tentando parsear data: "${dateString}"`);
         
         // Tentar diferentes formatos de data
@@ -39,15 +39,16 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
           'MM/dd/yyyy',
           'dd-MM-yyyy',
           'dd/MM/yy',
-          'yyyy-MM-dd HH:mm:ss'
+          'yyyy-MM-dd HH:mm:ss',
+          'dd/MM/yyyy HH:mm:ss'
         ];
         
-        for (const format of dateFormats) {
+        for (const formatStr of dateFormats) {
           try {
-            const testDate = parse(dateString, format, new Date());
-            if (isValid(testDate)) {
+            const testDate = parse(dateString, formatStr, new Date());
+            if (isValid(testDate) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
               parsedDate = testDate;
-              console.log(`✅ Data parseada com formato ${format}:`, dateString, '->', parsedDate);
+              console.log(`✅ Data parseada com formato ${formatStr}:`, dateString, '->', format(parsedDate, 'dd/MM/yyyy'));
               break;
             }
           } catch (e) {
@@ -59,24 +60,52 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
         if (!parsedDate) {
           try {
             const isoDate = parseISO(dateString);
-            if (isValid(isoDate)) {
+            if (isValid(isoDate) && isoDate.getFullYear() >= 2020 && isoDate.getFullYear() <= 2030) {
               parsedDate = isoDate;
-              console.log('✅ Data parseada com ISO:', dateString, '->', parsedDate);
+              console.log('✅ Data parseada com ISO:', dateString, '->', format(parsedDate, 'dd/MM/yyyy'));
             }
           } catch (e) {
             console.warn(`❌ Não foi possível parsear a data: ${dateString}`);
           }
         }
         
-        // Se ainda não conseguiu parsear, usar data atual como fallback
+        // Se ainda não conseguiu parsear e parece ser uma data válida, tentar regex
+        if (!parsedDate && dateString.match(/\d+/)) {
+          const regexPatterns = [
+            /(\d{1,2})\/(\d{1,2})\/(\d{4})/,  // dd/mm/yyyy
+            /(\d{4})-(\d{1,2})-(\d{1,2})/,   // yyyy-mm-dd
+            /(\d{1,2})-(\d{1,2})-(\d{4})/,   // dd-mm-yyyy
+          ];
+          
+          for (const regex of regexPatterns) {
+            const match = dateString.match(regex);
+            if (match) {
+              let day, month, year;
+              if (regex === regexPatterns[1]) { // yyyy-mm-dd
+                [, year, month, day] = match;
+              } else { // dd/mm/yyyy or dd-mm-yyyy
+                [, day, month, year] = match;
+              }
+              
+              try {
+                const testDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                if (isValid(testDate) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+                  parsedDate = testDate;
+                  console.log(`✅ Data parseada com regex:`, dateString, '->', format(parsedDate, 'dd/MM/yyyy'));
+                  break;
+                }
+              } catch (e) {
+                // Continuar
+              }
+            }
+          }
+        }
+        
         if (!parsedDate) {
-          parsedDate = new Date();
-          console.warn(`⚠️ Usando data atual como fallback para: ${dateString}`);
+          console.warn(`⚠️ Data não parseada: ${dateString} - item será excluído`);
         }
       } else {
-        // Se não tem data, usar data atual
-        parsedDate = new Date();
-        console.warn(`⚠️ Item sem campo de data, usando data atual`);
+        console.warn(`⚠️ Item sem campo de data`);
       }
 
       const lead: Lead = {
@@ -94,17 +123,17 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
         parsedDate: parsedDate,
       };
 
-      console.log(`✅ Lead processado:`, {
+      console.log(`${parsedDate ? '✅' : '❌'} Lead processado:`, {
         nome: lead.Nome,
         status: lead.Status,
         data: lead.data,
-        parsedDate: lead.parsedDate
+        parsedDate: parsedDate ? format(parsedDate, 'dd/MM/yyyy') : 'INVÁLIDA'
       });
 
       return lead;
-    });
+    }).filter(lead => lead.parsedDate); // Filtrar apenas leads com data válida
 
-    console.log('✅ Leads processados:', processedLeads.length);
+    console.log('✅ Leads processados (com data válida):', processedLeads.length);
     console.log('📊 Amostra de leads processados:', processedLeads.slice(0, 3));
     
     return processedLeads;

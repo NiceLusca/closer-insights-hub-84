@@ -23,15 +23,16 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
     
     // Filter by date range
     if (lead.parsedDate) {
-      const leadDate = lead.parsedDate;
+      const leadDate = new Date(lead.parsedDate);
       const fromDate = new Date(dateRange.from);
       const toDate = new Date(dateRange.to);
       
       // Ajustar as horas para comparação correta
+      leadDate.setHours(0, 0, 0, 0);
       fromDate.setHours(0, 0, 0, 0);
       toDate.setHours(23, 59, 59, 999);
       
-      console.log(`📅 Comparando datas - Lead: ${leadDate.toISOString()} | Range: ${fromDate.toISOString()} até ${toDate.toISOString()}`);
+      console.log(`📅 Comparando datas - Lead: ${leadDate.toISOString()} | From: ${fromDate.toISOString()} | To: ${toDate.toISOString()}`);
       
       if (leadDate < fromDate || leadDate > toDate) {
         console.log(`❌ Lead excluído por data fora do range: ${lead.Nome} - ${leadDate.toLocaleDateString()}`);
@@ -40,7 +41,8 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
         console.log(`✅ Lead dentro do range de data: ${lead.Nome} - ${leadDate.toLocaleDateString()}`);
       }
     } else {
-      console.log(`⚠️ Lead sem data parseada, incluindo: ${lead.Nome} - ${lead.data}`);
+      console.log(`⚠️ Lead sem data parseada, excluindo: ${lead.Nome} - ${lead.data}`);
+      return false; // Mudança: excluir leads sem data parseada válida
     }
     
     // Filter by status
@@ -74,5 +76,6 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
   });
   
   console.log(`📊 Resultado da filtragem: ${filtered.length} de ${leads.length} leads aprovados`);
+  console.log('📋 Leads filtrados sample:', filtered.slice(0, 3).map(l => ({ nome: l.Nome, data: l.data, parsedDate: l.parsedDate, status: l.Status })));
   return filtered;
 }

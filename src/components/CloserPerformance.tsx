@@ -57,14 +57,6 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
     }).format(value);
   };
 
-  const getBarDataKey = () => {
-    return viewMode === 'percentage' ? 'conversao' : 'vendas';
-  };
-
-  const getBarName = () => {
-    return viewMode === 'percentage' ? 'Taxa de Conversão (%)' : 'Número de Vendas';
-  };
-
   return (
     <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
@@ -113,24 +105,36 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
                 color: '#f3f4f6'
               }}
               formatter={(value, name) => {
-                if (name === 'receita') return formatCurrency(value as number);
-                if (name === 'Taxa de Conversão (%)') return `${(value as number).toFixed(1)}%`;
-                return value;
+                if (name === 'Total de Leads') return [value, 'Total de Leads'];
+                if (name === 'Taxa de Conversão (%)') return [`${(value as number).toFixed(1)}%`, 'Taxa de Conversão'];
+                if (name === 'Número de Vendas') return [value, 'Número de Vendas'];
+                return [value, name];
               }}
             />
             <Legend />
-            <Bar 
-              dataKey="leads" 
-              fill="#3b82f6" 
-              name="Total de Leads"
-              radius={[2, 2, 0, 0]}
-            />
-            <Bar 
-              dataKey={getBarDataKey()} 
-              fill="#10b981" 
-              name={getBarName()}
-              radius={[2, 2, 0, 0]}
-            />
+            {viewMode === 'percentage' ? (
+              <Bar 
+                dataKey="conversao" 
+                fill="#10b981" 
+                name="Taxa de Conversão (%)"
+                radius={[2, 2, 0, 0]}
+              />
+            ) : (
+              <>
+                <Bar 
+                  dataKey="leads" 
+                  fill="#3b82f6" 
+                  name="Total de Leads"
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar 
+                  dataKey="vendas" 
+                  fill="#10b981" 
+                  name="Número de Vendas"
+                  radius={[2, 2, 0, 0]}
+                />
+              </>
+            )}
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
