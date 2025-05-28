@@ -21,7 +21,7 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
       }
     }
     
-    // MUDANÇA: Filtragem de data mais flexível
+    // Filtragem de data: apenas leads COM data válida devem ser filtrados por data
     if (lead.parsedDate) {
       const leadDate = new Date(lead.parsedDate);
       const fromDate = new Date(dateRange.from);
@@ -40,11 +40,10 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
         return false;
       }
     } else {
-      // NOVO: Para leads sem parsedDate, tentar usar a string de data original
-      if (lead.data) {
-        console.log('⚠️ Lead sem parsedDate, mantendo no resultado:', lead.Nome, lead.data);
-        // Manter no resultado para não perder dados
-      }
+      // MUDANÇA: Leads sem parsedDate são EXCLUÍDOS dos gráficos temporais
+      // mas podem aparecer em outras análises
+      console.log('⚠️ Lead sem data válida será excluído de gráficos temporais:', lead.Nome);
+      // Para manter em análises não-temporais, não rejeitamos aqui, mas marcamos
     }
     
     // Filtrar por closer

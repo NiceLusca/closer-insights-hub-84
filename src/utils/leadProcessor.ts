@@ -1,7 +1,7 @@
 
 import type { Lead } from '@/types/lead';
 import { parseDate } from './dateParser';
-import { findFieldValue, parseNumber, FIELD_MAPPINGS } from './fieldMapper';
+import { findFieldValue, parseNumber, FIELD_MAPPINGS, detectDateColumn } from './fieldMapper';
 
 export function processRawDataToLeads(data: any[]): Lead[] {
   console.log('🔄 Processando dados brutos para leads:', { totalItens: data.length });
@@ -10,7 +10,13 @@ export function processRawDataToLeads(data: any[]): Lead[] {
     console.log('📋 Exemplo do primeiro item:', data[0]);
     console.log('🔑 Chaves disponíveis no primeiro item:', Object.keys(data[0]));
     
-    // NOVO: Log adicional para identificar problemas de mapeamento
+    // NOVO: Tentar detectar coluna de data automaticamente
+    const detectedDateColumn = detectDateColumn(data[0]);
+    if (detectedDateColumn) {
+      console.log('🎯 Coluna de data detectada automaticamente:', detectedDateColumn);
+    }
+    
+    // Log adicional para identificar problemas de mapeamento
     console.log('🔍 Analisando campos disponíveis:');
     Object.keys(data[0]).forEach(key => {
       console.log(`- Campo: "${key}" = "${data[0][key]}"`);
@@ -20,19 +26,24 @@ export function processRawDataToLeads(data: any[]): Lead[] {
   const processedLeads = data.map((item: any, index: number) => {
     console.log(`\n📊 Processando lead ${index + 1}:`);
     
-    const dateValue = findFieldValue(item, FIELD_MAPPINGS.data, '');
-    let parsedDate = dateValue ? parseDate(dateValue.toString()) : undefined;
+    // MUDANÇA: Usar detecção automática como fallback
+    let dateValue = findFieldValue(item, FIELD_MAPPINGS.data, '');
     
-    // NOVO: Se não conseguiu parsear a data, mas há uma string de data, usar fallback
-    if (!parsedDate && dateValue) {
-      console.log('⚠️ Não foi possível parsear a data, usando fallback para data atual');
-      parsedDate = new Date(); // Fallback para não perder o lead
+    // Se não encontrou data pelos mapeamentos, tentar detecção automática
+    if (!dateValue) {
+      const detectedColumn = detectDateColumn(item);
+      if (detectedColumn) {
+        dateValue = item[detectedColumn];
+        console.log('🎯 Usando coluna detectada automaticamente para data:', detectedColumn, '=', dateValue);
+      }
     }
+    
+    let parsedDate = dateValue ? parseDate(dateValue.toString()) : undefined;
     
     console.log('📅 Processamento de data:', {
       valorOriginal: dateValue,
       dataParsada: parsedDate?.toISOString() || 'não parseada',
-      usouFallback: !dateValue || !parsedDate
+      foiParseadaComSucesso: !!parsedDate
     });
 
     const nomeValue = findFieldValue(item, FIELD_MAPPINGS.nome, `Lead ${index + 1}`);
@@ -63,15 +74,14 @@ export function processRawDataToLeads(data: any[]): Lead[] {
       nome: lead.Nome,
       status: lead.Status,
       data: lead.data,
-      parsedDate: lead.parsedDate?.toISOString() || 'sem data'
+      parsedDate: lead.parsedDate?.toISOString() || 'sem data válida'
     });
 
     return lead;
   });
 
-  // MUDANÇA: Filtros ainda mais relaxados - manter praticamente todos os leads
+  // Manter leads com dados básicos
   const filteredLeads = processedLeads.filter(lead => {
-    // Manter lead se tiver pelo menos nome OU email OU whatsapp OU status
     const hasBasicData = lead.Nome || lead['e-mail'] || lead.Whatsapp || lead.Status;
     
     if (!hasBasicData) {
@@ -88,9 +98,16 @@ export function processRawDataToLeads(data: any[]): Lead[] {
     totalProcessados: processedLeads.length,
     totalFiltrados: filteredLeads.length,
     comDataValida: filteredLeads.filter(l => l.parsedDate).length,
+    semDataValida: filteredLeads.filter(l => !l.parsedDate).length,
     comStatus: filteredLeads.filter(l => l.Status && l.Status.trim() !== '').length,
     statusEncontrados: [...new Set(filteredLeads.map(l => l.Status).filter(Boolean))]
   });
+
+  // IMPORTANTE: Alertar sobre problemas de data
+  const leadsWithoutDate = filteredLeads.filter(l => !l.parsedDate).length;
+  if (leadsWithoutDate > 0) {
+    console.warn(`⚠️ ATENÇÃO: ${leadsWithoutDate} leads não possuem data válida e serão excluídos dos gráficos temporais`);
+  }
 
   return filteredLeads;
 }

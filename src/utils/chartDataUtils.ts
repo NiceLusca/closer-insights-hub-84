@@ -6,6 +6,10 @@ import type { Lead } from "@/types/lead";
 export function generateLeadsChartData(leads: Lead[]) {
   console.log('📈 Gerando dados para LeadsChart com', leads.length, 'leads');
   
+  // MUDANÇA: Filtrar apenas leads com parsedDate válida para gráficos temporais
+  const leadsWithValidDate = leads.filter(lead => lead.parsedDate);
+  console.log(`📅 Leads com data válida para gráficos: ${leadsWithValidDate.length} de ${leads.length}`);
+  
   const last30Days = eachDayOfInterval({
     start: subDays(new Date(), 29),
     end: new Date()
@@ -14,21 +18,7 @@ export function generateLeadsChartData(leads: Lead[]) {
   console.log('📅 Processando últimos 30 dias...');
 
   const chartData = last30Days.map(date => {
-    const dayLeads = leads.filter(lead => {
-      // MUDANÇA: Incluir leads mesmo sem parsedDate válida
-      if (!lead.parsedDate) {
-        // Se não tem parsedDate, agrupar por data atual para não perder os dados
-        const today = new Date();
-        const targetDateStr = format(date, 'yyyy-MM-dd');
-        const todayStr = format(today, 'yyyy-MM-dd');
-        
-        if (targetDateStr === todayStr) {
-          console.log('⚠️ Lead sem parsedDate incluído no dia atual:', lead.Nome);
-          return true;
-        }
-        return false;
-      }
-      
+    const dayLeads = leadsWithValidDate.filter(lead => {
       const leadDateStr = format(lead.parsedDate, 'yyyy-MM-dd');
       const targetDateStr = format(date, 'yyyy-MM-dd');
       const matches = leadDateStr === targetDateStr;
@@ -56,16 +46,6 @@ export function generateLeadsChartData(leads: Lead[]) {
 
     return dayData;
   });
-
-  // NOVO: Se não há dados nos últimos 30 dias, criar dados para hoje com todos os leads
-  const totalDataPoints = chartData.reduce((sum, day) => sum + day.total, 0);
-  if (totalDataPoints === 0 && leads.length > 0) {
-    console.log('⚠️ Nenhum lead nos últimos 30 dias, criando dados para hoje');
-    const todayIndex = chartData.length - 1;
-    chartData[todayIndex].total = leads.length;
-    chartData[todayIndex].agendados = leads.filter(l => l.Status === 'Agendado').length;
-    chartData[todayIndex].fechamentos = leads.filter(l => l.Status === 'Fechou').length;
-  }
 
   console.log('✅ Dados do gráfico gerados:', chartData.filter(d => d.total > 0).length, 'dias com dados');
   console.log('📊 Amostra dos dados do gráfico:', chartData.slice(-7));

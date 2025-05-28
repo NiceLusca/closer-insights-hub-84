@@ -59,7 +59,7 @@ export function parseDate(dateValue: string): Date | undefined {
     // Data inválida
   }
 
-  // NOVO: Tentar extrair data de timestamp Unix se for um número
+  // Tentar extrair data de timestamp Unix se for um número
   if (!isNaN(Number(dateValue))) {
     try {
       const timestamp = Number(dateValue);
@@ -77,11 +77,9 @@ export function parseDate(dateValue: string): Date | undefined {
     }
   }
 
-  console.log('❌ Falha ao parsear data, tentando fallback para data atual:', dateValue);
+  console.log('❌ Falha ao parsear data:', dateValue);
   
-  // NOVO: Fallback para data atual se a data não for parseável
-  // Isso permitirá que os leads apareçam nos gráficos mesmo com datas inválidas
-  const currentDate = new Date();
-  console.log('⚠️ Usando data atual como fallback:', currentDate.toISOString());
-  return currentDate;
+  // REMOVIDO: Não usar mais fallback para data atual
+  // Retornar undefined para que o lead seja tratado adequadamente
+  return undefined;
 }

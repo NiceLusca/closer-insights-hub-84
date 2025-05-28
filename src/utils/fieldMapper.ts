@@ -1,4 +1,3 @@
-
 export function findFieldValue(item: any, possibleKeys: readonly string[], defaultValue: any = ''): any {
   console.log('🔍 Procurando campo:', { possibleKeys, availableKeys: Object.keys(item) });
   
@@ -21,6 +20,50 @@ export function findFieldValue(item: any, possibleKeys: readonly string[], defau
   return defaultValue;
 }
 
+// NOVA função para detectar colunas de data automaticamente
+export function detectDateColumn(item: any): string | null {
+  console.log('🔍 Detectando coluna de data automaticamente...');
+  
+  const allKeys = Object.keys(item);
+  console.log('🔑 Todas as chaves disponíveis:', allKeys);
+  
+  // Procurar por padrões que indicam data
+  const datePatterns = [
+    /data/i, /date/i, /created/i, /timestamp/i, /time/i,
+    /criacao/i, /cadastro/i, /registro/i, /entrada/i
+  ];
+  
+  for (const key of allKeys) {
+    // Verificar se a chave parece ser de data
+    const isDateKey = datePatterns.some(pattern => pattern.test(key));
+    
+    if (isDateKey) {
+      const value = item[key];
+      console.log(`🎯 Possível coluna de data encontrada: "${key}" = "${value}"`);
+      
+      // Verificar se o valor parece ser uma data
+      if (value && typeof value === 'string') {
+        // Padrões que indicam que é uma data
+        const dateValuePatterns = [
+          /^\d{4}-\d{2}-\d{2}/, // 2024-01-01
+          /^\d{2}\/\d{2}\/\d{4}/, // 01/01/2024
+          /^\d{2}-\d{2}-\d{4}/, // 01-01-2024
+          /^\d{8}$/, // 20240101
+          /^\d{10,13}$/ // timestamp
+        ];
+        
+        if (dateValuePatterns.some(pattern => pattern.test(value))) {
+          console.log('✅ Coluna de data detectada automaticamente:', key);
+          return key;
+        }
+      }
+    }
+  }
+  
+  console.log('❌ Nenhuma coluna de data detectada automaticamente');
+  return null;
+}
+
 export function parseNumber(value: any): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
@@ -31,7 +74,7 @@ export function parseNumber(value: any): number {
   return 0;
 }
 
-// EXPANDIR AINDA MAIS os mapeamentos com variações de nomes de colunas
+// Expandir ainda MAIS os mapeamentos com base em problemas reais
 export const FIELD_MAPPINGS = {
   data: [
     // Variações básicas
@@ -40,13 +83,17 @@ export const FIELD_MAPPINGS = {
     'data_criacao', 'dt_criacao', 'data_cadastro', 'dt_cadastro',
     'datetime', 'dateTime', 'DateTime', 'data_hora', 'data_time',
     'registration_date', 'signup_date', 'lead_date',
-    // NOVAS variações mais comuns em webhooks
+    // Variações específicas de webhook
     'Data de Criação', 'Data de Cadastro', 'Data do Lead', 'Data Lead',
     'data_lead', 'dataLead', 'lead_created_at', 'leadCreatedAt',
     'created_date', 'createdDate', 'dt_create', 'dt_created',
     'data_entrada', 'dataEntrada', 'entry_date', 'entryDate',
-    // Variações em português
-    'data_criado', 'dataCriado', 'data_registro', 'dataRegistro'
+    'data_criado', 'dataCriado', 'data_registro', 'dataRegistro',
+    // NOVOS padrões encontrados em webhooks reais
+    'created', 'Created', 'CREATED', 'criado', 'Criado', 'CRIADO',
+    'data_lead_criacao', 'dataLeadCriacao', 'lead_creation_date',
+    'webhook_date', 'webhookDate', 'form_date', 'formDate',
+    'submission_date', 'submissionDate', 'capture_date', 'captureDate'
   ],
   hora: [
     'Hora', 'hora', 'HORA', 'time', 'Time', 'TIME',
@@ -58,7 +105,6 @@ export const FIELD_MAPPINGS = {
     'cliente', 'Cliente', 'CLIENTE', 'lead_name', 'leadName',
     'full_name', 'fullName', 'first_name', 'firstName',
     'usuario', 'user', 'pessoa', 'person', 'contato',
-    // NOVAS variações
     'Nome Completo', 'Nome do Lead', 'Cliente Nome', 'Lead Name',
     'nome_completo', 'nomeCompleto', 'nome_cliente', 'nomeCliente',
     'contact_name', 'contactName', 'lead_nome', 'leadNome'
@@ -67,7 +113,6 @@ export const FIELD_MAPPINGS = {
     'e-mail', 'email', 'Email', 'EMAIL', 'E-mail', 'E-MAIL',
     'mail', 'Mail', 'MAIL', 'endereco_email', 'enderecoEmail',
     'email_address', 'emailAddress', 'contact_email', 'user_email',
-    // NOVAS variações
     'E-mail do Lead', 'Email do Cliente', 'Lead Email', 'Cliente Email',
     'email_lead', 'emailLead', 'lead_email', 'leadEmail',
     'email_contato', 'emailContato', 'contato_email', 'contatoEmail'
@@ -78,7 +123,6 @@ export const FIELD_MAPPINGS = {
     'celular', 'Celular', 'CELULAR', 'numero', 'Numero', 'NUMERO',
     'mobile', 'Mobile', 'MOBILE', 'tel', 'Tel', 'TEL',
     'contact', 'contato', 'fone', 'telephone',
-    // NOVAS variações
     'WhatsApp', 'Número WhatsApp', 'Telefone WhatsApp', 'Celular WhatsApp',
     'whatsapp_number', 'whatsappNumber', 'numero_whatsapp', 'numeroWhatsapp',
     'phone_number', 'phoneNumber', 'contact_phone', 'contactPhone',
@@ -88,7 +132,6 @@ export const FIELD_MAPPINGS = {
     'Status', 'status', 'STATUS', 'estado', 'Estado', 'ESTADO',
     'situacao', 'Situacao', 'SITUACAO', 'stage', 'Stage', 'STAGE',
     'phase', 'Phase', 'PHASE', 'etapa', 'Etapa', 'ETAPA',
-    // NOVAS variações
     'Status do Lead', 'Status Lead', 'Lead Status', 'Situação do Lead',
     'status_lead', 'statusLead', 'lead_status', 'leadStatus',
     'current_status', 'currentStatus', 'status_atual', 'statusAtual'
@@ -98,7 +141,6 @@ export const FIELD_MAPPINGS = {
     'consultor', 'Consultor', 'CONSULTOR', 'responsavel', 'Responsavel', 'RESPONSAVEL',
     'agent', 'Agent', 'AGENT', 'seller', 'Seller', 'SELLER',
     'atendente', 'Atendente', 'ATENDENTE', 'usuario', 'assigned_to',
-    // NOVAS variações
     'Responsável', 'Responsável pelo Lead', 'Vendedor Responsável',
     'closer_responsavel', 'closerResponsavel', 'vendedor_lead', 'vendedorLead',
     'assigned_user', 'assignedUser', 'owner', 'Owner', 'proprietario'
@@ -108,7 +150,6 @@ export const FIELD_MAPPINGS = {
     'canal', 'Canal', 'CANAL', 'campaign', 'Campaign', 'CAMPAIGN',
     'midia', 'Midia', 'MIDIA', 'media', 'Media', 'MEDIA',
     'utm_source', 'utmSource', 'lead_source', 'leadSource', 'traffic_source',
-    // NOVAS variações
     'Origem do Lead', 'Canal de Origem', 'Fonte do Lead', 'Lead Source',
     'origem_lead', 'origemLead', 'canal_origem', 'canalOrigem',
     'fonte', 'Fonte', 'FONTE', 'campanha', 'Campanha', 'CAMPANHA'
@@ -119,7 +160,6 @@ export const FIELD_MAPPINGS = {
     'total', 'Total', 'TOTAL', 'amount', 'Amount', 'AMOUNT',
     'receita', 'Receita', 'RECEITA', 'revenue', 'Revenue', 'REVENUE',
     'sale_value', 'saleValue', 'deal_value', 'dealValue',
-    // NOVAS variações
     'Valor da Venda', 'Valor Total', 'Receita Total', 'Sale Amount',
     'valor_venda', 'valorVenda', 'venda_valor', 'vendaValor',
     'deal_amount', 'dealAmount', 'transaction_value', 'transactionValue'
@@ -129,7 +169,6 @@ export const FIELD_MAPPINGS = {
     'valor_recorrente', 'valorRecorrente', 'monthly', 'Monthly', 'MONTHLY',
     'mensal', 'Mensal', 'MENSAL', 'subscription', 'Subscription', 'SUBSCRIPTION',
     'recurring_value', 'recurringValue', 'mrr', 'MRR',
-    // NOVAS variações
     'Valor Recorrente', 'Receita Recorrente', 'Mensalidade', 'Monthly Revenue',
     'mrr_value', 'mrrValue', 'subscription_value', 'subscriptionValue',
     'valor_mensal', 'valorMensal', 'receita_mensal', 'receitaMensal'
