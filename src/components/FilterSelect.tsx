@@ -25,20 +25,22 @@ export function FilterSelect({
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Validação simples e direta
+  // Validação rigorosa dos dados
   const validOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
+    if (isLoading || !Array.isArray(options)) return [];
     return options.filter(option => 
-      option && 
+      option !== null && 
+      option !== undefined && 
       typeof option === 'string' && 
       option.trim() !== ''
     );
-  }, [options]);
+  }, [options, isLoading]);
 
   const validSelectedValues = React.useMemo(() => {
     if (!Array.isArray(selectedValues)) return [];
     return selectedValues.filter(value => 
-      value && 
+      value !== null && 
+      value !== undefined && 
       typeof value === 'string' && 
       value.trim() !== ''
     );
@@ -54,7 +56,8 @@ export function FilterSelect({
     onChange(newValues);
   };
 
-  const isDisabled = isLoading || validOptions.length === 0;
+  // Só renderizar se não estiver carregando E tiver opções válidas
+  const canRenderPopover = !isLoading && validOptions.length > 0;
 
   return (
     <div>
@@ -62,13 +65,13 @@ export function FilterSelect({
         {label}
       </label>
       
-      {isDisabled ? (
+      {!canRenderPopover ? (
         <Button
           variant="outline"
           disabled
           className="w-full justify-between opacity-50"
         >
-          {isLoading ? "Carregando..." : placeholder}
+          {isLoading ? "Carregando..." : "Nenhuma opção disponível"}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       ) : (
