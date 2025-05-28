@@ -21,7 +21,7 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
       }
     }
     
-    // Filtrar por data apenas se houver data parseada
+    // MUDANÇA: Filtragem de data mais flexível
     if (lead.parsedDate) {
       const leadDate = new Date(lead.parsedDate);
       const fromDate = new Date(dateRange.from);
@@ -32,7 +32,18 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
       toDate.setHours(23, 59, 59, 999);
       
       if (leadDate < fromDate || leadDate > toDate) {
+        console.log('❌ Lead rejeitado por data fora do range:', {
+          lead: lead.Nome,
+          leadDate: leadDate.toLocaleDateString(),
+          range: `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
+        });
         return false;
+      }
+    } else {
+      // NOVO: Para leads sem parsedDate, tentar usar a string de data original
+      if (lead.data) {
+        console.log('⚠️ Lead sem parsedDate, mantendo no resultado:', lead.Nome, lead.data);
+        // Manter no resultado para não perder dados
       }
     }
     
@@ -56,5 +67,8 @@ export function filterLeads(leads: Lead[], dateRange: DateRange, filters: Filter
   });
   
   console.log(`📊 Resultado da filtragem: ${filtered.length} de ${leads.length} leads`);
+  console.log(`📊 Leads com parsedDate: ${filtered.filter(l => l.parsedDate).length}`);
+  console.log(`📊 Leads sem parsedDate: ${filtered.filter(l => !l.parsedDate).length}`);
+  
   return filtered;
 }

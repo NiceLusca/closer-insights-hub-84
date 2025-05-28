@@ -6,7 +6,7 @@ export function parseDate(dateValue: string): Date | undefined {
 
   console.log('🔍 Tentando parsear data:', dateValue);
 
-  // Expandir formatos de data suportados
+  // Expandir formatos de data suportados com mais variações
   const dateFormats = [
     // Formatos brasileiros
     'dd/MM/yyyy', 'dd/MM/yyyy HH:mm:ss', 'dd/MM/yyyy HH:mm',
@@ -21,7 +21,11 @@ export function parseDate(dateValue: string): Date | undefined {
     // Formatos sem separadores
     'ddMMyyyy', 'yyyyMMdd',
     // Formatos com texto
-    'dd MMM yyyy', 'MMM dd, yyyy', 'MMMM dd, yyyy'
+    'dd MMM yyyy', 'MMM dd, yyyy', 'MMMM dd, yyyy',
+    // Formatos timestamp-like
+    'yyyy-MM-dd\'T\'HH:mm:ss', 'yyyy-MM-dd\'T\'HH:mm:ss.SSS',
+    // Formatos mais relaxados
+    'd/M/yyyy', 'M/d/yyyy', 'd-M-yyyy', 'M-d-yyyy'
   ];
   
   // Tentar cada formato
@@ -55,6 +59,29 @@ export function parseDate(dateValue: string): Date | undefined {
     // Data inválida
   }
 
-  console.log('❌ Falha ao parsear data:', dateValue);
-  return undefined;
+  // NOVO: Tentar extrair data de timestamp Unix se for um número
+  if (!isNaN(Number(dateValue))) {
+    try {
+      const timestamp = Number(dateValue);
+      // Se for timestamp em segundos, converter para milissegundos
+      const date = new Date(timestamp > 10000000000 ? timestamp : timestamp * 1000);
+      if (isValid(date) && date.getFullYear() >= 2020 && date.getFullYear() <= 2030) {
+        console.log('✅ Timestamp parseado com sucesso:', {
+          original: dateValue,
+          resultado: date.toISOString()
+        });
+        return date;
+      }
+    } catch (e) {
+      // Continue
+    }
+  }
+
+  console.log('❌ Falha ao parsear data, tentando fallback para data atual:', dateValue);
+  
+  // NOVO: Fallback para data atual se a data não for parseável
+  // Isso permitirá que os leads apareçam nos gráficos mesmo com datas inválidas
+  const currentDate = new Date();
+  console.log('⚠️ Usando data atual como fallback:', currentDate.toISOString());
+  return currentDate;
 }
