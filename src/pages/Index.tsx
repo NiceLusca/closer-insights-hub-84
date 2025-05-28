@@ -102,17 +102,39 @@ const Index = () => {
 
   // Filter data based on selected filters and date range
   const filteredLeads = useMemo(() => {
+    if (!allLeads || allLeads.length === 0) {
+      return [];
+    }
     console.log('Aplicando filtros:', { dateRange, filters });
     const result = filterLeads(allLeads, dateRange, filters);
     console.log('Resultado dos filtros:', result.length, 'leads');
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options
+  // Get unique values for filter options - garantir que sempre retorne arrays válidos
   const filterOptions = useMemo(() => {
-    const statusOptions = [...new Set(allLeads.map(lead => lead.Status))].filter(Boolean);
-    const closerOptions = [...new Set(allLeads.map(lead => lead.Closer))].filter(Boolean);
-    const origemOptions = [...new Set(allLeads.map(lead => lead.origem))].filter(Boolean);
+    if (!allLeads || allLeads.length === 0) {
+      return {
+        statusOptions: [],
+        closerOptions: [],
+        origemOptions: []
+      };
+    }
+
+    const statusOptions = [...new Set(allLeads
+      .map(lead => lead.Status)
+      .filter(status => status && status.trim() !== '')
+    )];
+    
+    const closerOptions = [...new Set(allLeads
+      .map(lead => lead.Closer)
+      .filter(closer => closer && closer.trim() !== '')
+    )];
+    
+    const origemOptions = [...new Set(allLeads
+      .map(lead => lead.origem)
+      .filter(origem => origem && origem.trim() !== '')
+    )];
     
     console.log('Opções de filtro:', { statusOptions, closerOptions, origemOptions });
     return { statusOptions, closerOptions, origemOptions };
