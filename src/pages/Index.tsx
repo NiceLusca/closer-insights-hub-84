@@ -23,9 +23,9 @@ const Index = () => {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [dataStable, setDataStable] = useState(false); // Novo estado para controlar estabilidade dos dados
+  const [dataReady, setDataReady] = useState(false);
   
-  // Filtros aplicados (usados para filtrar os dados)
+  // Filtros aplicados
   const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
@@ -37,7 +37,7 @@ const Index = () => {
     origem: []
   });
 
-  // Filtros temporários (modificados na UI antes de aplicar)
+  // Filtros temporários
   const [tempDateRange, setTempDateRange] = useState<DateRange>({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
@@ -49,67 +49,53 @@ const Index = () => {
     origem: []
   });
 
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Mostrar filtros por padrão
 
   // Função para buscar dados do webhook
   const fetchLeadsData = async () => {
     setIsLoading(true);
-    setDataStable(false); // Marcar dados como instáveis durante carregamento
+    setDataReady(false);
     
     try {
-      console.log('Iniciando busca de dados do webhook...');
+      console.log('🔄 Iniciando busca de dados do webhook...');
       const webhookLeads = await fetchLeadsFromWebhook();
       
       if (webhookLeads.length > 0) {
-        console.log('Dados carregados com sucesso:', webhookLeads.length, 'leads');
+        console.log('✅ Dados carregados do webhook:', webhookLeads.length, 'leads');
         setAllLeads(webhookLeads);
         setLastUpdated(new Date());
         
-        // Aguardar um pequeno delay para garantir que o estado seja atualizado
-        setTimeout(() => {
-          setDataStable(true);
-          console.log('Dados marcados como estáveis');
-        }, 100);
-        
         toast({
-          title: "Dados atualizados!",
-          description: `${webhookLeads.length} leads carregados com sucesso.`,
+          title: "✅ Dados atualizados!",
+          description: `${webhookLeads.length} leads carregados do webhook com sucesso.`,
         });
       } else {
-        console.log('Webhook retornou dados vazios, usando dados mock');
+        console.log('⚠️ Webhook vazio, usando dados de demonstração');
         const mockLeads = generateMockData(500);
         setAllLeads(mockLeads);
         setLastUpdated(new Date());
         
-        setTimeout(() => {
-          setDataStable(true);
-          console.log('Dados mock marcados como estáveis');
-        }, 100);
-        
         toast({
-          title: "Usando dados de demonstração",
-          description: "Não foi possível carregar dados do webhook. Usando dados mock.",
+          title: "⚠️ Usando dados de demonstração",
+          description: "Webhook retornou dados vazios. Usando dados mock para demonstração.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('❌ Erro ao buscar dados:', error);
       const mockLeads = generateMockData(500);
       setAllLeads(mockLeads);
       setLastUpdated(new Date());
       
-      setTimeout(() => {
-        setDataStable(true);
-        console.log('Dados mock (erro) marcados como estáveis');
-      }, 100);
-      
       toast({
-        title: "Erro ao carregar dados",
-        description: "Usando dados de demonstração. Verifique a conexão com o webhook.",
+        title: "❌ Erro ao carregar dados",
+        description: "Erro na conexão com webhook. Usando dados de demonstração.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      // Pequeno delay para garantir que o estado seja atualizado
+      setTimeout(() => setDataReady(true), 200);
     }
   };
 
@@ -118,90 +104,101 @@ const Index = () => {
     fetchLeadsData();
   }, []);
 
-  // Filter data based on selected filters and date range
+  // Filtrar dados baseado nos filtros aplicados
   const filteredLeads = useMemo(() => {
     if (!allLeads || allLeads.length === 0) {
       return [];
     }
-    console.log('Aplicando filtros:', { dateRange, filters });
+    
+    console.log('🔍 Aplicando filtros aos dados:', {
+      totalLeads: allLeads.length,
+      dateRange,
+      filters
+    });
+    
     const result = filterLeads(allLeads, dateRange, filters);
-    console.log('Resultado dos filtros:', result.length, 'leads');
+    console.log('📊 Resultado dos filtros:', result.length, 'leads filtrados');
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options - VERSÃO MELHORADA COM DEBOUNCE
+  // Gerar opções para os filtros de forma mais robusta
   const filterOptions = useMemo(() => {
-    console.log('=== GERANDO OPÇÕES DE FILTRO ===');
-    console.log('Estado atual:', { 
-      allLeadsLength: allLeads?.length || 0, 
+    console.log('🔧 Gerando opções de filtro...');
+    console.log('Estado:', { 
+      leadsLength: allLeads?.length || 0, 
       isLoading, 
-      dataStable 
+      dataReady 
     });
-    
-    // Sempre retornar arrays válidos, mesmo quando dados não estão prontos
-    const defaultOptions = {
-      statusOptions: [],
-      closerOptions: [],
-      origemOptions: []
-    };
 
-    // Só processar se dados estiverem estáveis e válidos
-    if (!dataStable || isLoading || !Array.isArray(allLeads) || allLeads.length === 0) {
-      console.log('Retornando opções vazias - dados não estão prontos');
-      return defaultOptions;
+    // Retornar arrays vazios se dados não estão prontos
+    if (!dataReady || isLoading || !Array.isArray(allLeads) || allLeads.length === 0) {
+      console.log('⏳ Dados não prontos, retornando opções vazias');
+      return {
+        statusOptions: [],
+        closerOptions: [],
+        origemOptions: []
+      };
     }
 
     try {
-      console.log('Processando', allLeads.length, 'leads para gerar opções...');
-      
-      // Filtrar e processar status
+      // Processar Status
       const statusSet = new Set<string>();
       allLeads.forEach(lead => {
-        if (lead?.Status && typeof lead.Status === 'string' && lead.Status.trim() !== '') {
-          statusSet.add(lead.Status.trim());
+        if (lead?.Status && typeof lead.Status === 'string') {
+          const status = lead.Status.trim();
+          if (status !== '') {
+            statusSet.add(status);
+          }
         }
       });
       const statusOptions = Array.from(statusSet).sort();
       
-      // Filtrar e processar closers
+      // Processar Closers
       const closerSet = new Set<string>();
       allLeads.forEach(lead => {
-        if (lead?.Closer && typeof lead.Closer === 'string' && lead.Closer.trim() !== '') {
-          closerSet.add(lead.Closer.trim());
+        if (lead?.Closer && typeof lead.Closer === 'string') {
+          const closer = lead.Closer.trim();
+          if (closer !== '') {
+            closerSet.add(closer);
+          }
         }
       });
       const closerOptions = Array.from(closerSet).sort();
       
-      // Filtrar e processar origens
+      // Processar Origens
       const origemSet = new Set<string>();
       allLeads.forEach(lead => {
-        if (lead?.origem && typeof lead.origem === 'string' && lead.origem.trim() !== '') {
-          origemSet.add(lead.origem.trim());
+        if (lead?.origem && typeof lead.origem === 'string') {
+          const origem = lead.origem.trim();
+          if (origem !== '') {
+            origemSet.add(origem);
+          }
         }
       });
       const origemOptions = Array.from(origemSet).sort();
       
-      console.log('=== OPÇÕES GERADAS ===');
-      console.log('Status:', statusOptions.length, 'opções:', statusOptions);
-      console.log('Closers:', closerOptions.length, 'opções:', closerOptions);
-      console.log('Origens:', origemOptions.length, 'opções:', origemOptions);
+      console.log('✅ Opções de filtro geradas:');
+      console.log('📈 Status:', statusOptions.length, 'opções:', statusOptions);
+      console.log('👥 Closers:', closerOptions.length, 'opções:', closerOptions);
+      console.log('🎯 Origens:', origemOptions.length, 'opções:', origemOptions);
       
-      const result = { 
+      return { 
         statusOptions, 
         closerOptions, 
         origemOptions 
       };
-      
-      console.log('Opções finais:', result);
-      return result;
     } catch (error) {
-      console.error('Erro ao gerar opções de filtro:', error);
-      return defaultOptions;
+      console.error('❌ Erro ao gerar opções de filtro:', error);
+      return {
+        statusOptions: [],
+        closerOptions: [],
+        origemOptions: []
+      };
     }
-  }, [allLeads, dataStable, isLoading]); // Adicionar dataStable como dependência
+  }, [allLeads, dataReady, isLoading]);
 
   const handleTempFilterChange = (filterType: keyof Filters, values: string[]) => {
-    console.log('Mudança temporária de filtro:', filterType, values);
+    console.log('🔄 Mudança temporária de filtro:', filterType, values);
     setTempFilters(prev => ({
       ...prev,
       [filterType]: values
@@ -209,12 +206,12 @@ const Index = () => {
   };
 
   const applyFilters = () => {
-    console.log('Aplicando filtros:', { tempDateRange, tempFilters });
+    console.log('✅ Aplicando filtros:', { tempDateRange, tempFilters });
     setDateRange(tempDateRange);
     setFilters(tempFilters);
     toast({
-      title: "Filtros aplicados!",
-      description: "Os dados foram atualizados com os novos filtros.",
+      title: "✅ Filtros aplicados!",
+      description: "Dashboard atualizado com os novos filtros.",
     });
   };
 
@@ -235,27 +232,18 @@ const Index = () => {
     setTempFilters(emptyFilters);
     
     toast({
-      title: "Filtros limpos",
+      title: "🗑️ Filtros limpos",
       description: "Todos os filtros foram removidos.",
     });
   };
 
-  // Verificar se existem filtros pendentes de aplicar
+  // Verificar se existem filtros pendentes
   const hasPendingFilters = 
     JSON.stringify(filters) !== JSON.stringify(tempFilters) ||
     JSON.stringify(dateRange) !== JSON.stringify(tempDateRange);
 
-  // Estado consolidado para os filtros
-  const filtersReady = dataStable && !isLoading && allLeads.length > 0;
-  
-  console.log('=== ESTADO FINAL DOS FILTROS ===');
-  console.log('filtersReady:', filtersReady);
-  console.log('dataStable:', dataStable);
-  console.log('isLoading:', isLoading);
-  console.log('allLeads.length:', allLeads.length);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <DashboardHeader
         isLoading={isLoading}
         lastUpdated={lastUpdated}
@@ -273,7 +261,7 @@ const Index = () => {
           filterOptions={filterOptions}
           hasPendingFilters={hasPendingFilters}
           allLeads={allLeads}
-          isLoading={!filtersReady} // Passa true se filtros não estão prontos
+          isLoading={!dataReady}
           onTempDateRangeChange={setTempDateRange}
           onTempFilterChange={handleTempFilterChange}
           onApplyFilters={applyFilters}
@@ -282,28 +270,37 @@ const Index = () => {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center py-8">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-            <span className="ml-2 text-gray-600">Carregando dados...</span>
+          <div className="flex justify-center items-center py-12">
+            <div className="bg-white rounded-lg shadow-lg p-8 flex items-center space-x-4">
+              <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Carregando Dados</h3>
+                <p className="text-gray-600">Buscando leads do webhook...</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Metrics Cards */}
-        <MetricsCards leads={filteredLeads} />
+        {!isLoading && (
+          <>
+            {/* Metrics Cards */}
+            <MetricsCards leads={filteredLeads} />
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <LeadsChart leads={filteredLeads} />
-          <RevenueChart leads={filteredLeads} />
-          <StatusDistribution leads={filteredLeads} />
-          <CloserPerformance leads={filteredLeads} />
-        </div>
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              <LeadsChart leads={filteredLeads} />
+              <RevenueChart leads={filteredLeads} />
+              <StatusDistribution leads={filteredLeads} />
+              <CloserPerformance leads={filteredLeads} />
+            </div>
 
-        {/* Origin Analysis */}
-        <OriginAnalysis leads={filteredLeads} />
+            {/* Origin Analysis */}
+            <OriginAnalysis leads={filteredLeads} />
 
-        {/* Leads Table */}
-        <LeadsTable leads={filteredLeads} />
+            {/* Leads Table */}
+            <LeadsTable leads={filteredLeads} />
+          </>
+        )}
       </div>
     </div>
   );

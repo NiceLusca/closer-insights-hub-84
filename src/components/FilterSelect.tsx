@@ -3,7 +3,7 @@ import React from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface FilterSelectProps {
@@ -25,25 +25,29 @@ export function FilterSelect({
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Ultra safe validation - never allow Command to render with bad data
-  const safeOptions = React.useMemo(() => {
-    // Always return empty array if loading or invalid data
+  // Validação e filtragem de opções
+  const validOptions = React.useMemo(() => {
     if (isLoading || !Array.isArray(options)) {
       return [];
     }
     
-    // Filter out any invalid entries
-    const filtered = options.filter(option => 
-      option !== null && 
-      option !== undefined && 
-      typeof option === 'string' && 
-      option.trim() !== ''
-    );
+    // Filtrar opções válidas, remover duplicatas e ordenar
+    const filtered = options
+      .filter(option => 
+        option !== null && 
+        option !== undefined && 
+        typeof option === 'string' && 
+        option.trim() !== ''
+      )
+      .map(option => option.trim())
+      .filter((option, index, arr) => arr.indexOf(option) === index) // Remove duplicatas
+      .sort();
     
+    console.log(`FilterSelect ${label} - Opções válidas:`, filtered);
     return filtered;
-  }, [options, isLoading]);
+  }, [options, isLoading, label]);
 
-  const safeSelectedValues = React.useMemo(() => {
+  const validSelectedValues = React.useMemo(() => {
     if (!Array.isArray(selectedValues)) return [];
     
     return selectedValues.filter(value => 
@@ -57,21 +61,16 @@ export function FilterSelect({
   const handleSelect = (value: string) => {
     if (!value || typeof value !== 'string') return;
     
-    const newValues = safeSelectedValues.includes(value)
-      ? safeSelectedValues.filter(v => v !== value)
-      : [...safeSelectedValues, value];
+    const trimmedValue = value.trim();
+    const newValues = validSelectedValues.includes(trimmedValue)
+      ? validSelectedValues.filter(v => v !== trimmedValue)
+      : [...validSelectedValues, trimmedValue];
     
     onChange(newValues);
   };
 
-  // NEVER render Command component unless we have 100% valid data
-  const canRenderCommand = !isLoading && 
-                          Array.isArray(safeOptions) && 
-                          safeOptions.length > 0 &&
-                          safeOptions.every(opt => typeof opt === 'string' && opt.trim() !== '');
-
-  // Always show disabled button if can't render Command
-  if (!canRenderCommand) {
+  // Mostrar botão desabilitado se não houver opções válidas
+  if (isLoading || validOptions.length === 0) {
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -89,7 +88,6 @@ export function FilterSelect({
     );
   }
 
-  // Only render full component when data is completely safe
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -104,8 +102,8 @@ export function FilterSelect({
             aria-expanded={open}
             className="w-full justify-between"
           >
-            {safeSelectedValues.length > 0
-              ? `${safeSelectedValues.length} selecionado(s)`
+            {validSelectedValues.length > 0
+              ? `${validSelectedValues.length} selecionado(s)`
               : placeholder}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -114,23 +112,26 @@ export function FilterSelect({
           <Command>
             <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
             <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-            <CommandGroup>
-              {safeOptions.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={() => handleSelect(option)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      safeSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <CommandList>
+              <CommandGroup>
+                {validOptions.map((option) => (
+                  <CommandItem
+                    key={option}
+                    value={option}
+                    onSelect={() => handleSelect(option)}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        validSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
           </Command>
         </PopoverContent>
       </Popover>

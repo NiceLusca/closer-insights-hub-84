@@ -40,4 +40,7 @@ export interface Metrics {
   confirmados: number;
   mentorados: number;
   aproveitamentoGeral: number;
+  vendasCompletas: number;
+  vendasRecorrentes: number;
+  receitaCompleta: number;
 }

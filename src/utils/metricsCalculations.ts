@@ -1,96 +1,109 @@
 
 import type { Lead, Metrics } from "@/types/lead";
 
-export interface ExtendedMetrics extends Metrics {
-  vendasCompletas: number;
-  vendasRecorrentes: number;
-  receitaCompleta: number;
-  mentorados: number;
-  aproveitamentoGeral: number; // Nova métrica
-}
+export function calculateMetrics(leads: Lead[]): Metrics {
+  console.log('📊 Calculando métricas para', leads.length, 'leads');
+  
+  if (!leads || leads.length === 0) {
+    return {
+      totalLeads: 0,
+      agendamentos: 0,
+      noShows: 0,
+      remarcacoes: 0,
+      fechamentos: 0,
+      receitaTotal: 0,
+      receitaRecorrente: 0,
+      taxaComparecimento: 0,
+      taxaFechamento: 0,
+      taxaDesmarque: 0,
+      confirmados: 0,
+      mentorados: 0,
+      aproveitamentoGeral: 0,
+      vendasCompletas: 0,
+      vendasRecorrentes: 0,
+      receitaCompleta: 0
+    };
+  }
 
-export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
-  console.log('Calculando métricas para', leads.length, 'leads');
+  // Contadores básicos
+  let agendamentos = 0;
+  let noShows = 0;
+  let remarcacoes = 0;
+  let fechamentos = 0;
+  let confirmados = 0;
+  let mentorados = 0;
+  let desmarcados = 0;
+  let vendasCompletas = 0;
+  let vendasRecorrentes = 0;
   
+  // Receitas
+  let receitaCompleta = 0;
+  let receitaRecorrente = 0;
+
+  leads.forEach(lead => {
+    const status = lead.Status?.trim() || '';
+    
+    switch (status) {
+      case 'Agendado':
+        agendamentos++;
+        break;
+      case 'Não Apareceu':
+        noShows++;
+        break;
+      case 'Remarcou':
+      case 'Aguardando resposta':
+        remarcacoes++;
+        break;
+      case 'Fechou':
+        fechamentos++;
+        break;
+      case 'Confirmado':
+        confirmados++;
+        break;
+      case 'Mentorado':
+        mentorados++;
+        break;
+      case 'Desmarcou':
+        desmarcados++;
+        break;
+    }
+
+    // Calcular vendas completas
+    if (lead['Venda Completa'] && lead['Venda Completa'] > 0) {
+      vendasCompletas++;
+      receitaCompleta += lead['Venda Completa'];
+    }
+
+    // Calcular vendas recorrentes
+    const recorrente = typeof lead.recorrente === 'number' ? lead.recorrente : 
+                      (typeof lead.recorrente === 'string' && lead.recorrente !== '') ? parseFloat(lead.recorrente) : 0;
+    
+    if (recorrente > 0) {
+      vendasRecorrentes++;
+      receitaRecorrente += recorrente;
+    }
+  });
+
   const totalLeads = leads.length;
-  
-  // Separar leads por status
-  const agendamentos = leads.filter(lead => lead.Status === "Agendado").length;
-  const confirmados = leads.filter(lead => lead.Status === "Confirmado").length;
-  const noShows = leads.filter(lead => lead.Status === "Não Apareceu").length;
-  const fechamentos = leads.filter(lead => lead.Status === "Fechou").length;
-  const mentorados = leads.filter(lead => lead.Status === "Mentorado").length;
-  const desmarcacoes = leads.filter(lead => lead.Status === "Desmarcou").length;
-  const remarcacoes = leads.filter(lead => 
-    lead.Status === "Remarcou" || lead.Status === "Aguardando resposta"
-  ).length;
-  
-  // Calcular vendas completas e recorrentes (separadas)
-  const vendasCompletas = leads.filter(lead => 
-    typeof lead['Venda Completa'] === 'number' && lead['Venda Completa'] > 0
-  ).length;
-  
-  const vendasRecorrentes = leads.filter(lead => 
-    typeof lead.recorrente === 'number' && lead.recorrente > 0
-  ).length;
-  
-  // Calcular receita total - somar apenas valores válidos
-  const receitaCompleta = leads.reduce((sum, lead) => {
-    const venda = lead['Venda Completa'] || 0;
-    return sum + (typeof venda === 'number' && !isNaN(venda) ? venda : 0);
-  }, 0);
-  
-  const receitaRecorrente = leads.reduce((sum, lead) => {
-    const recorrente = typeof lead.recorrente === 'number' ? lead.recorrente : 0;
-    return sum + (!isNaN(recorrente) ? recorrente : 0);
-  }, 0);
-  
   const receitaTotal = receitaCompleta + receitaRecorrente;
   
-  // NOVA LÓGICA: Mentorados são clientes existentes, não contam para taxas de conversão
-  // Total de apresentações = apenas Fechou + Não Apareceu (excluindo Mentorados)
-  const totalApresentacoes = fechamentos + noShows;
+  // Cálculos de taxas (seguindo as definições do briefing)
+  // Taxa de Comparecimento = Agendados ÷ (Agendados + No-Shows)
+  const baseComparecimento = agendamentos + noShows;
+  const taxaComparecimento = baseComparecimento > 0 ? (agendamentos / baseComparecimento) * 100 : 0;
   
-  // Taxa de Comparecimento: Fechamentos / Total de apresentações (excluindo Mentorados)
-  const taxaComparecimento = totalApresentacoes > 0 
-    ? (fechamentos / totalApresentacoes) * 100 
-    : 0;
+  // Taxa de Fechamento = Fechou ÷ Total de Apresentações
+  // Considerando apresentações como leads que não são mentorados
+  const totalApresentacoes = totalLeads - mentorados;
+  const taxaFechamento = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
   
-  // Taxa de Fechamento: igual à taxa de comparecimento (só contamos quem pode realmente comprar)
-  const taxaFechamento = totalApresentacoes > 0 
-    ? (fechamentos / totalApresentacoes) * 100 
-    : 0;
+  // Taxa de Desmarque = Desmarcou ÷ Agendados
+  const taxaDesmarque = agendamentos > 0 ? (desmarcados / agendamentos) * 100 : 0;
   
-  // Taxa de Desmarque: Desmarcações / Total de agendamentos
-  const totalAgendamentos = agendamentos + confirmados + totalApresentacoes + mentorados;
-  const taxaDesmarque = totalAgendamentos > 0 
-    ? (desmarcacoes / totalAgendamentos) * 100 
-    : 0;
-  
-  // NOVA MÉTRICA: Aproveitamento Geral
-  // Todos os leads do período (excluindo mentorados) dividido pelo número de fechamentos
-  const leadsExcluindoMentorados = totalLeads - mentorados;
-  const aproveitamentoGeral = leadsExcluindoMentorados > 0 
-    ? (fechamentos / leadsExcluindoMentorados) * 100 
-    : 0;
-  
-  console.log('Métricas calculadas:', {
-    totalLeads,
-    fechamentos,
-    mentorados,
-    noShows,
-    vendasCompletas,
-    vendasRecorrentes,
-    receitaCompleta,
-    receitaRecorrente,
-    receitaTotal,
-    taxaComparecimento,
-    taxaFechamento,
-    aproveitamentoGeral,
-    leadsExcluindoMentorados
-  });
-  
-  return {
+  // Aproveitamento Geral = Fechamentos / (Total de Leads - Mentorados) * 100
+  const aproveitamentoGeral = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
+
+  const metrics = {
     totalLeads,
     agendamentos,
     noShows,
@@ -102,10 +115,13 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     taxaFechamento,
     taxaDesmarque,
     confirmados,
+    mentorados,
+    aproveitamentoGeral,
     vendasCompletas,
     vendasRecorrentes,
-    receitaCompleta,
-    mentorados,
-    aproveitamentoGeral
+    receitaCompleta
   };
+
+  console.log('📈 Métricas calculadas:', metrics);
+  return metrics;
 }
