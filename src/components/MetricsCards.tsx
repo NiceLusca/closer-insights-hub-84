@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw, Users } from "lucide-react";
 import { calculateMetrics } from "@/utils/metricsCalculations";
 import type { Lead } from "@/types/lead";
 
@@ -68,7 +68,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600",
       borderColor: "border-purple-200",
-      tooltip: "% de quem compareceu nas apresentações (Fechou + Mentorado) vs total de apresentações (incluindo Não Apareceu)"
+      tooltip: "% de quem compareceu e pode comprar: Fechou / (Fechou + Não Apareceu). Mentorados são excluídos pois são clientes existentes."
     },
     {
       title: "Taxa de Fechamento",
@@ -77,16 +77,16 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgColor: "bg-orange-50",
       iconColor: "text-orange-600",
       borderColor: "border-orange-200",
-      tooltip: "% de fechamentos em relação ao total de apresentações realizadas (Fechou / Total de apresentações)"
+      tooltip: "% de fechamentos entre quem pode comprar: Fechou / (Fechou + Não Apareceu). Mentorados são excluídos pois já são clientes."
     },
     {
-      title: "Confirmados",
-      value: metrics.confirmados.toLocaleString(),
-      icon: Clock,
-      bgColor: "bg-indigo-50",
-      iconColor: "text-indigo-600",
-      borderColor: "border-indigo-200",
-      tooltip: "Leads que confirmaram presença mas ainda não foram atendidos"
+      title: "Mentorados",
+      value: metrics.mentorados.toLocaleString(),
+      icon: Users,
+      bgColor: "bg-yellow-50",
+      iconColor: "text-yellow-600",
+      borderColor: "border-yellow-200",
+      tooltip: "Clientes existentes que compareceram às apresentações. Não contam como vendas pois já eram clientes."
     },
     {
       title: "No-Shows",

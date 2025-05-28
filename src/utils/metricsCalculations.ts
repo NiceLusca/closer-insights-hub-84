@@ -5,6 +5,7 @@ export interface ExtendedMetrics extends Metrics {
   vendasCompletas: number;
   vendasRecorrentes: number;
   receitaCompleta: number;
+  mentorados: number;
 }
 
 export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
@@ -45,20 +46,22 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
   
   const receitaTotal = receitaCompleta + receitaRecorrente;
   
-  // Taxa de Comparecimento: Quem compareceu (Fechou + Mentorado) vs Total de apresentações
-  const totalApresentacoes = fechamentos + mentorados + noShows;
-  const compareceram = fechamentos + mentorados;
+  // NOVA LÓGICA: Mentorados são clientes existentes, não contam para taxas de conversão
+  // Total de apresentações = apenas Fechou + Não Apareceu (excluindo Mentorados)
+  const totalApresentacoes = fechamentos + noShows;
+  
+  // Taxa de Comparecimento: Fechamentos / Total de apresentações (excluindo Mentorados)
   const taxaComparecimento = totalApresentacoes > 0 
-    ? (compareceram / totalApresentacoes) * 100 
+    ? (fechamentos / totalApresentacoes) * 100 
     : 0;
   
-  // Taxa de Fechamento: Fechamentos / Total de apresentações
+  // Taxa de Fechamento: igual à taxa de comparecimento (só contamos quem pode realmente comprar)
   const taxaFechamento = totalApresentacoes > 0 
     ? (fechamentos / totalApresentacoes) * 100 
     : 0;
   
-  // Taxa de Desmarque: Desmarcações / Total de agendamentos (incluindo confirmados)
-  const totalAgendamentos = agendamentos + confirmados + totalApresentacoes;
+  // Taxa de Desmarque: Desmarcações / Total de agendamentos
+  const totalAgendamentos = agendamentos + confirmados + totalApresentacoes + mentorados;
   const taxaDesmarque = totalAgendamentos > 0 
     ? (desmarcacoes / totalAgendamentos) * 100 
     : 0;
@@ -72,7 +75,9 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     vendasRecorrentes,
     receitaCompleta,
     receitaRecorrente,
-    receitaTotal
+    receitaTotal,
+    taxaComparecimento,
+    taxaFechamento
   });
   
   return {
@@ -89,6 +94,7 @@ export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
     confirmados,
     vendasCompletas,
     vendasRecorrentes,
-    receitaCompleta
+    receitaCompleta,
+    mentorados
   };
 }

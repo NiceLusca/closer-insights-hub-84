@@ -38,4 +38,5 @@ export interface Metrics {
   taxaFechamento: number;
   taxaDesmarque: number;
   confirmados: number;
+  mentorados: number;
 }
