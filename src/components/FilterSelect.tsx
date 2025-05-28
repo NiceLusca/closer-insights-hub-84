@@ -25,39 +25,63 @@ export function FilterSelect({
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  // Validação rigorosa dos dados
-  const validOptions = React.useMemo(() => {
-    if (isLoading || !Array.isArray(options)) return [];
-    return options.filter(option => 
+  // Validação rigorosa - garantir que NUNCA passemos dados inválidos
+  const safeOptions = React.useMemo(() => {
+    // Se está carregando, retorna array vazio
+    if (isLoading) return [];
+    
+    // Se options não é array válido, retorna array vazio
+    if (!Array.isArray(options)) return [];
+    
+    // Filtrar apenas strings válidas e não vazias
+    const filtered = options.filter(option => 
       option !== null && 
       option !== undefined && 
       typeof option === 'string' && 
       option.trim() !== ''
     );
-  }, [options, isLoading]);
+    
+    console.log(`FilterSelect ${label} - opções filtradas:`, filtered.length);
+    return filtered;
+  }, [options, isLoading, label]);
 
-  const validSelectedValues = React.useMemo(() => {
+  const safeSelectedValues = React.useMemo(() => {
     if (!Array.isArray(selectedValues)) return [];
-    return selectedValues.filter(value => 
+    
+    const filtered = selectedValues.filter(value => 
       value !== null && 
       value !== undefined && 
       typeof value === 'string' && 
       value.trim() !== ''
     );
+    
+    return filtered;
   }, [selectedValues]);
 
   const handleSelect = (value: string) => {
-    if (!value || typeof value !== 'string') return;
+    // Extra verificação de segurança
+    if (!value || typeof value !== 'string') {
+      console.warn('FilterSelect: valor inválido selecionado:', value);
+      return;
+    }
     
-    const newValues = validSelectedValues.includes(value)
-      ? validSelectedValues.filter(v => v !== value)
-      : [...validSelectedValues, value];
+    const newValues = safeSelectedValues.includes(value)
+      ? safeSelectedValues.filter(v => v !== value)
+      : [...safeSelectedValues, value];
     
     onChange(newValues);
   };
 
-  // Só renderizar se não estiver carregando E tiver opções válidas
-  const canRenderPopover = !isLoading && validOptions.length > 0;
+  // Condições para renderizar o popover funcional
+  const hasValidData = safeOptions.length > 0;
+  const isReady = !isLoading && hasValidData;
+
+  console.log(`FilterSelect ${label} - Estado:`, { 
+    isLoading, 
+    hasValidData, 
+    isReady, 
+    optionsLength: safeOptions.length 
+  });
 
   return (
     <div>
@@ -65,7 +89,7 @@ export function FilterSelect({
         {label}
       </label>
       
-      {!canRenderPopover ? (
+      {!isReady ? (
         <Button
           variant="outline"
           disabled
@@ -83,8 +107,8 @@ export function FilterSelect({
               aria-expanded={open}
               className="w-full justify-between"
             >
-              {validSelectedValues.length > 0
-                ? `${validSelectedValues.length} selecionado(s)`
+              {safeSelectedValues.length > 0
+                ? `${safeSelectedValues.length} selecionado(s)`
                 : placeholder}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -94,7 +118,7 @@ export function FilterSelect({
               <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
               <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
               <CommandGroup>
-                {validOptions.map((option) => (
+                {safeOptions.map((option) => (
                   <CommandItem
                     key={option}
                     value={option}
@@ -103,7 +127,7 @@ export function FilterSelect({
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        validSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
+                        safeSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
                       )}
                     />
                     {option}
