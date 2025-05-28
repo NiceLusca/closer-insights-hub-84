@@ -6,7 +6,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
   console.log('🔌 Buscando dados do webhook...');
   
   try {
-    const response = await fetch('https://hook.us2.make.com/yb7lq8eme0hpc4w0aemej2m7k5ovhp5t');
+    const response = await fetch('https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul');
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

@@ -45,53 +45,69 @@ export function RevenueChart({ leads }: RevenueChartProps) {
     }).format(value);
   };
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl">
+          <p className="text-gray-200 font-medium mb-2">{`Data: ${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {`${entry.name}: ${formatCurrency(entry.value)}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-xl font-semibold text-gray-100">
           Receita por Dia (Últimos 30 dias)
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
             <XAxis 
               dataKey="date" 
               stroke="#9ca3af"
               fontSize={12}
+              tick={{ fill: '#9ca3af' }}
             />
             <YAxis 
               stroke="#9ca3af" 
               fontSize={12}
+              tick={{ fill: '#9ca3af' }}
               tickFormatter={formatCurrency}
             />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6'
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              wrapperStyle={{ 
+                paddingTop: '20px',
+                color: '#d1d5db'
               }}
-              formatter={(value: number) => formatCurrency(value)}
             />
-            <Legend />
             <Line 
               type="monotone" 
               dataKey="receita" 
               stroke="#10b981" 
-              strokeWidth={3}
+              strokeWidth={4}
               name="Receita Total"
-              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#10b981', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 8, fill: '#10b981', strokeWidth: 2 }}
             />
             <Line 
               type="monotone" 
               dataKey="recorrente" 
               stroke="#8b5cf6" 
-              strokeWidth={2}
+              strokeWidth={3}
               name="Receita Recorrente"
-              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#8b5cf6', strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>

@@ -3,22 +3,12 @@ import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { generateStatusDistributionData } from "@/utils/chartDataUtils";
+import { getStatusColor } from "@/utils/statusColors";
 import type { Lead } from "@/types/lead";
 
 interface StatusDistributionProps {
   leads: Lead[];
 }
-
-const COLORS = [
-  '#60a5fa', // blue
-  '#ef4444', // red
-  '#fbbf24', // yellow
-  '#34d399', // green
-  '#a78bfa', // purple
-  '#22d3ee', // cyan
-  '#fb7185', // orange
-  '#84cc16'  // lime
-];
 
 export function StatusDistribution({ leads }: StatusDistributionProps) {
   const statusData = useMemo(() => generateStatusDistributionData(leads), [leads]);
@@ -40,6 +30,7 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
         dominantBaseline="central"
         fontSize={12}
         fontWeight="bold"
+        style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
@@ -47,14 +38,14 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
   };
 
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-xl font-semibold text-gray-100">
           Distribuição por Status (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie
               data={statusData}
@@ -62,25 +53,41 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
               cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              outerRadius={100}
+              outerRadius={120}
               fill="#8884d8"
               dataKey="value"
+              stroke="#374151"
+              strokeWidth={2}
             >
               {statusData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={getStatusColor(entry.name)}
+                  className="hover:opacity-80 transition-opacity duration-200"
+                />
               ))}
             </Pie>
             <Tooltip 
               contentStyle={{
                 backgroundColor: '#1f2937',
                 border: '1px solid #374151',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6'
+                borderRadius: '12px',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)',
+                color: '#f3f4f6',
+                fontSize: '14px'
               }}
-              formatter={(value, name) => [`${value} leads (${statusData.find(d => d.name === name)?.percentage}%)`, name]}
+              formatter={(value, name) => [
+                `${value} leads (${statusData.find(d => d.name === name)?.percentage}%)`, 
+                name
+              ]}
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{ 
+                paddingTop: '20px',
+                fontSize: '14px',
+                color: '#d1d5db'
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

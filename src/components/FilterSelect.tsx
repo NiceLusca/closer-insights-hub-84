@@ -13,6 +13,7 @@ interface FilterSelectProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   isLoading?: boolean;
+  icon?: React.ReactNode;
 }
 
 export function FilterSelect({
@@ -21,7 +22,8 @@ export function FilterSelect({
   selectedValues,
   onChange,
   placeholder = "Selecione...",
-  isLoading = false
+  isLoading = false,
+  icon
 }: FilterSelectProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -73,13 +75,14 @@ export function FilterSelect({
   if (isLoading || validOptions.length === 0) {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
+        <label className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
+          {icon && <span className="text-gray-400">{icon}</span>}
+          <span>{label}</span>
         </label>
         <Button
           variant="outline"
           disabled
-          className="w-full justify-between opacity-50"
+          className="w-full justify-between opacity-50 bg-gray-800/30 border-gray-600 text-gray-400"
         >
           {isLoading ? "Carregando..." : "Nenhuma opção disponível"}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -90,8 +93,9 @@ export function FilterSelect({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {label}
+      <label className="flex items-center space-x-2 text-sm font-medium text-gray-300 mb-2">
+        {icon && <span className="text-gray-400">{icon}</span>}
+        <span>{label}</span>
       </label>
       
       <Popover open={open} onOpenChange={setOpen}>
@@ -100,7 +104,7 @@ export function FilterSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between"
+            className="w-full justify-between bg-gray-800/50 border-gray-600 text-gray-200 hover:bg-gray-700/50 hover:text-white transition-all duration-200"
           >
             {validSelectedValues.length > 0
               ? `${validSelectedValues.length} selecionado(s)`
@@ -108,10 +112,13 @@ export function FilterSelect({
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0 bg-white shadow-lg border z-50">
-          <Command>
-            <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
-            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
+        <PopoverContent className="w-full p-0 bg-gray-800 border-gray-600 shadow-xl z-50">
+          <Command className="bg-gray-800">
+            <CommandInput 
+              placeholder={`Buscar ${label.toLowerCase()}...`} 
+              className="text-gray-200 placeholder:text-gray-400"
+            />
+            <CommandEmpty className="text-gray-400">Nenhum resultado encontrado.</CommandEmpty>
             <CommandList>
               <CommandGroup>
                 {validOptions.map((option) => (
@@ -119,12 +126,12 @@ export function FilterSelect({
                     key={option}
                     value={option}
                     onSelect={() => handleSelect(option)}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-gray-200 hover:bg-gray-700 focus:bg-gray-700"
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        validSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
+                        validSelectedValues.includes(option) ? "opacity-100 text-green-400" : "opacity-0"
                       )}
                     />
                     {option}

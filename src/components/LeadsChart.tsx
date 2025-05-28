@@ -12,56 +12,77 @@ interface LeadsChartProps {
 export function LeadsChart({ leads }: LeadsChartProps) {
   const chartData = useMemo(() => generateLeadsChartData(leads), [leads]);
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl">
+          <p className="text-gray-200 font-medium mb-2">{`Data: ${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value} leads`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-xl font-semibold text-gray-100">
           Leads por Dia - Últimos 30 dias (excluindo Mentorados)
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
             <XAxis 
               dataKey="date" 
               stroke="#9ca3af"
               fontSize={12}
+              tick={{ fill: '#9ca3af' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6'
+            <YAxis 
+              stroke="#9ca3af" 
+              fontSize={12}
+              tick={{ fill: '#9ca3af' }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              wrapperStyle={{ 
+                paddingTop: '20px',
+                color: '#d1d5db'
               }}
             />
-            <Legend />
             <Line 
               type="monotone" 
               dataKey="total" 
               stroke="#60a5fa" 
-              strokeWidth={2}
+              strokeWidth={3}
               name="Total de Leads"
-              dot={{ fill: '#60a5fa', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#60a5fa', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#60a5fa', strokeWidth: 2 }}
             />
             <Line 
               type="monotone" 
               dataKey="agendados" 
               stroke="#34d399" 
-              strokeWidth={2}
+              strokeWidth={3}
               name="Agendados"
-              dot={{ fill: '#34d399', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#34d399', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#34d399', strokeWidth: 2 }}
             />
             <Line 
               type="monotone" 
               dataKey="fechamentos" 
               stroke="#fbbf24" 
-              strokeWidth={2}
+              strokeWidth={3}
               name="Fechamentos"
-              dot={{ fill: '#fbbf24', strokeWidth: 2, r: 4 }}
+              dot={{ fill: '#fbbf24', strokeWidth: 2, r: 5 }}
+              activeDot={{ r: 7, fill: '#fbbf24', strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
