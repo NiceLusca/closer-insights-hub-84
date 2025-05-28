@@ -50,25 +50,6 @@ export function FilterSelect({
     }
   };
 
-  // Se não há opções válidas, não renderizar o componente
-  if (safeOptions.length === 0) {
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </label>
-        <Button
-          variant="outline"
-          disabled
-          className="w-full justify-between opacity-50"
-        >
-          {placeholder}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -81,6 +62,7 @@ export function FilterSelect({
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
+            disabled={safeOptions.length === 0}
           >
             {safeSelectedValues.length > 0
               ? `${safeSelectedValues.length} selecionado(s)`
@@ -89,26 +71,39 @@ export function FilterSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
-          <Command>
-            <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
-            <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
-            <CommandGroup>
-              {safeOptions.map((option) => (
-                <CommandItem
-                  key={option}
-                  onSelect={() => handleSelect(option)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      safeSelectedValues.includes(option) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
+          {safeOptions.length > 0 ? (
+            <Command>
+              <CommandInput placeholder={`Buscar ${label.toLowerCase()}...`} />
+              <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
+              <CommandGroup>
+                {safeOptions.map((option) => {
+                  // Garantir que option é sempre uma string válida
+                  const validOption = option && typeof option === 'string' ? option.trim() : '';
+                  if (!validOption) return null;
+                  
+                  return (
+                    <CommandItem
+                      key={validOption}
+                      value={validOption}
+                      onSelect={() => handleSelect(validOption)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          safeSelectedValues.includes(validOption) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {validOption}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </Command>
+          ) : (
+            <div className="p-4 text-center text-sm text-gray-500">
+              Nenhuma opção disponível
+            </div>
+          )}
         </PopoverContent>
       </Popover>
     </div>
