@@ -159,6 +159,50 @@ export type Database = {
           },
         ]
       }
+      processing_logs: {
+        Row: {
+          date_parsing_attempts: Json | null
+          error_message: string | null
+          error_type: string
+          field_analysis: Json | null
+          id: string
+          raw_row_data: Json
+          row_index: number
+          timestamp: string
+          webhook_raw_data_id: string | null
+        }
+        Insert: {
+          date_parsing_attempts?: Json | null
+          error_message?: string | null
+          error_type: string
+          field_analysis?: Json | null
+          id?: string
+          raw_row_data: Json
+          row_index: number
+          timestamp?: string
+          webhook_raw_data_id?: string | null
+        }
+        Update: {
+          date_parsing_attempts?: Json | null
+          error_message?: string | null
+          error_type?: string
+          field_analysis?: Json | null
+          id?: string
+          raw_row_data?: Json
+          row_index?: number
+          timestamp?: string
+          webhook_raw_data_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_logs_webhook_raw_data_id_fkey"
+            columns: ["webhook_raw_data_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_raw_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -177,6 +221,78 @@ export type Database = {
           email?: string | null
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          log_level: string
+          message: string
+          session_id: string | null
+          source: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          log_level: string
+          message: string
+          session_id?: string | null
+          source: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          log_level?: string
+          message?: string
+          session_id?: string | null
+          source?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      webhook_raw_data: {
+        Row: {
+          created_at: string
+          error_details: Json | null
+          failed_records: number
+          id: string
+          processed_records: number
+          processing_status: string
+          raw_data: Json
+          session_id: string | null
+          timestamp: string
+          total_records: number
+        }
+        Insert: {
+          created_at?: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          processed_records?: number
+          processing_status?: string
+          raw_data: Json
+          session_id?: string | null
+          timestamp?: string
+          total_records?: number
+        }
+        Update: {
+          created_at?: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          processed_records?: number
+          processing_status?: string
+          raw_data?: Json
+          session_id?: string | null
+          timestamp?: string
+          total_records?: number
         }
         Relationships: []
       }

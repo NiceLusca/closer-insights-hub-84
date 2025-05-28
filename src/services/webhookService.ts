@@ -1,106 +1,222 @@
 
 import type { Lead } from '@/types/lead';
 import { processRawDataToLeads } from '@/utils/leadProcessor';
+import { supabaseLogger } from './supabaseLogger';
 
 export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
-  console.log('🔌 Buscando dados do webhook...');
+  const sessionId = supabaseLogger.getSessionId();
+  
+  await supabaseLogger.log({
+    level: 'info',
+    message: '🔌 Iniciando busca de dados do webhook',
+    source: 'webhook-service',
+    sessionId
+  });
   
   try {
     const response = await fetch('https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul');
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(`HTTP error! status: ${response.status}`);
+      await supabaseLogger.log({
+        level: 'error',
+        message: 'Erro HTTP na requisição do webhook',
+        data: { status: response.status, statusText: response.statusText },
+        source: 'webhook-service',
+        sessionId
+      });
+      throw error;
     }
     
     const data = await response.json();
-    console.log('📦 Dados brutos recebidos do webhook:', {
-      tipo: typeof data,
-      isArray: Array.isArray(data),
-      quantidade: data?.length || 0,
-      primeiroItem: data?.[0] || null
-    });
     
-    // NOVO: Log detalhado da estrutura dos dados
+    await supabaseLogger.log({
+      level: 'info',
+      message: '📦 Dados brutos recebidos do webhook',
+      data: {
+        tipo: typeof data,
+        isArray: Array.isArray(data),
+        quantidade: data?.length || 0,
+        primeiroItem: data?.[0] || null
+      },
+      source: 'webhook-service',
+      sessionId
+    });
+
+    // Salvar dados brutos no Supabase
+    const webhookDataId = await supabaseLogger.logWebhookRawData({
+      rawData: data,
+      totalRecords: Array.isArray(data) ? data.length : 0,
+      sessionId
+    });
+
+    if (webhookDataId) {
+      await supabaseLogger.updateWebhookStatus(webhookDataId, 'processing');
+    }
+
+    // ANÁLISE DETALHADA DOS DADOS
     if (Array.isArray(data) && data.length > 0) {
-      console.log('🔍 ANÁLISE DETALHADA DO PRIMEIRO ITEM:');
-      console.log('📋 Todas as chaves:', Object.keys(data[0]));
-      console.log('📊 Valores completos do primeiro item:', data[0]);
-      
-      // Procurar especificamente por campos que podem conter data
-      Object.keys(data[0]).forEach(key => {
-        const value = data[0][key];
-        console.log(`🔑 "${key}": "${value}" (tipo: ${typeof value})`);
-        
-        // Se o valor parece ser uma data, destacar
-        if (typeof value === 'string' && (
-          value.includes('-') || 
-          value.includes('/') || 
-          value.includes('T') ||
-          /\d{4}/.test(value)
-        )) {
-          console.log(`🎯 POSSÍVEL CAMPO DE DATA: "${key}" = "${value}"`);
-        }
+      await supabaseLogger.log({
+        level: 'debug',
+        message: '🔍 ANÁLISE DETALHADA DO PRIMEIRO ITEM',
+        data: {
+          todasAsChaves: Object.keys(data[0]),
+          valoresCompletos: data[0],
+          analiseDetalhada: await analyzeDataFields(data[0], sessionId)
+        },
+        source: 'webhook-service',
+        sessionId
       });
       
-      // Mostrar também alguns outros items para comparar
+      // Mostrar alguns outros items para comparar
       if (data.length > 1) {
-        console.log('📋 Segundo item (comparação):', data[1]);
-      }
-      if (data.length > 2) {
-        console.log('📋 Terceiro item (comparação):', data[2]);
+        await supabaseLogger.log({
+          level: 'debug',
+          message: '📋 Comparação com outros itens',
+          data: {
+            segundoItem: data[1],
+            terceiroItem: data.length > 2 ? data[2] : null
+          },
+          source: 'webhook-service',
+          sessionId
+        });
       }
     }
     
     if (!Array.isArray(data)) {
-      console.log('⚠️ Dados não são um array, tentando acessar propriedade que pode conter o array...');
+      await supabaseLogger.log({
+        level: 'warn',
+        message: '⚠️ Dados não são um array, tentando acessar propriedade que pode conter o array',
+        source: 'webhook-service',
+        sessionId
+      });
       
       // Tentar encontrar array dentro do objeto
       const possibleArrayKeys = ['data', 'leads', 'items', 'results', 'records'];
       for (const key of possibleArrayKeys) {
         if (data[key] && Array.isArray(data[key])) {
-          console.log(`✅ Array encontrado na propriedade '${key}'`);
-          return await processWebhookData(data[key]);
+          await supabaseLogger.log({
+            level: 'info',
+            message: `✅ Array encontrado na propriedade '${key}'`,
+            source: 'webhook-service',
+            sessionId
+          });
+          
+          const processedLeads = await processWebhookData(data[key], sessionId, webhookDataId);
+          
+          if (webhookDataId) {
+            await supabaseLogger.updateWebhookStatus(
+              webhookDataId, 
+              'completed', 
+              processedLeads.length,
+              data[key].length - processedLeads.length
+            );
+          }
+          
+          return processedLeads;
         }
       }
       
-      console.log('❌ Nenhum array encontrado nos dados, retornando vazio');
+      await supabaseLogger.log({
+        level: 'error',
+        message: '❌ Nenhum array encontrado nos dados',
+        source: 'webhook-service',
+        sessionId
+      });
+      
+      if (webhookDataId) {
+        await supabaseLogger.updateWebhookStatus(webhookDataId, 'failed', 0, 0, { error: 'No array found in data' });
+      }
+      
       return [];
     }
 
-    return await processWebhookData(data);
+    const processedLeads = await processWebhookData(data, sessionId, webhookDataId);
+    
+    if (webhookDataId) {
+      await supabaseLogger.updateWebhookStatus(
+        webhookDataId, 
+        'completed',
+        processedLeads.length,
+        data.length - processedLeads.length
+      );
+    }
+    
+    return processedLeads;
     
   } catch (error) {
-    console.error('❌ Erro ao buscar dados do webhook:', error);
+    await supabaseLogger.log({
+      level: 'error',
+      message: '❌ Erro crítico ao buscar dados do webhook',
+      data: { error: error.message, stack: error.stack },
+      source: 'webhook-service',
+      sessionId
+    });
     throw error;
   }
 }
 
-async function processWebhookData(data: any[]): Promise<Lead[]> {
+async function analyzeDataFields(item: any, sessionId: string) {
+  const analysis = {};
+  
+  for (const [key, value] of Object.entries(item)) {
+    const valueStr = String(value);
+    analysis[key] = {
+      value: valueStr,
+      type: typeof value,
+      isPossibleDate: /\d{4}/.test(valueStr) && (valueStr.includes('-') || valueStr.includes('/') || valueStr.includes('T'))
+    };
+    
+    if (analysis[key].isPossibleDate) {
+      await supabaseLogger.log({
+        level: 'debug',
+        message: `🎯 POSSÍVEL CAMPO DE DATA DETECTADO: "${key}" = "${value}"`,
+        source: 'webhook-service',
+        sessionId
+      });
+    }
+  }
+  
+  return analysis;
+}
+
+async function processWebhookData(data: any[], sessionId: string, webhookDataId: string | null): Promise<Lead[]> {
   if (data.length === 0) {
-    console.log('⚠️ Array vazio recebido');
+    await supabaseLogger.log({
+      level: 'warn',
+      message: '⚠️ Array vazio recebido',
+      source: 'webhook-service',
+      sessionId
+    });
     return [];
   }
 
-  console.log('🔍 Analisando estrutura dos dados recebidos:');
-  console.log('📊 Total de registros:', data.length);
-  
-  if (data.length > 0) {
-    console.log('🔑 Chaves encontradas no primeiro item:', Object.keys(data[0]));
-    console.log('📋 Valores do primeiro item:', data[0]);
-    
-    if (data.length > 1) {
-      console.log('🔑 Chaves encontradas no segundo item:', Object.keys(data[1]));
-    }
-  }
+  await supabaseLogger.log({
+    level: 'info',
+    message: '🔍 Iniciando processamento dos dados do webhook',
+    data: {
+      totalRegistros: data.length,
+      chavesDoTopo: data[0] ? Object.keys(data[0]) : [],
+      valoresDoTopo: data[0] || null
+    },
+    source: 'webhook-service',
+    sessionId
+  });
 
-  const processedLeads = processRawDataToLeads(data);
+  const processedLeads = await processRawDataToLeads(data, sessionId, webhookDataId);
 
-  console.log('✅ Processamento do webhook concluído:', {
-    recebidos: data.length,
-    processados: processedLeads.length,
-    comDataValida: processedLeads.filter(l => l.parsedDate).length,
-    comStatus: processedLeads.filter(l => l.Status && l.Status.trim() !== '').length,
-    statusEncontrados: [...new Set(processedLeads.map(l => l.Status).filter(Boolean))]
+  await supabaseLogger.log({
+    level: 'info',
+    message: '✅ Processamento do webhook concluído',
+    data: {
+      recebidos: data.length,
+      processados: processedLeads.length,
+      comDataValida: processedLeads.filter(l => l.parsedDate).length,
+      comStatus: processedLeads.filter(l => l.Status && l.Status.trim() !== '').length,
+      statusEncontrados: [...new Set(processedLeads.map(l => l.Status).filter(Boolean))]
+    },
+    source: 'webhook-service',
+    sessionId
   });
   
   return processedLeads;
