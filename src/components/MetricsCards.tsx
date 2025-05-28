@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Clock, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw } from "lucide-react";
 import { calculateMetrics } from "@/utils/metricsCalculations";
 import type { Lead } from "@/types/lead";
 
@@ -41,7 +41,25 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgColor: "bg-green-50",
       iconColor: "text-green-600",
       borderColor: "border-green-200",
-      tooltip: "Soma de todas as vendas realizadas (campo 'Venda Completa')"
+      tooltip: "Soma de todas as vendas realizadas (vendas completas + recorrentes)"
+    },
+    {
+      title: "Vendas Completas",
+      value: `${metrics.vendasCompletas} (${formatCurrency(metrics.receitaCompleta)})`,
+      icon: CreditCard,
+      bgColor: "bg-emerald-50",
+      iconColor: "text-emerald-600",
+      borderColor: "border-emerald-200",
+      tooltip: "Número de vendas à vista com valores únicos (campo 'Venda Completa')"
+    },
+    {
+      title: "Vendas Recorrentes",
+      value: `${metrics.vendasRecorrentes} (${formatCurrency(metrics.receitaRecorrente)})`,
+      icon: RotateCcw,
+      bgColor: "bg-cyan-50",
+      iconColor: "text-cyan-600",
+      borderColor: "border-cyan-200",
+      tooltip: "Número de vendas recorrentes mensais (campo 'recorrente')"
     },
     {
       title: "Taxa de Comparecimento",
@@ -50,7 +68,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600",
       borderColor: "border-purple-200",
-      tooltip: "% de quem compareceu nas apresentações (Fechou + Mentorado) vs total de apresentações"
+      tooltip: "% de quem compareceu nas apresentações (Fechou + Mentorado) vs total de apresentações (incluindo Não Apareceu)"
     },
     {
       title: "Taxa de Fechamento",
@@ -59,7 +77,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgColor: "bg-orange-50",
       iconColor: "text-orange-600",
       borderColor: "border-orange-200",
-      tooltip: "% de fechamentos em relação ao total de apresentações realizadas"
+      tooltip: "% de fechamentos em relação ao total de apresentações realizadas (Fechou / Total de apresentações)"
     },
     {
       title: "Confirmados",
@@ -83,7 +101,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {metricsData.map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -105,7 +123,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
                 <Icon className={`h-5 w-5 ${metric.iconColor}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-xl font-bold text-gray-900">
                   {metric.value}
                 </div>
               </CardContent>

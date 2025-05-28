@@ -7,7 +7,7 @@ export interface Lead {
   'e-mail': string;
   Whatsapp: string;
   origem: string;
-  Status: 'Agendado' | 'Não Apareceu' | 'Desmarcou' | 'Fechou' | 'Mentorado' | 'Remarcou' | 'Confirmado' | 'Aguardando resposta' | 'Número errado';
+  Status: 'Agendado' | 'Não Apareceu' | 'Desmarcou' | 'Fechou' | 'Mentorado' | 'Remarcou' | 'Confirmado' | 'Aguardando resposta' | 'Número errado' | 'Não Fechou' | '';
   Closer: string;
   'Venda Completa': number;
   recorrente: number | string;

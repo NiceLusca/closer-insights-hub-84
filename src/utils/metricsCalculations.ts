@@ -1,7 +1,15 @@
 
 import type { Lead, Metrics } from "@/types/lead";
 
-export function calculateMetrics(leads: Lead[]): Metrics {
+export interface ExtendedMetrics extends Metrics {
+  vendasCompletas: number;
+  vendasRecorrentes: number;
+  receitaCompleta: number;
+}
+
+export function calculateMetrics(leads: Lead[]): ExtendedMetrics {
+  console.log('Calculando métricas para', leads.length, 'leads');
+  
   const totalLeads = leads.length;
   
   // Separar leads por status
@@ -15,8 +23,17 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     lead.Status === "Remarcou" || lead.Status === "Aguardando resposta"
   ).length;
   
+  // Calcular vendas completas e recorrentes (separadas)
+  const vendasCompletas = leads.filter(lead => 
+    typeof lead['Venda Completa'] === 'number' && lead['Venda Completa'] > 0
+  ).length;
+  
+  const vendasRecorrentes = leads.filter(lead => 
+    typeof lead.recorrente === 'number' && lead.recorrente > 0
+  ).length;
+  
   // Calcular receita total - somar apenas valores válidos
-  const receitaTotal = leads.reduce((sum, lead) => {
+  const receitaCompleta = leads.reduce((sum, lead) => {
     const venda = lead['Venda Completa'] || 0;
     return sum + (typeof venda === 'number' && !isNaN(venda) ? venda : 0);
   }, 0);
@@ -25,6 +42,8 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     const recorrente = typeof lead.recorrente === 'number' ? lead.recorrente : 0;
     return sum + (!isNaN(recorrente) ? recorrente : 0);
   }, 0);
+  
+  const receitaTotal = receitaCompleta + receitaRecorrente;
   
   // Taxa de Comparecimento: Quem compareceu (Fechou + Mentorado) vs Total de apresentações
   const totalApresentacoes = fechamentos + mentorados + noShows;
@@ -44,6 +63,18 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     ? (desmarcacoes / totalAgendamentos) * 100 
     : 0;
   
+  console.log('Métricas calculadas:', {
+    totalLeads,
+    fechamentos,
+    mentorados,
+    noShows,
+    vendasCompletas,
+    vendasRecorrentes,
+    receitaCompleta,
+    receitaRecorrente,
+    receitaTotal
+  });
+  
   return {
     totalLeads,
     agendamentos,
@@ -55,6 +86,9 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     taxaComparecimento,
     taxaFechamento,
     taxaDesmarque,
-    confirmados
+    confirmados,
+    vendasCompletas,
+    vendasRecorrentes,
+    receitaCompleta
   };
 }

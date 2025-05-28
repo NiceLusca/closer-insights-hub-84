@@ -102,19 +102,24 @@ const Index = () => {
 
   // Filter data based on selected filters and date range
   const filteredLeads = useMemo(() => {
-    return filterLeads(allLeads, dateRange, filters);
+    console.log('Aplicando filtros:', { dateRange, filters });
+    const result = filterLeads(allLeads, dateRange, filters);
+    console.log('Resultado dos filtros:', result.length, 'leads');
+    return result;
   }, [allLeads, dateRange, filters]);
 
   // Get unique values for filter options
   const filterOptions = useMemo(() => {
-    const statusOptions = [...new Set(allLeads.map(lead => lead.Status))];
-    const closerOptions = [...new Set(allLeads.map(lead => lead.Closer))];
-    const origemOptions = [...new Set(allLeads.map(lead => lead.origem))];
+    const statusOptions = [...new Set(allLeads.map(lead => lead.Status))].filter(Boolean);
+    const closerOptions = [...new Set(allLeads.map(lead => lead.Closer))].filter(Boolean);
+    const origemOptions = [...new Set(allLeads.map(lead => lead.origem))].filter(Boolean);
     
+    console.log('Opções de filtro:', { statusOptions, closerOptions, origemOptions });
     return { statusOptions, closerOptions, origemOptions };
   }, [allLeads]);
 
   const handleTempFilterChange = (filterType: keyof Filters, values: string[]) => {
+    console.log('Mudança temporária de filtro:', filterType, values);
     setTempFilters(prev => ({
       ...prev,
       [filterType]: values
@@ -122,6 +127,7 @@ const Index = () => {
   };
 
   const applyFilters = () => {
+    console.log('Aplicando filtros:', { tempDateRange, tempFilters });
     setDateRange(tempDateRange);
     setFilters(tempFilters);
     toast({
