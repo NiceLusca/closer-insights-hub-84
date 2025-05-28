@@ -38,6 +38,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
             const testDate = parse(item.data, format, new Date());
             if (isValid(testDate)) {
               parsedDate = testDate;
+              console.log(`✅ Data parseada com formato ${format}:`, item.data, '->', parsedDate);
               break;
             }
           } catch (e) {
@@ -51,6 +52,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
             const isoDate = parseISO(item.data);
             if (isValid(isoDate)) {
               parsedDate = isoDate;
+              console.log('✅ Data parseada com ISO:', item.data, '->', parsedDate);
             }
           } catch (e) {
             console.warn(`❌ Não foi possível parsear a data: ${item.data}`);
@@ -59,15 +61,18 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
       }
 
       const lead: Lead = {
-        id: item.id || `webhook-${index}`,
+        row_number: item.row_number || index + 1,
+        data: item.data || '',
+        Hora: item.Hora || item.hora || '',
         Nome: item.Nome || item.nome || `Lead ${index + 1}`,
+        'e-mail': item['e-mail'] || item.email || '',
+        Whatsapp: item.Whatsapp || item.whatsapp || '',
         Status: item.Status || item.status || '',
         Closer: item.Closer || item.closer || '',
         origem: item.origem || item.Origem || '',
-        data: item.data || '',
-        parsedDate: parsedDate,
         'Venda Completa': parseFloat(item['Venda Completa'] || item.vendaCompleta || '0') || 0,
         recorrente: parseFloat(item.recorrente || '0') || 0,
+        parsedDate: parsedDate,
       };
 
       return lead;
