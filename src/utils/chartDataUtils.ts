@@ -3,20 +3,9 @@ import { format, subDays, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Lead } from "@/types/lead";
 
-// Excluir mentorados dos dados dos gráficos
-export function filterLeadsForCharts(leads: Lead[]): Lead[] {
-  console.log('🔍 Filtrando leads para gráficos. Total inicial:', leads.length);
-  
-  const filtered = leads.filter(lead => lead.Status !== "Mentorado");
-  
-  console.log('📊 Após filtrar mentorados:', filtered.length, 'leads restantes');
-  return filtered;
-}
-
+// Não excluir mentorados automaticamente - deixar isso para o filtro geral
 export function generateLeadsChartData(leads: Lead[]) {
   console.log('📈 Gerando dados para LeadsChart com', leads.length, 'leads');
-  
-  const filteredLeads = filterLeadsForCharts(leads);
   
   const last30Days = eachDayOfInterval({
     start: subDays(new Date(), 29),
@@ -26,14 +15,20 @@ export function generateLeadsChartData(leads: Lead[]) {
   console.log('📅 Processando últimos 30 dias...');
 
   const chartData = last30Days.map(date => {
-    const dayLeads = filteredLeads.filter(lead => {
+    const dayLeads = leads.filter(lead => {
       if (!lead.parsedDate) {
         console.log('⚠️ Lead sem parsedDate:', lead.Nome, lead.data);
         return false;
       }
       const leadDateStr = format(lead.parsedDate, 'yyyy-MM-dd');
       const targetDateStr = format(date, 'yyyy-MM-dd');
-      return leadDateStr === targetDateStr;
+      const matches = leadDateStr === targetDateStr;
+      
+      if (matches) {
+        console.log(`📊 Lead ${lead.Nome} corresponde ao dia ${targetDateStr}`);
+      }
+      
+      return matches;
     });
 
     const agendados = dayLeads.filter(lead => lead.Status === 'Agendado').length;
@@ -54,17 +49,18 @@ export function generateLeadsChartData(leads: Lead[]) {
   });
 
   console.log('✅ Dados do gráfico gerados:', chartData.filter(d => d.total > 0).length, 'dias com dados');
+  console.log('📊 Amostra dos dados do gráfico:', chartData.slice(-7)); // Últimos 7 dias
   return chartData;
 }
 
 export function generateStatusDistributionData(leads: Lead[]) {
   console.log('🥧 Gerando distribuição de status com', leads.length, 'leads');
   
-  const filteredLeads = filterLeadsForCharts(leads);
   const statusCount: Record<string, number> = {};
   
-  filteredLeads.forEach(lead => {
-    statusCount[lead.Status] = (statusCount[lead.Status] || 0) + 1;
+  leads.forEach(lead => {
+    const status = lead.Status || 'Sem Status';
+    statusCount[status] = (statusCount[status] || 0) + 1;
   });
 
   console.log('📊 Contagem por status:', statusCount);
@@ -72,17 +68,16 @@ export function generateStatusDistributionData(leads: Lead[]) {
   return Object.entries(statusCount).map(([status, count]) => ({
     name: status,
     value: count,
-    percentage: ((count / filteredLeads.length) * 100).toFixed(1)
+    percentage: ((count / leads.length) * 100).toFixed(1)
   }));
 }
 
 export function generateOriginAnalysisData(leads: Lead[]) {
   console.log('🎯 Gerando análise de origem com', leads.length, 'leads');
   
-  const filteredLeads = filterLeadsForCharts(leads);
   const originStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
   
-  filteredLeads.forEach(lead => {
+  leads.forEach(lead => {
     const origem = lead.origem || 'Sem Origem';
     
     if (!originStats[origem]) {

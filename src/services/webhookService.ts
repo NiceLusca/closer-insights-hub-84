@@ -14,6 +14,8 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
     
     const data = await response.json();
     console.log('📦 Dados brutos recebidos:', data);
+    console.log('📦 Tipo dos dados:', typeof data);
+    console.log('📦 É array?', Array.isArray(data));
     
     if (!Array.isArray(data)) {
       console.log('⚠️ Dados não são um array, retornando vazio');
@@ -21,24 +23,31 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
     }
 
     const processedLeads = data.map((item: any, index: number) => {
+      console.log(`🔍 Processando item ${index}:`, item);
+      
       // Processar a data com múltiplos formatos possíveis
       let parsedDate: Date | undefined;
       
-      if (item.data) {
+      if (item.data || item.Data) {
+        const dateString = item.data || item.Data;
+        console.log(`📅 Tentando parsear data: "${dateString}"`);
+        
         // Tentar diferentes formatos de data
         const dateFormats = [
           'dd/MM/yyyy',
           'yyyy-MM-dd',
           'MM/dd/yyyy',
-          'dd-MM-yyyy'
+          'dd-MM-yyyy',
+          'dd/MM/yy',
+          'yyyy-MM-dd HH:mm:ss'
         ];
         
         for (const format of dateFormats) {
           try {
-            const testDate = parse(item.data, format, new Date());
+            const testDate = parse(dateString, format, new Date());
             if (isValid(testDate)) {
               parsedDate = testDate;
-              console.log(`✅ Data parseada com formato ${format}:`, item.data, '->', parsedDate);
+              console.log(`✅ Data parseada com formato ${format}:`, dateString, '->', parsedDate);
               break;
             }
           } catch (e) {
@@ -49,20 +58,30 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
         // Se nenhum formato funcionou, tentar parseISO
         if (!parsedDate) {
           try {
-            const isoDate = parseISO(item.data);
+            const isoDate = parseISO(dateString);
             if (isValid(isoDate)) {
               parsedDate = isoDate;
-              console.log('✅ Data parseada com ISO:', item.data, '->', parsedDate);
+              console.log('✅ Data parseada com ISO:', dateString, '->', parsedDate);
             }
           } catch (e) {
-            console.warn(`❌ Não foi possível parsear a data: ${item.data}`);
+            console.warn(`❌ Não foi possível parsear a data: ${dateString}`);
           }
         }
+        
+        // Se ainda não conseguiu parsear, usar data atual como fallback
+        if (!parsedDate) {
+          parsedDate = new Date();
+          console.warn(`⚠️ Usando data atual como fallback para: ${dateString}`);
+        }
+      } else {
+        // Se não tem data, usar data atual
+        parsedDate = new Date();
+        console.warn(`⚠️ Item sem campo de data, usando data atual`);
       }
 
       const lead: Lead = {
         row_number: item.row_number || index + 1,
-        data: item.data || '',
+        data: item.data || item.Data || '',
         Hora: item.Hora || item.hora || '',
         Nome: item.Nome || item.nome || `Lead ${index + 1}`,
         'e-mail': item['e-mail'] || item.email || '',
@@ -75,11 +94,18 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
         parsedDate: parsedDate,
       };
 
+      console.log(`✅ Lead processado:`, {
+        nome: lead.Nome,
+        status: lead.Status,
+        data: lead.data,
+        parsedDate: lead.parsedDate
+      });
+
       return lead;
     });
 
     console.log('✅ Leads processados:', processedLeads.length);
-    console.log('📅 Exemplo de lead processado:', processedLeads[0]);
+    console.log('📊 Amostra de leads processados:', processedLeads.slice(0, 3));
     
     return processedLeads;
   } catch (error) {

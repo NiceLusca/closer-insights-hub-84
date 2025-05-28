@@ -61,7 +61,7 @@ const Index = () => {
       
       if (webhookLeads.length > 0) {
         console.log('✅ Dados carregados do webhook:', webhookLeads.length, 'leads');
-        console.log('📊 Amostra de lead do webhook:', webhookLeads[0]);
+        console.log('📊 Primeiros 3 leads do webhook:', webhookLeads.slice(0, 3));
         setAllLeads(webhookLeads);
         setLastUpdated(new Date());
         
@@ -71,8 +71,8 @@ const Index = () => {
         });
       } else {
         console.log('⚠️ Webhook vazio, usando dados de demonstração');
-        const mockLeads = generateMockData(500);
-        console.log('📊 Amostra de lead mock:', mockLeads[0]);
+        const mockLeads = generateMockData(100);
+        console.log('📊 Primeiros 3 leads mock:', mockLeads.slice(0, 3));
         setAllLeads(mockLeads);
         setLastUpdated(new Date());
         
@@ -83,8 +83,8 @@ const Index = () => {
       }
     } catch (error) {
       console.error('❌ Erro ao buscar dados:', error);
-      const mockLeads = generateMockData(500);
-      console.log('📊 Amostra de lead mock (erro):', mockLeads[0]);
+      const mockLeads = generateMockData(100);
+      console.log('📊 Primeiros 3 leads mock (erro):', mockLeads.slice(0, 3));
       setAllLeads(mockLeads);
       setLastUpdated(new Date());
       
@@ -102,7 +102,7 @@ const Index = () => {
     fetchLeadsData();
   }, []);
 
-  // Filtrar dados baseado nos filtros aplicados (já exclui status vazios)
+  // Filtrar dados baseado nos filtros aplicados
   const filteredLeads = useMemo(() => {
     if (!allLeads || allLeads.length === 0) {
       console.log('⚠️ Nenhum lead disponível para filtrar');
@@ -111,13 +111,16 @@ const Index = () => {
     
     console.log('🔍 Aplicando filtros aos dados:', {
       totalLeads: allLeads.length,
-      dateRange,
+      dateRange: {
+        from: dateRange.from.toLocaleDateString(),
+        to: dateRange.to.toLocaleDateString()
+      },
       filters
     });
     
     const result = filterLeads(allLeads, dateRange, filters);
-    console.log('📊 Resultado dos filtros:', result.length, 'leads filtrados');
-    console.log('📊 Amostra de lead filtrado:', result[0]);
+    console.log('📊 Leads após filtragem:', result.length);
+    console.log('📊 Primeiros 3 leads filtrados:', result.slice(0, 3));
     return result;
   }, [allLeads, dateRange, filters]);
 
@@ -280,6 +283,13 @@ const Index = () => {
 
         {!isLoading && (
           <>
+            {/* Debug Info */}
+            <div className="mb-4 p-4 bg-gray-800/50 rounded-lg text-sm text-gray-300">
+              <p>📊 Total de leads carregados: {allLeads.length}</p>
+              <p>🔍 Leads após filtros: {filteredLeads.length}</p>
+              <p>📅 Período: {dateRange.from.toLocaleDateString()} até {dateRange.to.toLocaleDateString()}</p>
+            </div>
+
             {/* Metrics Cards */}
             <MetricsCards leads={filteredLeads} />
 
