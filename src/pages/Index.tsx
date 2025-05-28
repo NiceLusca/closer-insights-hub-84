@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
@@ -199,6 +198,7 @@ const Index = () => {
           tempFilters={tempFilters}
           filterOptions={filterOptions}
           hasPendingFilters={hasPendingFilters}
+          allLeads={allLeads}
           onTempDateRangeChange={setTempDateRange}
           onTempFilterChange={handleTempFilterChange}
           onApplyFilters={applyFilters}

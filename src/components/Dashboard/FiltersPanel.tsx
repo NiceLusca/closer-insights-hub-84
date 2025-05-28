@@ -16,6 +16,7 @@ interface FiltersPanelProps {
     origemOptions: string[];
   };
   hasPendingFilters: boolean;
+  allLeads?: any[]; // Para passar para o DatePickerWithRange
   onTempDateRangeChange: (dateRange: DateRange) => void;
   onTempFilterChange: (filterType: keyof Filters, values: string[]) => void;
   onApplyFilters: () => void;
@@ -28,6 +29,7 @@ export function FiltersPanel({
   tempFilters,
   filterOptions,
   hasPendingFilters,
+  allLeads,
   onTempDateRangeChange,
   onTempFilterChange,
   onApplyFilters,
@@ -41,14 +43,15 @@ export function FiltersPanel({
         <CardTitle className="text-lg">Filtros Globais</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <div className="lg:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Período
             </label>
             <DatePickerWithRange 
               dateRange={tempDateRange} 
-              onDateRangeChange={onTempDateRangeChange} 
+              onDateRangeChange={onTempDateRangeChange}
+              allLeads={allLeads}
             />
           </div>
           
@@ -94,11 +97,13 @@ export function FiltersPanel({
             </Button>
           </div>
           
-          {hasPendingFilters && (
-            <span className="text-sm text-orange-600 font-medium">
-              Existem filtros não aplicados
-            </span>
-          )}
+          <div className="flex items-center">
+            {hasPendingFilters && (
+              <span className="text-sm text-orange-600 font-medium">
+                Existem filtros não aplicados
+              </span>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
