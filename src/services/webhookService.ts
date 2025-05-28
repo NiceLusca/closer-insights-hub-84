@@ -20,6 +20,37 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
       primeiroItem: data?.[0] || null
     });
     
+    // NOVO: Log detalhado da estrutura dos dados
+    if (Array.isArray(data) && data.length > 0) {
+      console.log('🔍 ANÁLISE DETALHADA DO PRIMEIRO ITEM:');
+      console.log('📋 Todas as chaves:', Object.keys(data[0]));
+      console.log('📊 Valores completos do primeiro item:', data[0]);
+      
+      // Procurar especificamente por campos que podem conter data
+      Object.keys(data[0]).forEach(key => {
+        const value = data[0][key];
+        console.log(`🔑 "${key}": "${value}" (tipo: ${typeof value})`);
+        
+        // Se o valor parece ser uma data, destacar
+        if (typeof value === 'string' && (
+          value.includes('-') || 
+          value.includes('/') || 
+          value.includes('T') ||
+          /\d{4}/.test(value)
+        )) {
+          console.log(`🎯 POSSÍVEL CAMPO DE DATA: "${key}" = "${value}"`);
+        }
+      });
+      
+      // Mostrar também alguns outros items para comparar
+      if (data.length > 1) {
+        console.log('📋 Segundo item (comparação):', data[1]);
+      }
+      if (data.length > 2) {
+        console.log('📋 Terceiro item (comparação):', data[2]);
+      }
+    }
+    
     if (!Array.isArray(data)) {
       console.log('⚠️ Dados não são um array, tentando acessar propriedade que pode conter o array...');
       

@@ -1,5 +1,9 @@
 export function findFieldValue(item: any, possibleKeys: readonly string[], defaultValue: any = ''): any {
-  console.log('🔍 Procurando campo:', { possibleKeys, availableKeys: Object.keys(item) });
+  console.log('🔍 Procurando campo:', { 
+    possibleKeys: possibleKeys.slice(0, 3), // mostrar só os primeiros 3 para não poluir
+    totalPossibleKeys: possibleKeys.length,
+    availableKeys: Object.keys(item).slice(0, 10) // mostrar só as primeiras 10
+  });
   
   for (const key of possibleKeys) {
     // Case-sensitive match
@@ -16,51 +20,94 @@ export function findFieldValue(item: any, possibleKeys: readonly string[], defau
     }
   }
   
-  console.log('⚠️ Campo não encontrado, usando valor padrão:', { possibleKeys, defaultValue });
+  console.log('⚠️ Campo não encontrado, usando valor padrão:', { possibleKeys: possibleKeys.slice(0, 3), defaultValue });
   return defaultValue;
 }
 
-// NOVA função para detectar colunas de data automaticamente
+// MELHORADA: função para detectar colunas de data automaticamente
 export function detectDateColumn(item: any): string | null {
-  console.log('🔍 Detectando coluna de data automaticamente...');
+  console.log('🔍 ========== DETECTANDO COLUNA DE DATA AUTOMATICAMENTE ==========');
   
   const allKeys = Object.keys(item);
   console.log('🔑 Todas as chaves disponíveis:', allKeys);
   
-  // Procurar por padrões que indicam data
+  // Padrões mais específicos que indicam data
   const datePatterns = [
-    /data/i, /date/i, /created/i, /timestamp/i, /time/i,
-    /criacao/i, /cadastro/i, /registro/i, /entrada/i
+    /^data$/i, /^date$/i, /^created$/i, /^timestamp$/i,
+    /data.*criacao/i, /data.*cadastro/i, /data.*registro/i, /data.*entrada/i,
+    /created.*at/i, /created.*date/i, /registration.*date/i,
+    /lead.*date/i, /date.*created/i
   ];
   
+  // Primeiro, procurar por padrões de nome exatos
   for (const key of allKeys) {
+    console.log(`🔍 Analisando chave: "${key}"`);
+    
     // Verificar se a chave parece ser de data
-    const isDateKey = datePatterns.some(pattern => pattern.test(key));
+    const isDateKey = datePatterns.some(pattern => {
+      const matches = pattern.test(key);
+      if (matches) {
+        console.log(`✅ Padrão "${pattern}" corresponde à chave "${key}"`);
+      }
+      return matches;
+    });
     
     if (isDateKey) {
       const value = item[key];
       console.log(`🎯 Possível coluna de data encontrada: "${key}" = "${value}"`);
       
-      // Verificar se o valor parece ser uma data
+      // Verificar se o valor parece ser uma data válida
       if (value && typeof value === 'string') {
+        console.log(`🧪 Testando se o valor "${value}" parece ser uma data...`);
+        
         // Padrões que indicam que é uma data
         const dateValuePatterns = [
-          /^\d{4}-\d{2}-\d{2}/, // 2024-01-01
-          /^\d{2}\/\d{2}\/\d{4}/, // 01/01/2024
-          /^\d{2}-\d{2}-\d{4}/, // 01-01-2024
+          /^\d{4}-\d{1,2}-\d{1,2}/, // 2024-01-01, 2024-1-1
+          /^\d{1,2}\/\d{1,2}\/\d{4}/, // 01/01/2024, 1/1/2024
+          /^\d{1,2}-\d{1,2}-\d{4}/, // 01-01-2024, 1-1-2024
           /^\d{8}$/, // 20240101
-          /^\d{10,13}$/ // timestamp
+          /^\d{10,13}$/, // timestamp
+          /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // ISO format
+          /\d{1,2}\s+\w{3}\s+\d{4}/ // 01 Jan 2024
         ];
         
-        if (dateValuePatterns.some(pattern => pattern.test(value))) {
-          console.log('✅ Coluna de data detectada automaticamente:', key);
+        for (let i = 0; i < dateValuePatterns.length; i++) {
+          const pattern = dateValuePatterns[i];
+          if (pattern.test(value)) {
+            console.log(`✅ Valor "${value}" corresponde ao padrão de data ${i + 1}: ${pattern}`);
+            console.log('🎯 ========== COLUNA DE DATA DETECTADA! ==========');
+            console.log('🎯 Coluna:', key);
+            console.log('🎯 Valor exemplo:', value);
+            return key;
+          }
+        }
+        
+        console.log(`❌ Valor "${value}" não corresponde a nenhum padrão de data conhecido`);
+      } else {
+        console.log(`❌ Valor não é string ou está vazio:`, value);
+      }
+    }
+  }
+  
+  // Se não encontrou por padrões específicos, tentar qualquer chave que contenha palavras-chave
+  console.log('🔍 Tentando busca mais ampla por palavras-chave...');
+  const broadDateKeywords = ['data', 'date', 'created', 'time', 'timestamp'];
+  
+  for (const keyword of broadDateKeywords) {
+    for (const key of allKeys) {
+      if (key.toLowerCase().includes(keyword.toLowerCase())) {
+        const value = item[key];
+        console.log(`🎯 Chave "${key}" contém palavra-chave "${keyword}", valor: "${value}"`);
+        
+        if (value && typeof value === 'string' && value.length > 4) {
+          console.log(`✅ Usando "${key}" como coluna de data (busca ampla)`);
           return key;
         }
       }
     }
   }
   
-  console.log('❌ Nenhuma coluna de data detectada automaticamente');
+  console.log('❌ ========== NENHUMA COLUNA DE DATA DETECTADA ==========');
   return null;
 }
 
@@ -74,26 +121,27 @@ export function parseNumber(value: any): number {
   return 0;
 }
 
-// Expandir ainda MAIS os mapeamentos com base em problemas reais
+// EXPANDIR AINDA MAIS os mapeamentos com base em problemas reais
 export const FIELD_MAPPINGS = {
   data: [
-    // Variações básicas
+    // Variações mais específicas primeiro
     'data', 'Data', 'DATA', 'date', 'Date', 'DATE',
     'created_at', 'createdAt', 'created', 'timestamp', 'Timestamp',
     'data_criacao', 'dt_criacao', 'data_cadastro', 'dt_cadastro',
     'datetime', 'dateTime', 'DateTime', 'data_hora', 'data_time',
     'registration_date', 'signup_date', 'lead_date',
-    // Variações específicas de webhook
     'Data de Criação', 'Data de Cadastro', 'Data do Lead', 'Data Lead',
     'data_lead', 'dataLead', 'lead_created_at', 'leadCreatedAt',
     'created_date', 'createdDate', 'dt_create', 'dt_created',
     'data_entrada', 'dataEntrada', 'entry_date', 'entryDate',
     'data_criado', 'dataCriado', 'data_registro', 'dataRegistro',
-    // NOVOS padrões encontrados em webhooks reais
     'created', 'Created', 'CREATED', 'criado', 'Criado', 'CRIADO',
     'data_lead_criacao', 'dataLeadCriacao', 'lead_creation_date',
     'webhook_date', 'webhookDate', 'form_date', 'formDate',
-    'submission_date', 'submissionDate', 'capture_date', 'captureDate'
+    'submission_date', 'submissionDate', 'capture_date', 'captureDate',
+    // NOVOS padrões mais específicos baseados em webhooks reais
+    'lead_datetime', 'leadDatetime', 'form_submission_date', 'formSubmissionDate',
+    'contact_date', 'contactDate', 'inquiry_date', 'inquiryDate'
   ],
   hora: [
     'Hora', 'hora', 'HORA', 'time', 'Time', 'TIME',
