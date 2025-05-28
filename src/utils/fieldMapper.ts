@@ -1,3 +1,4 @@
+
 export function findFieldValue(item: any, possibleKeys: readonly string[], defaultValue: any = ''): any {
   console.log('🔍 Procurando campo:', { 
     possibleKeys: possibleKeys.slice(0, 3), // mostrar só os primeiros 3 para não poluir
@@ -60,7 +61,7 @@ export function detectDateColumn(item: any): string | null {
       if (value && typeof value === 'string') {
         console.log(`🧪 Testando se o valor "${value}" parece ser uma data...`);
         
-        // Padrões que indicam que é uma data
+        // Padrões que indicam que é uma data - INCLUINDO FORMATOS BRASILEIROS
         const dateValuePatterns = [
           /^\d{4}-\d{1,2}-\d{1,2}/, // 2024-01-01, 2024-1-1
           /^\d{1,2}\/\d{1,2}\/\d{4}/, // 01/01/2024, 1/1/2024
@@ -68,13 +69,17 @@ export function detectDateColumn(item: any): string | null {
           /^\d{8}$/, // 20240101
           /^\d{10,13}$/, // timestamp
           /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // ISO format
-          /\d{1,2}\s+\w{3}\s+\d{4}/ // 01 Jan 2024
+          /\d{1,2}\s+\w{3}\s+\d{4}/, // 01 Jan 2024
+          /^\d{1,2}\s+[a-záêç.]+\.?$/i // NOVO: 12 fev., 24 fev. (formato brasileiro)
         ];
         
         for (let i = 0; i < dateValuePatterns.length; i++) {
           const pattern = dateValuePatterns[i];
           if (pattern.test(value)) {
             console.log(`✅ Valor "${value}" corresponde ao padrão de data ${i + 1}: ${pattern}`);
+            if (i === dateValuePatterns.length - 1) {
+              console.log('🇧🇷 FORMATO BRASILEIRO DETECTADO!');
+            }
             console.log('🎯 ========== COLUNA DE DATA DETECTADA! ==========');
             console.log('🎯 Coluna:', key);
             console.log('🎯 Valor exemplo:', value);

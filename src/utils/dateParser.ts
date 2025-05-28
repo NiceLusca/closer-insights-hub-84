@@ -2,6 +2,43 @@
 import { parseISO, parse, isValid } from 'date-fns';
 import { supabaseLogger } from '@/services/supabaseLogger';
 
+// Mapeamento de meses brasileiros abreviados
+const MESES_BRASILEIROS = {
+  'jan.': '01', 'jan': '01',
+  'fev.': '02', 'fev': '02',
+  'mar.': '03', 'mar': '03',
+  'abr.': '04', 'abr': '04',
+  'mai.': '05', 'mai': '05',
+  'jun.': '06', 'jun': '06',
+  'jul.': '07', 'jul': '07',
+  'ago.': '08', 'ago': '08',
+  'set.': '09', 'set': '09',
+  'out.': '10', 'out': '10',
+  'nov.': '11', 'nov': '11',
+  'dez.': '12', 'dez': '12'
+};
+
+function convertBrazilianDateFormat(dateValue: string): string | null {
+  // Padrão para detectar formato brasileiro: "12 fev.", "24 fev.", etc.
+  const brazilianPattern = /^(\d{1,2})\s+([a-záêç.]+)\.?$/i;
+  const match = dateValue.trim().match(brazilianPattern);
+  
+  if (match) {
+    const [, day, monthStr] = match;
+    const monthKey = monthStr.toLowerCase().endsWith('.') ? monthStr.toLowerCase() : monthStr.toLowerCase() + '.';
+    const month = MESES_BRASILEIROS[monthKey];
+    
+    if (month) {
+      const currentYear = new Date().getFullYear();
+      const convertedDate = `${currentYear}-${month}-${day.padStart(2, '0')}`;
+      console.log(`🇧🇷 Convertendo data brasileira: "${dateValue}" → "${convertedDate}"`);
+      return convertedDate;
+    }
+  }
+  
+  return null;
+}
+
 export async function parseDate(dateValue: string, sessionId?: string): Promise<Date | undefined> {
   if (!dateValue) {
     await supabaseLogger.log({
@@ -21,6 +58,51 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
     sessionId
   });
 
+  // PRIMEIRO: Tentar converter formato brasileiro específico
+  const brazilianConverted = convertBrazilianDateFormat(dateValue.toString());
+  if (brazilianConverted) {
+    await supabaseLogger.log({
+      level: 'info',
+      message: '🇧🇷 DETECTADO FORMATO BRASILEIRO',
+      data: { 
+        original: dateValue, 
+        convertido: brazilianConverted,
+        metodo: 'conversao_brasileira'
+      },
+      source: 'date-parser',
+      sessionId
+    });
+    
+    // Tentar parsear a data convertida
+    try {
+      const testDate = parseISO(brazilianConverted);
+      if (isValid(testDate) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+        await supabaseLogger.log({
+          level: 'info',
+          message: '✅ DATA BRASILEIRA PARSEADA COM SUCESSO!',
+          data: {
+            dataOriginal: dateValue,
+            dataConvertida: brazilianConverted,
+            dataParsada: testDate.toISOString(),
+            dataLocal: testDate.toLocaleDateString()
+          },
+          source: 'date-parser',
+          sessionId
+        });
+        return testDate;
+      }
+    } catch (e) {
+      await supabaseLogger.log({
+        level: 'warn',
+        message: '⚠️ Falha ao parsear data brasileira convertida',
+        data: { original: dateValue, convertido: brazilianConverted, erro: e.message },
+        source: 'date-parser',
+        sessionId
+      });
+    }
+  }
+
+  // Se não for formato brasileiro ou falhou, continuar com formatos originais
   const dateFormats = [
     // Formatos brasileiros mais comuns
     'dd/MM/yyyy', 'dd/MM/yyyy HH:mm:ss', 'dd/MM/yyyy HH:mm',
