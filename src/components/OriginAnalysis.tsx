@@ -50,9 +50,17 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
               formatter={(value, name) => {
                 if (name === 'receita') return formatCurrency(value as number);
                 if (name === 'conversao') return `${value}%`;
-                if (name === 'roi') return formatCurrency(value as number);
                 return value;
               }}
+              labelFormatter={(label) => `Origem: ${label}`}
+              formatter={(value, name, props) => {
+                if (name === 'leads') return [value, 'Total de Leads'];
+                if (name === 'vendas') return [value, 'Vendas'];
+                return [value, name];
+              }}
+              labelStyle={{ color: '#374151' }}
+              separator=": "
+              itemStyle={{ color: '#374151' }}
             />
             <Legend />
             <Bar 
@@ -67,14 +75,21 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
               name="Vendas"
               radius={[2, 2, 0, 0]}
             />
-            <Bar 
-              dataKey="receita" 
-              fill="#f59e0b" 
-              name="Receita"
-              radius={[2, 2, 0, 0]}
-            />
           </BarChart>
         </ResponsiveContainer>
+        
+        {/* Informações adicionais */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {originData.slice(0, 3).map((item, index) => (
+            <div key={index} className="bg-gray-50 p-3 rounded-lg">
+              <h4 className="font-medium text-sm text-gray-900 truncate">{item.origem}</h4>
+              <div className="text-xs text-gray-600 mt-1">
+                <div>Taxa: {item.conversao}%</div>
+                <div>Receita: {formatCurrency(item.receita)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

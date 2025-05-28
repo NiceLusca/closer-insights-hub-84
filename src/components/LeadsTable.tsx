@@ -22,17 +22,35 @@ export function LeadsTable({ leads }: LeadsTableProps) {
   const leadsPerPage = 10;
 
   const filteredAndSortedLeads = useMemo(() => {
-    let filtered = leads.filter(lead =>
-      lead.Nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead['e-mail'].toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.origem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.Closer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.Status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    console.log('Processando leads na tabela:', leads?.length || 0);
+    
+    if (!leads || leads.length === 0) {
+      return [];
+    }
+
+    let filtered = leads.filter(lead => {
+      const nome = lead?.Nome || '';
+      const email = lead?.['e-mail'] || '';
+      const origem = lead?.origem || '';
+      const closer = lead?.Closer || '';
+      const status = lead?.Status || '';
+      
+      const searchLower = searchTerm.toLowerCase();
+      
+      return nome.toLowerCase().includes(searchLower) ||
+             email.toLowerCase().includes(searchLower) ||
+             origem.toLowerCase().includes(searchLower) ||
+             closer.toLowerCase().includes(searchLower) ||
+             status.toLowerCase().includes(searchLower);
+    });
 
     filtered.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
+
+      // Tratar valores undefined/null
+      if (aValue == null) aValue = '';
+      if (bValue == null) bValue = '';
 
       if (typeof aValue === 'string') aValue = aValue.toLowerCase();
       if (typeof bValue === 'string') bValue = bValue.toLowerCase();
@@ -93,6 +111,23 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     </th>
   );
 
+  if (!leads || leads.length === 0) {
+    return (
+      <Card className="bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-900">
+            Leads Detalhados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-500">
+            Nenhum lead encontrado
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-white/80 backdrop-blur-sm">
       <CardHeader>
@@ -129,27 +164,36 @@ export function LeadsTable({ leads }: LeadsTableProps) {
               {paginatedLeads.map((lead) => (
                 <tr key={lead.row_number} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.data} {lead.Hora}
+                    {lead?.data || '-'} {lead?.Hora || ''}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {lead.Nome}
+                    {lead?.Nome || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {lead['e-mail']}
+                    {lead?.['e-mail'] || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.origem}
+                    {lead?.origem || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge className={getStatusBadgeColor(lead.Status)}>
-                      {lead.Status}
-                    </Badge>
+                    {lead?.Status ? (
+                      <Badge className={getStatusBadgeColor(lead.Status)}>
+                        {lead.Status}
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-gray-100 text-gray-800">
+                        Sem status
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.Closer}
+                    {lead?.Closer || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead['Venda Completa'] > 0 ? formatCurrency(lead['Venda Completa']) : '-'}
+                    {lead?.['Venda Completa'] && lead['Venda Completa'] > 0 
+                      ? formatCurrency(lead['Venda Completa']) 
+                      : '-'
+                    }
                   </td>
                 </tr>
               ))}

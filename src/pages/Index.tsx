@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
@@ -108,7 +109,10 @@ const Index = () => {
 
   // Get unique values for filter options
   const filterOptions = useMemo(() => {
+    console.log('Gerando opções de filtro. AllLeads:', allLeads?.length || 0);
+    
     if (!allLeads || allLeads.length === 0) {
+      console.log('Retornando opções vazias');
       return {
         statusOptions: [],
         closerOptions: [],
@@ -116,22 +120,30 @@ const Index = () => {
       };
     }
 
-    const statusOptions = [...new Set(allLeads
-      .map(lead => lead.Status)
-      .filter(status => status && status.trim() !== '')
+    const statusOptions = [...new Set(
+      allLeads
+        .map(lead => lead?.Status)
+        .filter(status => status && typeof status === 'string' && status.trim() !== '')
     )];
     
-    const closerOptions = [...new Set(allLeads
-      .map(lead => lead.Closer)
-      .filter(closer => closer && closer.trim() !== '')
+    const closerOptions = [...new Set(
+      allLeads
+        .map(lead => lead?.Closer)
+        .filter(closer => closer && typeof closer === 'string' && closer.trim() !== '')
     )];
     
-    const origemOptions = [...new Set(allLeads
-      .map(lead => lead.origem)
-      .filter(origem => origem && origem.trim() !== '')
+    const origemOptions = [...new Set(
+      allLeads
+        .map(lead => lead?.origem)
+        .filter(origem => origem && typeof origem === 'string' && origem.trim() !== '')
     )];
     
-    console.log('Opções de filtro:', { statusOptions, closerOptions, origemOptions });
+    console.log('Opções de filtro geradas:', { 
+      statusOptions: statusOptions.length, 
+      closerOptions: closerOptions.length, 
+      origemOptions: origemOptions.length 
+    });
+    
     return { statusOptions, closerOptions, origemOptions };
   }, [allLeads]);
 
