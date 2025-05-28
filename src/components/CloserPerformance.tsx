@@ -1,7 +1,9 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Percent, Hash } from "lucide-react";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceProps {
@@ -9,32 +11,43 @@ interface CloserPerformanceProps {
 }
 
 export function CloserPerformance({ leads }: CloserPerformanceProps) {
+  const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('percentage');
+  
+  console.log('CloserPerformance recebendo leads:', leads.length);
+
   const closerData = useMemo(() => {
+    console.log('Processando dados do CloserPerformance com', leads.length, 'leads');
+    
     const closerStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
     
     leads.forEach(lead => {
-      if (!closerStats[lead.Closer]) {
-        closerStats[lead.Closer] = { leads: 0, vendas: 0, receita: 0 };
+      const closer = lead.Closer || 'Sem Closer';
+      
+      if (!closerStats[closer]) {
+        closerStats[closer] = { leads: 0, vendas: 0, receita: 0 };
       }
       
-      closerStats[lead.Closer].leads++;
+      closerStats[closer].leads++;
       
       if (lead.Status === 'Fechou') {
-        closerStats[lead.Closer].vendas++;
-        closerStats[lead.Closer].receita += lead['Venda Completa'] || 0;
+        closerStats[closer].vendas++;
+        closerStats[closer].receita += lead['Venda Completa'] || 0;
       }
     });
 
-    return Object.entries(closerStats)
+    const result = Object.entries(closerStats)
       .map(([closer, stats]) => ({
         closer: closer.split(' ')[0], // Show only first name for better display
         leads: stats.leads,
         vendas: stats.vendas,
-        conversao: stats.leads > 0 ? ((stats.vendas / stats.leads) * 100).toFixed(1) : '0',
+        conversao: stats.leads > 0 ? ((stats.vendas / stats.leads) * 100) : 0,
         receita: stats.receita
       }))
-      .sort((a, b) => b.vendas - a.vendas);
-  }, [leads]);
+      .sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
+
+    console.log('Dados processados do CloserPerformance:', result);
+    return result;
+  }, [leads, viewMode]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -44,33 +57,64 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
     }).format(value);
   };
 
+  const getBarDataKey = () => {
+    return viewMode === 'percentage' ? 'conversao' : 'vendas';
+  };
+
+  const getBarName = () => {
+    return viewMode === 'percentage' ? 'Taxa de Conversão (%)' : 'Número de Vendas';
+  };
+
   return (
-    <Card className="bg-white/80 backdrop-blur-sm">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
-          Performance por Closer
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-semibold text-gray-100">
+            Performance por Closer
+          </CardTitle>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant={viewMode === 'percentage' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('percentage')}
+              className="flex items-center space-x-1"
+            >
+              <Percent className="w-4 h-4" />
+              <span>%</span>
+            </Button>
+            <Button
+              variant={viewMode === 'absolute' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('absolute')}
+              className="flex items-center space-x-1"
+            >
+              <Hash className="w-4 h-4" />
+              <span>Nº</span>
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={closerData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="closer" 
-              stroke="#64748b"
+              stroke="#9ca3af"
               fontSize={12}
             />
-            <YAxis stroke="#64748b" fontSize={12} />
+            <YAxis stroke="#9ca3af" fontSize={12} />
             <Tooltip 
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
+                backgroundColor: '#1f2937',
+                border: '1px solid #374151',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
+                color: '#f3f4f6'
               }}
               formatter={(value, name) => {
                 if (name === 'receita') return formatCurrency(value as number);
-                if (name === 'conversao') return `${value}%`;
+                if (name === 'Taxa de Conversão (%)') return `${(value as number).toFixed(1)}%`;
                 return value;
               }}
             />
@@ -82,9 +126,9 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               radius={[2, 2, 0, 0]}
             />
             <Bar 
-              dataKey="vendas" 
+              dataKey={getBarDataKey()} 
               fill="#10b981" 
-              name="Vendas"
+              name={getBarName()}
               radius={[2, 2, 0, 0]}
             />
           </BarChart>

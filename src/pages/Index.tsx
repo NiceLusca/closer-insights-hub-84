@@ -61,6 +61,7 @@ const Index = () => {
       
       if (webhookLeads.length > 0) {
         console.log('✅ Dados carregados do webhook:', webhookLeads.length, 'leads');
+        console.log('📊 Amostra de lead do webhook:', webhookLeads[0]);
         setAllLeads(webhookLeads);
         setLastUpdated(new Date());
         
@@ -71,6 +72,7 @@ const Index = () => {
       } else {
         console.log('⚠️ Webhook vazio, usando dados de demonstração');
         const mockLeads = generateMockData(500);
+        console.log('📊 Amostra de lead mock:', mockLeads[0]);
         setAllLeads(mockLeads);
         setLastUpdated(new Date());
         
@@ -82,6 +84,7 @@ const Index = () => {
     } catch (error) {
       console.error('❌ Erro ao buscar dados:', error);
       const mockLeads = generateMockData(500);
+      console.log('📊 Amostra de lead mock (erro):', mockLeads[0]);
       setAllLeads(mockLeads);
       setLastUpdated(new Date());
       
@@ -102,6 +105,7 @@ const Index = () => {
   // Filtrar dados baseado nos filtros aplicados (já exclui status vazios)
   const filteredLeads = useMemo(() => {
     if (!allLeads || allLeads.length === 0) {
+      console.log('⚠️ Nenhum lead disponível para filtrar');
       return [];
     }
     
@@ -113,6 +117,7 @@ const Index = () => {
     
     const result = filterLeads(allLeads, dateRange, filters);
     console.log('📊 Resultado dos filtros:', result.length, 'leads filtrados');
+    console.log('📊 Amostra de lead filtrado:', result[0]);
     return result;
   }, [allLeads, dateRange, filters]);
 
