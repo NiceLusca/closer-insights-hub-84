@@ -1,5 +1,5 @@
 
-export function findFieldValue(item: any, possibleKeys: string[], defaultValue: any = ''): any {
+export function findFieldValue(item: any, possibleKeys: readonly string[], defaultValue: any = ''): any {
   for (const key of possibleKeys) {
     if (item[key] !== undefined && item[key] !== null && item[key] !== '') {
       return item[key];
