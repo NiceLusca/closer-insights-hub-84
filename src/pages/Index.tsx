@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
@@ -22,6 +23,7 @@ const Index = () => {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [dataStable, setDataStable] = useState(false); // Novo estado para controlar estabilidade dos dados
   
   // Filtros aplicados (usados para filtrar os dados)
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -52,23 +54,38 @@ const Index = () => {
   // Função para buscar dados do webhook
   const fetchLeadsData = async () => {
     setIsLoading(true);
+    setDataStable(false); // Marcar dados como instáveis durante carregamento
+    
     try {
       console.log('Iniciando busca de dados do webhook...');
       const webhookLeads = await fetchLeadsFromWebhook();
       
       if (webhookLeads.length > 0) {
+        console.log('Dados carregados com sucesso:', webhookLeads.length, 'leads');
         setAllLeads(webhookLeads);
         setLastUpdated(new Date());
+        
+        // Aguardar um pequeno delay para garantir que o estado seja atualizado
+        setTimeout(() => {
+          setDataStable(true);
+          console.log('Dados marcados como estáveis');
+        }, 100);
+        
         toast({
           title: "Dados atualizados!",
           description: `${webhookLeads.length} leads carregados com sucesso.`,
         });
-        console.log('Dados carregados com sucesso:', webhookLeads.length, 'leads');
       } else {
         console.log('Webhook retornou dados vazios, usando dados mock');
         const mockLeads = generateMockData(500);
         setAllLeads(mockLeads);
         setLastUpdated(new Date());
+        
+        setTimeout(() => {
+          setDataStable(true);
+          console.log('Dados mock marcados como estáveis');
+        }, 100);
+        
         toast({
           title: "Usando dados de demonstração",
           description: "Não foi possível carregar dados do webhook. Usando dados mock.",
@@ -80,6 +97,12 @@ const Index = () => {
       const mockLeads = generateMockData(500);
       setAllLeads(mockLeads);
       setLastUpdated(new Date());
+      
+      setTimeout(() => {
+        setDataStable(true);
+        console.log('Dados mock (erro) marcados como estáveis');
+      }, 100);
+      
       toast({
         title: "Erro ao carregar dados",
         description: "Usando dados de demonstração. Verifique a conexão com o webhook.",
@@ -106,23 +129,31 @@ const Index = () => {
     return result;
   }, [allLeads, dateRange, filters]);
 
-  // Get unique values for filter options - ENHANCED VERSION
+  // Get unique values for filter options - VERSÃO MELHORADA COM DEBOUNCE
   const filterOptions = useMemo(() => {
-    console.log('Gerando opções de filtro. AllLeads:', allLeads?.length || 0);
+    console.log('=== GERANDO OPÇÕES DE FILTRO ===');
+    console.log('Estado atual:', { 
+      allLeadsLength: allLeads?.length || 0, 
+      isLoading, 
+      dataStable 
+    });
     
-    // Sempre retornar arrays válidos, mesmo quando allLeads está vazio ou undefined
+    // Sempre retornar arrays válidos, mesmo quando dados não estão prontos
     const defaultOptions = {
       statusOptions: [],
       closerOptions: [],
       origemOptions: []
     };
 
-    if (!Array.isArray(allLeads) || allLeads.length === 0) {
-      console.log('Retornando opções vazias - allLeads não é um array válido ou está vazio');
+    // Só processar se dados estiverem estáveis e válidos
+    if (!dataStable || isLoading || !Array.isArray(allLeads) || allLeads.length === 0) {
+      console.log('Retornando opções vazias - dados não estão prontos');
       return defaultOptions;
     }
 
     try {
+      console.log('Processando', allLeads.length, 'leads para gerar opções...');
+      
       // Filtrar e processar status
       const statusSet = new Set<string>();
       allLeads.forEach(lead => {
@@ -150,22 +181,24 @@ const Index = () => {
       });
       const origemOptions = Array.from(origemSet).sort();
       
-      console.log('Opções de filtro geradas:', { 
-        statusOptions: statusOptions.length, 
-        closerOptions: closerOptions.length, 
-        origemOptions: origemOptions.length 
-      });
+      console.log('=== OPÇÕES GERADAS ===');
+      console.log('Status:', statusOptions.length, 'opções:', statusOptions);
+      console.log('Closers:', closerOptions.length, 'opções:', closerOptions);
+      console.log('Origens:', origemOptions.length, 'opções:', origemOptions);
       
-      return { 
+      const result = { 
         statusOptions, 
         closerOptions, 
         origemOptions 
       };
+      
+      console.log('Opções finais:', result);
+      return result;
     } catch (error) {
       console.error('Erro ao gerar opções de filtro:', error);
       return defaultOptions;
     }
-  }, [allLeads]);
+  }, [allLeads, dataStable, isLoading]); // Adicionar dataStable como dependência
 
   const handleTempFilterChange = (filterType: keyof Filters, values: string[]) => {
     console.log('Mudança temporária de filtro:', filterType, values);
@@ -212,6 +245,15 @@ const Index = () => {
     JSON.stringify(filters) !== JSON.stringify(tempFilters) ||
     JSON.stringify(dateRange) !== JSON.stringify(tempDateRange);
 
+  // Estado consolidado para os filtros
+  const filtersReady = dataStable && !isLoading && allLeads.length > 0;
+  
+  console.log('=== ESTADO FINAL DOS FILTROS ===');
+  console.log('filtersReady:', filtersReady);
+  console.log('dataStable:', dataStable);
+  console.log('isLoading:', isLoading);
+  console.log('allLeads.length:', allLeads.length);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <DashboardHeader
@@ -231,7 +273,7 @@ const Index = () => {
           filterOptions={filterOptions}
           hasPendingFilters={hasPendingFilters}
           allLeads={allLeads}
-          isLoading={isLoading}
+          isLoading={!filtersReady} // Passa true se filtros não estão prontos
           onTempDateRangeChange={setTempDateRange}
           onTempFilterChange={handleTempFilterChange}
           onApplyFilters={applyFilters}

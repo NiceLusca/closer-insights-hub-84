@@ -39,13 +39,36 @@ export function FiltersPanel({
 }: FiltersPanelProps) {
   if (!showFilters) return null;
 
-  // Verificar se as opções são válidas
-  const hasValidOptions = filterOptions && 
+  // Verificações mais rigorosas para dados válidos
+  const hasValidFilterOptions = filterOptions && 
+    typeof filterOptions === 'object' &&
     Array.isArray(filterOptions.statusOptions) && 
     Array.isArray(filterOptions.closerOptions) && 
     Array.isArray(filterOptions.origemOptions);
 
-  const filtersReady = !isLoading && hasValidOptions;
+  const hasAnyFilterData = hasValidFilterOptions && (
+    filterOptions.statusOptions.length > 0 ||
+    filterOptions.closerOptions.length > 0 ||
+    filterOptions.origemOptions.length > 0
+  );
+
+  const filtersReady = !isLoading && hasValidFilterOptions;
+  const showFilterComponents = filtersReady && hasAnyFilterData;
+
+  console.log('=== FILTERS PANEL STATE ===');
+  console.log('isLoading:', isLoading);
+  console.log('hasValidFilterOptions:', hasValidFilterOptions);
+  console.log('hasAnyFilterData:', hasAnyFilterData);
+  console.log('filtersReady:', filtersReady);
+  console.log('showFilterComponents:', showFilterComponents);
+  
+  if (hasValidFilterOptions) {
+    console.log('Opções disponíveis:', {
+      status: filterOptions.statusOptions.length,
+      closer: filterOptions.closerOptions.length,
+      origem: filterOptions.origemOptions.length
+    });
+  }
 
   return (
     <Card className="mb-8 bg-white/80 backdrop-blur-sm">
@@ -65,32 +88,80 @@ export function FiltersPanel({
             />
           </div>
           
-          <FilterSelect
-            label="Status"
-            options={filterOptions?.statusOptions || []}
-            selectedValues={tempFilters?.status || []}
-            onChange={(values) => onTempFilterChange('status', values)}
-            placeholder="Todos os status"
-            isLoading={!filtersReady}
-          />
+          {/* Status Filter */}
+          {showFilterComponents ? (
+            <FilterSelect
+              label="Status"
+              options={filterOptions.statusOptions}
+              selectedValues={tempFilters?.status || []}
+              onChange={(values) => onTempFilterChange('status', values)}
+              placeholder="Todos os status"
+              isLoading={false}
+            />
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <Button
+                variant="outline"
+                disabled
+                className="w-full justify-between opacity-50"
+              >
+                {isLoading ? "Carregando..." : "Nenhuma opção disponível"}
+              </Button>
+            </div>
+          )}
           
-          <FilterSelect
-            label="Closer"
-            options={filterOptions?.closerOptions || []}
-            selectedValues={tempFilters?.closer || []}
-            onChange={(values) => onTempFilterChange('closer', values)}
-            placeholder="Todos os closers"
-            isLoading={!filtersReady}
-          />
+          {/* Closer Filter */}
+          {showFilterComponents ? (
+            <FilterSelect
+              label="Closer"
+              options={filterOptions.closerOptions}
+              selectedValues={tempFilters?.closer || []}
+              onChange={(values) => onTempFilterChange('closer', values)}
+              placeholder="Todos os closers"
+              isLoading={false}
+            />
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Closer
+              </label>
+              <Button
+                variant="outline"
+                disabled
+                className="w-full justify-between opacity-50"
+              >
+                {isLoading ? "Carregando..." : "Nenhuma opção disponível"}
+              </Button>
+            </div>
+          )}
           
-          <FilterSelect
-            label="Origem"
-            options={filterOptions?.origemOptions || []}
-            selectedValues={tempFilters?.origem || []}
-            onChange={(values) => onTempFilterChange('origem', values)}
-            placeholder="Todas as origens"
-            isLoading={!filtersReady}
-          />
+          {/* Origem Filter */}
+          {showFilterComponents ? (
+            <FilterSelect
+              label="Origem"
+              options={filterOptions.origemOptions}
+              selectedValues={tempFilters?.origem || []}
+              onChange={(values) => onTempFilterChange('origem', values)}
+              placeholder="Todas as origens"
+              isLoading={false}
+            />
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Origem
+              </label>
+              <Button
+                variant="outline"
+                disabled
+                className="w-full justify-between opacity-50"
+              >
+                {isLoading ? "Carregando..." : "Nenhuma opção disponível"}
+              </Button>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-between items-center">
@@ -118,6 +189,11 @@ export function FiltersPanel({
             {isLoading && (
               <span className="text-sm text-gray-600">
                 Carregando filtros...
+              </span>
+            )}
+            {!isLoading && !hasAnyFilterData && hasValidFilterOptions && (
+              <span className="text-sm text-yellow-600">
+                Nenhum dado válido para filtros
               </span>
             )}
             {!isLoading && hasPendingFilters && (
