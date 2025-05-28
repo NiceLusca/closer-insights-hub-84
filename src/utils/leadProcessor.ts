@@ -135,8 +135,7 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
             rawRowData: item,
             errorType: 'date_parsing_failed',
             errorMessage: `Falha ao parsear data: ${dateSearchResults.dateValue}`,
-            fieldAnalysis: dateSearchResults,
-            dateParsingAttempts: dateSearchResults.attempts || []
+            fieldAnalysis: dateSearchResults
           });
         }
         processingErrors.push({ index, error: 'date_parsing_failed', data: dateSearchResults.dateValue });
