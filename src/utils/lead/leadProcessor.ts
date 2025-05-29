@@ -15,6 +15,7 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
   const processedLeads = [];
   const processingErrors = [];
   let successfulParses = 0;
+  let successfulLeads = 0;
 
   for (let index = 0; index < data.length; index++) {
     const item = data[index];
@@ -44,7 +45,7 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
         data: {
           valorOriginal: dateSearchResults.dateValue,
           valorString: dateSearchResults.dateValue?.toString(),
-          dataParsada: parsedDate?.toISOString() || 'FALHOU AO PARSEAR',
+          dataParsada: parsedDate?.toISOString() || 'SEM DATA VÁLIDA',
           foiParseadaComSucesso: !!parsedDate,
           metodoEncontrado: dateSearchResults.method
         },
@@ -54,20 +55,32 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
 
       const lead: Lead = buildLead(item, index, dateSearchResults.dateValue?.toString() || '', parsedDate);
 
-      await supabaseLogger.log({
-        level: 'debug',
-        message: '✅ Lead processado',
-        data: {
-          nome: lead.Nome,
-          status: lead.Status,
-          dataOriginal: lead.data,
-          parsedDate: lead.parsedDate?.toISOString() || 'SEM DATA VÁLIDA ❌'
-        },
-        source: 'lead-processor',
-        sessionId
-      });
-
-      processedLeads.push(lead);
+      // Validar lead ANTES de adicioná-lo
+      if (validateLead(lead, sessionId)) {
+        processedLeads.push(lead);
+        successfulLeads++;
+        
+        await supabaseLogger.log({
+          level: 'debug',
+          message: '✅ Lead processado e aceito',
+          data: {
+            nome: lead.Nome,
+            status: lead.Status,
+            dataOriginal: lead.data,
+            parsedDate: lead.parsedDate?.toISOString() || 'SEM DATA VÁLIDA'
+          },
+          source: 'lead-processor',
+          sessionId
+        });
+      } else {
+        await supabaseLogger.log({
+          level: 'warn',
+          message: '⚠️ Lead rejeitado na validação',
+          data: { lead },
+          source: 'lead-processor',
+          sessionId
+        });
+      }
 
       // Se não conseguiu parsear a data, salvar erro no Supabase MAS continuar processamento
       if (!parsedDate && dateSearchResults.dateValue) {
@@ -82,48 +95,54 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
       }
 
     } catch (error) {
+      await supabaseLogger.log({
+        level: 'error',
+        message: `❌ Erro crítico no lead ${index + 1} - CONTINUANDO processamento`,
+        data: { error: error.message, item },
+        source: 'lead-processor',
+        sessionId
+      });
+      
       const errorDetails = await handleProcessingError(error, index, item, webhookDataId, sessionId);
       processingErrors.push(errorDetails);
+      // NÃO PARAR O PROCESSAMENTO - continuar com próximo lead
     }
   }
-
-  // Filtrar leads com dados básicos
-  const filteredLeads = processedLeads.filter(lead => validateLead(lead, sessionId));
 
   await supabaseLogger.log({
     level: 'info',
     message: '📊 RESUMO FINAL DO PROCESSAMENTO',
     data: {
       totalRecebidos: data.length,
-      totalProcessados: processedLeads.length,
-      totalFiltrados: filteredLeads.length,
-      comDataValida: filteredLeads.filter(l => l.parsedDate).length,
-      semDataValida: filteredLeads.filter(l => !l.parsedDate).length,
-      comStatus: filteredLeads.filter(l => l.Status && l.Status.trim() !== '').length,
-      statusEncontrados: [...new Set(filteredLeads.map(l => l.Status).filter(Boolean))],
+      totalProcessados: successfulLeads,
+      comDataValida: processedLeads.filter(l => l.parsedDate).length,
+      semDataValida: processedLeads.filter(l => !l.parsedDate).length,
+      comStatus: processedLeads.filter(l => l.Status && l.Status.trim() !== '').length,
+      statusEncontrados: [...new Set(processedLeads.map(l => l.Status).filter(Boolean))],
       errosProcessamento: processingErrors.length,
       successfulDateParses: successfulParses,
-      percentualSucesso: ((successfulParses / data.length) * 100).toFixed(1)
+      percentualSucesso: ((successfulParses / data.length) * 100).toFixed(1),
+      percentualLeadsValidos: ((successfulLeads / data.length) * 100).toFixed(1)
     },
     source: 'lead-processor',
     sessionId
   });
 
-  // Alertar sobre problemas de data de forma mais construtiva
-  const leadsWithoutDate = filteredLeads.filter(l => !l.parsedDate).length;
+  // Informar sobre leads sem data, mas de forma positiva
+  const leadsWithoutDate = processedLeads.filter(l => !l.parsedDate).length;
   if (leadsWithoutDate > 0) {
     await supabaseLogger.log({
-      level: 'warn',
-      message: `⚠️ ATENÇÃO: ${leadsWithoutDate} de ${filteredLeads.length} leads não possuem data válida, mas processamento continua!`,
+      level: 'info', // Mudado de 'warn' para 'info'
+      message: `ℹ️ PROCESSAMENTO CONCLUÍDO: ${leadsWithoutDate} de ${processedLeads.length} leads sem data válida (mas incluídos nos resultados)`,
       data: { 
         leadsWithoutDate, 
-        totalLeads: filteredLeads.length,
-        percentualComDataValida: (((filteredLeads.length - leadsWithoutDate) / filteredLeads.length) * 100).toFixed(1)
+        totalLeads: processedLeads.length,
+        percentualComDataValida: (((processedLeads.length - leadsWithoutDate) / processedLeads.length) * 100).toFixed(1)
       },
       source: 'lead-processor',
       sessionId
     });
   }
 
-  return filteredLeads;
+  return processedLeads;
 }

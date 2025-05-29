@@ -6,7 +6,7 @@ const MESES_BRASILEIROS = {
   'jan.': '01', 'jan': '01',
   'fev.': '02', 'fev': '02',
   'mar.': '03', 'mar': '03',
-  'abr.': '04', 'abr': '04',
+  'abr.': '04', 'abr': '04',  // CORRIGIDO: Adicionado abril
   'mai.': '05', 'mai': '05',
   'jun.': '06', 'jun': '06',
   'jul.': '07', 'jul': '07',
@@ -18,6 +18,18 @@ const MESES_BRASILEIROS = {
 };
 
 export function convertBrazilianDateFormat(dateValue: string): string | null {
+  // Validação básica: rejeitar strings muito curtas ou que são apenas números
+  if (!dateValue || dateValue.trim().length < 3) {
+    console.log(`❌ Data rejeitada por ser muito curta: "${dateValue}"`);
+    return null;
+  }
+
+  // Rejeitar se for apenas um número (como "2")
+  if (/^\d+$/.test(dateValue.trim())) {
+    console.log(`❌ Data rejeitada por ser apenas número: "${dateValue}"`);
+    return null;
+  }
+
   // Padrão para detectar formato brasileiro: "12 fev.", "24 abr.", etc.
   const brazilianPattern = /^(\d{1,2})\s+([a-záêç.]+)\.?$/i;
   const match = dateValue.trim().match(brazilianPattern);
@@ -34,6 +46,7 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
       return convertedDate;
     } else {
       console.log(`❌ Mês brasileiro não reconhecido: "${monthStr}" (chave: "${monthKey}")`);
+      console.log(`Meses disponíveis:`, Object.keys(MESES_BRASILEIROS));
     }
   }
   

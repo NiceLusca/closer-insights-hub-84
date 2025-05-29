@@ -3,13 +3,25 @@ import { parseISO, parse, isValid } from 'date-fns';
 import { supabaseLogger } from '@/services/supabaseLogger';
 import { convertBrazilianDateFormat } from './brazilianDateConverter';
 import { DATE_FORMATS } from './dateFormats';
-import { validateParsedDate } from './dateValidator';
+import { validateParsedDate, isValidDateString } from './dateValidator';
 
 export async function parseDate(dateValue: string, sessionId?: string): Promise<Date | undefined> {
   if (!dateValue) {
     await supabaseLogger.log({
       level: 'warn',
       message: '❌ dateValue está vazio',
+      source: 'date-parser',
+      sessionId
+    });
+    return undefined;
+  }
+
+  // Validação inicial da string
+  if (!isValidDateString(dateValue)) {
+    await supabaseLogger.log({
+      level: 'warn',
+      message: '❌ String de data inválida rejeitada',
+      data: { valorRejeitado: dateValue, motivo: 'formato_invalido' },
       source: 'date-parser',
       sessionId
     });
@@ -171,8 +183,8 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
   }
 
   await supabaseLogger.log({
-    level: 'error',
-    message: '❌ FALHA COMPLETA NO PARSE DA DATA',
+    level: 'warn', // Mudado de 'error' para 'warn' para não travar o processamento
+    message: '⚠️ FALHA NO PARSE DA DATA (continuando processamento)',
     data: {
       valorQueFalhou: dateValue,
       totalTentativas: tentativas.length,
