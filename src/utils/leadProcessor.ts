@@ -1,4 +1,3 @@
-
 import type { Lead } from '@/types/lead';
 import { parseDate } from './dateParser';
 import { findFieldValue, parseNumber, FIELD_MAPPINGS, detectDateColumn } from './fieldMapper';
@@ -61,6 +60,7 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
 
   const processedLeads = [];
   const processingErrors = [];
+  let successfulParses = 0; // NOVO: contador de parsings bem-sucedidos
 
   for (let index = 0; index < data.length; index++) {
     const item = data[index];
@@ -78,6 +78,11 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
       const dateSearchResults = await findDateInItem(item, sessionId);
       
       let parsedDate = dateSearchResults.dateValue ? await parseDate(dateSearchResults.dateValue.toString(), sessionId) : undefined;
+      
+      // NOVO: Se parseou com sucesso, incrementar contador
+      if (parsedDate) {
+        successfulParses++;
+      }
       
       await supabaseLogger.log({
         level: 'debug',
@@ -126,7 +131,7 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
 
       processedLeads.push(lead);
 
-      // Se não conseguiu parsear a data, salvar erro no Supabase
+      // Se não conseguiu parsear a data, salvar erro no Supabase MAS continuar processamento
       if (!parsedDate && dateSearchResults.dateValue) {
         if (webhookDataId) {
           await supabaseLogger.logProcessingError({
@@ -192,19 +197,25 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
       semDataValida: filteredLeads.filter(l => !l.parsedDate).length,
       comStatus: filteredLeads.filter(l => l.Status && l.Status.trim() !== '').length,
       statusEncontrados: [...new Set(filteredLeads.map(l => l.Status).filter(Boolean))],
-      errosProcessamento: processingErrors.length
+      errosProcessamento: processingErrors.length,
+      successfulDateParses: successfulParses, // NOVO: mostrar quantas datas foram parseadas com sucesso
+      percentualSucesso: ((successfulParses / data.length) * 100).toFixed(1) // NOVO: percentual de sucesso
     },
     source: 'lead-processor',
     sessionId
   });
 
-  // IMPORTANTE: Alertar sobre problemas de data
+  // MELHORADO: Alertar sobre problemas de data de forma mais construtiva
   const leadsWithoutDate = filteredLeads.filter(l => !l.parsedDate).length;
   if (leadsWithoutDate > 0) {
     await supabaseLogger.log({
       level: 'warn',
-      message: `⚠️ ATENÇÃO: ${leadsWithoutDate} de ${filteredLeads.length} leads não possuem data válida!`,
-      data: { leadsWithoutDate, totalLeads: filteredLeads.length },
+      message: `⚠️ ATENÇÃO: ${leadsWithoutDate} de ${filteredLeads.length} leads não possuem data válida, mas processamento continua!`,
+      data: { 
+        leadsWithoutDate, 
+        totalLeads: filteredLeads.length,
+        percentualComDataValida: (((filteredLeads.length - leadsWithoutDate) / filteredLeads.length) * 100).toFixed(1)
+      },
       source: 'lead-processor',
       sessionId
     });

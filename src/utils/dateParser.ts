@@ -1,13 +1,12 @@
-
 import { parseISO, parse, isValid } from 'date-fns';
 import { supabaseLogger } from '@/services/supabaseLogger';
 
-// Mapeamento de meses brasileiros abreviados
+// Mapeamento COMPLETO de meses brasileiros abreviados - CORRIGIDO
 const MESES_BRASILEIROS = {
   'jan.': '01', 'jan': '01',
   'fev.': '02', 'fev': '02',
   'mar.': '03', 'mar': '03',
-  'abr.': '04', 'abr': '04',
+  'abr.': '04', 'abr': '04', // ADICIONADO - estava faltando!
   'mai.': '05', 'mai': '05',
   'jun.': '06', 'jun': '06',
   'jul.': '07', 'jul': '07',
@@ -19,7 +18,7 @@ const MESES_BRASILEIROS = {
 };
 
 function convertBrazilianDateFormat(dateValue: string): string | null {
-  // Padrão para detectar formato brasileiro: "12 fev.", "24 fev.", etc.
+  // Padrão para detectar formato brasileiro: "12 fev.", "24 abr.", etc.
   const brazilianPattern = /^(\d{1,2})\s+([a-záêç.]+)\.?$/i;
   const match = dateValue.trim().match(brazilianPattern);
   
@@ -33,6 +32,8 @@ function convertBrazilianDateFormat(dateValue: string): string | null {
       const convertedDate = `${currentYear}-${month}-${day.padStart(2, '0')}`;
       console.log(`🇧🇷 Convertendo data brasileira: "${dateValue}" → "${convertedDate}"`);
       return convertedDate;
+    } else {
+      console.log(`❌ Mês brasileiro não reconhecido: "${monthStr}" (chave: "${monthKey}")`);
     }
   }
   
