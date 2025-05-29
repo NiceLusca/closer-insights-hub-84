@@ -1,6 +1,6 @@
 
 import type { Lead } from '@/types/lead';
-import { processRawDataToLeads } from '@/utils/leadProcessor';
+import { processRawDataToLeads } from '@/utils/lead';
 import { supabaseLogger } from './supabaseLogger';
 
 export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
