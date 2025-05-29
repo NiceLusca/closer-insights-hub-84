@@ -1,44 +1,9 @@
+
 import { parseISO, parse, isValid } from 'date-fns';
 import { supabaseLogger } from '@/services/supabaseLogger';
-
-// Mapeamento COMPLETO de meses brasileiros abreviados - CORRIGIDO
-const MESES_BRASILEIROS = {
-  'jan.': '01', 'jan': '01',
-  'fev.': '02', 'fev': '02',
-  'mar.': '03', 'mar': '03',
-  'abr.': '04', 'abr': '04', // ADICIONADO - estava faltando!
-  'mai.': '05', 'mai': '05',
-  'jun.': '06', 'jun': '06',
-  'jul.': '07', 'jul': '07',
-  'ago.': '08', 'ago': '08',
-  'set.': '09', 'set': '09',
-  'out.': '10', 'out': '10',
-  'nov.': '11', 'nov': '11',
-  'dez.': '12', 'dez': '12'
-};
-
-function convertBrazilianDateFormat(dateValue: string): string | null {
-  // Padrão para detectar formato brasileiro: "12 fev.", "24 abr.", etc.
-  const brazilianPattern = /^(\d{1,2})\s+([a-záêç.]+)\.?$/i;
-  const match = dateValue.trim().match(brazilianPattern);
-  
-  if (match) {
-    const [, day, monthStr] = match;
-    const monthKey = monthStr.toLowerCase().endsWith('.') ? monthStr.toLowerCase() : monthStr.toLowerCase() + '.';
-    const month = MESES_BRASILEIROS[monthKey];
-    
-    if (month) {
-      const currentYear = new Date().getFullYear();
-      const convertedDate = `${currentYear}-${month}-${day.padStart(2, '0')}`;
-      console.log(`🇧🇷 Convertendo data brasileira: "${dateValue}" → "${convertedDate}"`);
-      return convertedDate;
-    } else {
-      console.log(`❌ Mês brasileiro não reconhecido: "${monthStr}" (chave: "${monthKey}")`);
-    }
-  }
-  
-  return null;
-}
+import { convertBrazilianDateFormat } from './brazilianDateConverter';
+import { DATE_FORMATS } from './dateFormats';
+import { validateParsedDate } from './dateValidator';
 
 export async function parseDate(dateValue: string, sessionId?: string): Promise<Date | undefined> {
   if (!dateValue) {
@@ -74,10 +39,9 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
       sessionId
     });
     
-    // Tentar parsear a data convertida
     try {
       const testDate = parseISO(brazilianConverted);
-      if (isValid(testDate) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+      if (validateParsedDate(testDate)) {
         await supabaseLogger.log({
           level: 'info',
           message: '✅ DATA BRASILEIRA PARSEADA COM SUCESSO!',
@@ -103,49 +67,11 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
     }
   }
 
-  // Se não for formato brasileiro ou falhou, continuar com formatos originais
-  const dateFormats = [
-    // Formatos brasileiros mais comuns
-    'dd/MM/yyyy', 'dd/MM/yyyy HH:mm:ss', 'dd/MM/yyyy HH:mm',
-    'd/M/yyyy', 'd/M/yyyy HH:mm:ss', 'd/M/yyyy HH:mm',
-    'dd-MM-yyyy', 'dd-MM-yyyy HH:mm:ss', 'dd-MM-yyyy HH:mm',
-    'd-M-yyyy', 'd-M-yyyy HH:mm:ss', 'd-M-yyyy HH:mm',
-    
-    // Formatos ISO e internacionais
-    'yyyy-MM-dd', 'yyyy-MM-dd HH:mm:ss', 'yyyy-MM-dd HH:mm',
-    'yyyy-M-d', 'yyyy-M-d HH:mm:ss', 'yyyy-M-d HH:mm',
-    
-    // Formatos americanos
-    'MM/dd/yyyy', 'MM/dd/yyyy HH:mm:ss', 'MM/dd/yyyy HH:mm',
-    'M/d/yyyy', 'M/d/yyyy HH:mm:ss', 'M/d/yyyy HH:mm',
-    'MM-dd-yyyy', 'MM-dd-yyyy HH:mm:ss', 'MM-dd-yyyy HH:mm',
-    'M-d-yyyy', 'M-d-yyyy HH:mm:ss', 'M-d-yyyy HH:mm',
-    
-    // Formatos com pontos
-    'dd.MM.yyyy', 'dd.MM.yyyy HH:mm:ss', 'dd.MM.yyyy HH:mm',
-    'd.M.yyyy', 'd.M.yyyy HH:mm:ss', 'd.M.yyyy HH:mm',
-    'yyyy.MM.dd', 'yyyy.MM.dd HH:mm:ss', 'yyyy.MM.dd HH:mm',
-    
-    // Formatos sem separadores
-    'ddMMyyyy', 'yyyyMMdd', 'yyyyMdd', 'ddMyyyy',
-    
-    // Formatos com texto de mês
-    'dd MMM yyyy', 'dd MMMM yyyy', 'MMM dd, yyyy', 'MMMM dd, yyyy',
-    'd MMM yyyy', 'd MMMM yyyy', 'MMM d, yyyy', 'MMMM d, yyyy',
-    
-    // Formatos ISO com T
-    'yyyy-MM-dd\'T\'HH:mm:ss', 'yyyy-MM-dd\'T\'HH:mm:ss.SSS',
-    'yyyy-MM-dd\'T\'HH:mm:ss.SSSSSS', 'yyyy-MM-dd\'T\'HH:mm:ssXXX',
-    
-    // Formatos mais exóticos
-    'dd MMM, yyyy', 'MMM dd yyyy', 'dd de MMMM de yyyy'
-  ];
-  
+  // Tentar cada formato com logs detalhados
   const tentativas = [];
   
-  // Tentar cada formato com logs detalhados
-  for (let i = 0; i < dateFormats.length; i++) {
-    const formatStr = dateFormats[i];
+  for (let i = 0; i < DATE_FORMATS.length; i++) {
+    const formatStr = DATE_FORMATS[i];
     try {
       const testDate = parse(dateValue.toString(), formatStr, new Date());
       
@@ -154,12 +80,12 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
         resultado: testDate.toISOString(),
         isValid: isValid(testDate),
         ano: testDate.getFullYear(),
-        anoValido: testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030
+        anoValido: validateParsedDate(testDate)
       };
       
       tentativas.push(tentativa);
       
-      if (isValid(testDate) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+      if (validateParsedDate(testDate)) {
         await supabaseLogger.log({
           level: 'info',
           message: '✅ DATA PARSEADA COM SUCESSO!',
@@ -193,7 +119,7 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
     
     tentativas.push(tentativaISO);
     
-    if (isValid(isoDate) && isoDate.getFullYear() >= 2020 && isoDate.getFullYear() <= 2030) {
+    if (validateParsedDate(isoDate)) {
       await supabaseLogger.log({
         level: 'info',
         message: '✅ DATA ISO PARSEADA COM SUCESSO!',
@@ -214,7 +140,6 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
   if (!isNaN(Number(dateValue))) {
     try {
       const timestamp = Number(dateValue);
-      // Se for timestamp em segundos, converter para milissegundos
       const date = new Date(timestamp > 10000000000 ? timestamp : timestamp * 1000);
       
       const tentativaTimestamp = {
@@ -227,7 +152,7 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
       
       tentativas.push(tentativaTimestamp);
       
-      if (isValid(date) && date.getFullYear() >= 2020 && date.getFullYear() <= 2030) {
+      if (validateParsedDate(date)) {
         await supabaseLogger.log({
           level: 'info',
           message: '✅ TIMESTAMP PARSEADO COM SUCESSO!',
