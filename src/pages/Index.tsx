@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { RefreshCw } from "lucide-react";
 import { generateMockData } from "@/utils/mockData";
-import { fetchLeadsFromWebhook } from "@/services/webhookService";
+import { webhookService } from "@/services/webhookService";
 import { filterLeads } from "@/utils/dataFilters";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
@@ -57,7 +57,7 @@ const Index = () => {
     
     try {
       console.log('🔄 Iniciando busca de dados do webhook...');
-      const webhookLeads = await fetchLeadsFromWebhook();
+      const webhookLeads = await webhookService.getAllWebhookData();
       
       if (webhookLeads.length > 0) {
         console.log('✅ Dados carregados do webhook:', webhookLeads.length, 'leads');
