@@ -18,9 +18,12 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
   const closerData = useMemo(() => {
     console.log('Processando dados do CloserPerformance com', leads.length, 'leads');
     
+    // Incluir TODOS os leads, excluindo apenas mentorados
+    const validLeads = leads.filter(lead => lead.Status !== 'Mentorado');
+    
     const closerStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
     
-    leads.forEach(lead => {
+    validLeads.forEach(lead => {
       const closer = lead.Closer || 'Sem Closer';
       
       if (!closerStats[closer]) {
@@ -57,13 +60,20 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
     }).format(value);
   };
 
+  const totalLeads = closerData.reduce((sum, item) => sum + item.leads, 0);
+
   return (
     <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-semibold text-gray-100">
-            Performance por Closer
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-100">
+              Performance por Closer
+            </CardTitle>
+            <p className="text-sm text-gray-400">
+              {totalLeads} leads analisados (excluindo mentorados)
+            </p>
+          </div>
           <div className="flex items-center space-x-2">
             <Button
               variant={viewMode === 'percentage' ? 'default' : 'outline'}

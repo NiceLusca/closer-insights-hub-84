@@ -11,7 +11,12 @@ interface StatusDistributionProps {
 }
 
 export function StatusDistribution({ leads }: StatusDistributionProps) {
-  const statusData = useMemo(() => generateStatusDistributionData(leads), [leads]);
+  const statusData = useMemo(() => {
+    console.log('StatusDistribution: Gerando dados para', leads.length, 'leads');
+    const data = generateStatusDistributionData(leads);
+    console.log('StatusDistribution: Dados gerados:', data);
+    return data;
+  }, [leads]);
 
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     if (percent < 0.05) return null; // Don't show labels for slices less than 5%
@@ -37,12 +42,17 @@ export function StatusDistribution({ leads }: StatusDistributionProps) {
     );
   };
 
+  const totalLeads = statusData.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-gray-100">
           Distribuição por Status (excluindo Mentorados)
         </CardTitle>
+        <p className="text-sm text-gray-400">
+          Total de {totalLeads} leads analisados
+        </p>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>

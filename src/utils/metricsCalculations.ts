@@ -1,136 +1,86 @@
 
-import type { Lead, Metrics } from "@/types/lead";
+import type { Lead } from "@/types/lead";
 
-export function calculateMetrics(leads: Lead[]): Metrics {
-  console.log('📊 Calculando métricas para', leads.length, 'leads');
+export function calculateMetrics(leads: Lead[]) {
+  console.log('Calculando métricas para', leads.length, 'leads');
   
-  if (!leads || leads.length === 0) {
-    return {
-      totalLeads: 0,
-      agendamentos: 0,
-      noShows: 0,
-      remarcacoes: 0,
-      fechamentos: 0,
-      receitaTotal: 0,
-      receitaRecorrente: 0,
-      taxaComparecimento: 0,
-      taxaFechamento: 0,
-      taxaDesmarque: 0,
-      confirmados: 0,
-      mentorados: 0,
-      aproveitamentoGeral: 0,
-      vendasCompletas: 0,
-      vendasRecorrentes: 0,
-      receitaCompleta: 0
-    };
-  }
-
-  // PRIMEIRO: Filtrar apenas leads com status válido (não vazio)
-  const validLeads = leads.filter(lead => {
-    const status = lead.Status?.trim();
-    return status && status !== '';
-  });
-
-  console.log(`📈 Processando ${validLeads.length} leads com status válido de ${leads.length} total`);
-
-  // Contadores básicos
-  let agendamentos = 0;
-  let noShows = 0;
-  let remarcacoes = 0;
-  let fechamentos = 0;
-  let confirmados = 0;
-  let mentorados = 0;
-  let desmarcados = 0;
-  let vendasCompletas = 0;
-  let vendasRecorrentes = 0;
+  // Filtrar apenas leads válidos (excluindo mentorados)
+  const validLeads = leads.filter(lead => lead.Status !== 'Mentorado');
+  console.log('Leads válidos (excluindo mentorados):', validLeads.length);
   
-  // Receitas
-  let receitaCompleta = 0;
-  let receitaRecorrente = 0;
-
-  validLeads.forEach(lead => {
-    const status = lead.Status?.trim() || '';
-    
-    switch (status) {
-      case 'Agendado':
-        agendamentos++;
-        break;
-      case 'Não Apareceu':
-        noShows++;
-        break;
-      case 'Remarcou':
-      case 'Aguardando resposta':
-        remarcacoes++;
-        break;
-      case 'Fechou':
-        fechamentos++;
-        break;
-      case 'Confirmado':
-        confirmados++;
-        break;
-      case 'Mentorado':
-        mentorados++;
-        break;
-      case 'Desmarcou':
-        desmarcados++;
-        break;
-    }
-
-    // Calcular vendas completas
-    if (lead['Venda Completa'] && lead['Venda Completa'] > 0) {
-      vendasCompletas++;
-      receitaCompleta += lead['Venda Completa'];
-    }
-
-    // Calcular vendas recorrentes
-    const recorrente = typeof lead.recorrente === 'number' ? lead.recorrente : 
-                      (typeof lead.recorrente === 'string' && lead.recorrente !== '') ? parseFloat(lead.recorrente) : 0;
-    
-    if (recorrente > 0) {
-      vendasRecorrentes++;
-      receitaRecorrente += recorrente;
-    }
-  });
-
-  const totalLeads = validLeads.length; // Apenas leads com status válido
+  const totalLeads = validLeads.length;
+  
+  // Contadores de status
+  const fechou = validLeads.filter(lead => lead.Status === 'Fechou').length;
+  const agendados = validLeads.filter(lead => 
+    ['Agendado', 'Confirmado'].includes(lead.Status || '')
+  ).length;
+  const naoApareceu = validLeads.filter(lead => lead.Status === 'Não Apareceu').length;
+  const desmarcou = validLeads.filter(lead => lead.Status === 'Desmarcou').length;
+  const apresentacoes = fechou + naoApareceu; // Leads que tiveram apresentação
+  
+  // Comparecimento = Confirmados + Agendados (que efetivamente compareceram)
+  const compareceram = agendados + fechou;
+  const elegiveisParaComparecimento = validLeads.filter(lead => 
+    ['Agendado', 'Confirmado', 'Fechou', 'Não Apareceu'].includes(lead.Status || '')
+  ).length;
+  
+  // Cálculo de receitas
+  const receitaCompleta = validLeads.reduce((sum, lead) => {
+    const venda = lead['Venda Completa'];
+    return sum + (typeof venda === 'number' ? venda : 0);
+  }, 0);
+  
+  const receitaRecorrente = validLeads.reduce((sum, lead) => {
+    const recorrente = lead.recorrente;
+    return sum + (typeof recorrente === 'number' ? recorrente : 0);
+  }, 0);
+  
   const receitaTotal = receitaCompleta + receitaRecorrente;
   
-  // Cálculos de taxas CORRIGIDOS
-  // Taxa de Comparecimento = Confirmados + Agendados ÷ (Confirmados + Agendados + No-Shows)
-  const baseComparecimento = confirmados + agendamentos + noShows;
-  const compareceram = confirmados + agendamentos;
-  const taxaComparecimento = baseComparecimento > 0 ? (compareceram / baseComparecimento) * 100 : 0;
+  // Contadores de vendas
+  const vendasCompletas = validLeads.filter(lead => 
+    lead['Venda Completa'] && lead['Venda Completa'] > 0
+  ).length;
   
-  // Taxa de Fechamento = Fechou ÷ Total de Apresentações (excluindo Mentorados)
-  const totalApresentacoes = totalLeads - mentorados;
-  const taxaFechamento = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
+  const vendasRecorrentes = validLeads.filter(lead => 
+    lead.recorrente && lead.recorrente > 0
+  ).length;
   
-  // Taxa de Desmarque = Desmarcou ÷ (Agendados + Confirmados + Desmarcados)
-  const baseDesmarque = agendamentos + confirmados + desmarcados;
-  const taxaDesmarque = baseDesmarque > 0 ? (desmarcados / baseDesmarque) * 100 : 0;
+  // Cálculo de taxas
+  const taxaFechamento = apresentacoes > 0 ? (fechou / apresentacoes) * 100 : 0;
+  const taxaComparecimento = elegiveisParaComparecimento > 0 ? (compareceram / elegiveisParaComparecimento) * 100 : 0;
+  const taxaDesmarque = (agendados + desmarcou) > 0 ? (desmarcou / (agendados + desmarcou)) * 100 : 0;
   
-  // Aproveitamento Geral = Fechamentos / (Total de Leads - Mentorados) * 100
-  const aproveitamentoGeral = totalApresentacoes > 0 ? (fechamentos / totalApresentacoes) * 100 : 0;
-
+  // Aproveitamento geral = fechamentos / total de leads aproveitáveis
+  const leadsAproveitaveis = validLeads.filter(lead => 
+    lead.Status && !['Aguardando resposta'].includes(lead.Status)
+  ).length;
+  const aproveitamentoGeral = leadsAproveitaveis > 0 ? (fechou / leadsAproveitaveis) * 100 : 0;
+  
   const metrics = {
     totalLeads,
-    agendamentos,
-    noShows,
-    remarcacoes,
-    fechamentos,
-    receitaTotal,
-    receitaRecorrente,
-    taxaComparecimento,
-    taxaFechamento,
-    taxaDesmarque,
-    confirmados,
-    mentorados,
     aproveitamentoGeral,
+    receitaTotal,
+    receitaCompleta,
+    receitaRecorrente,
+    taxaFechamento,
+    taxaComparecimento,
+    taxaDesmarque,
     vendasCompletas,
     vendasRecorrentes,
-    receitaCompleta
+    
+    // Dados adicionais para debug
+    fechou,
+    agendados,
+    naoApareceu,
+    desmarcou,
+    apresentacoes,
+    compareceram,
+    elegiveisParaComparecimento,
+    leadsAproveitaveis
   };
-
-  console.log('📈 Métricas calculadas (apenas status válidos):', metrics);
+  
+  console.log('Métricas calculadas:', metrics);
   return metrics;
 }

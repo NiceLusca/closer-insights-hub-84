@@ -10,7 +10,12 @@ interface LeadsChartProps {
 }
 
 export function LeadsChart({ leads }: LeadsChartProps) {
-  const chartData = useMemo(() => generateLeadsChartData(leads), [leads]);
+  const chartData = useMemo(() => {
+    console.log('LeadsChart: Gerando dados do gráfico para', leads.length, 'leads');
+    const data = generateLeadsChartData(leads);
+    console.log('LeadsChart: Dados gerados:', data);
+    return data;
+  }, [leads]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -28,12 +33,17 @@ export function LeadsChart({ leads }: LeadsChartProps) {
     return null;
   };
 
+  const totalLeadsInChart = chartData.reduce((sum, day) => sum + day.total, 0);
+
   return (
     <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
         <CardTitle className="text-xl font-semibold text-gray-100">
           Leads por Dia - Últimos 30 dias (excluindo Mentorados)
         </CardTitle>
+        <p className="text-sm text-gray-400">
+          Total de {totalLeadsInChart} leads no período
+        </p>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={320}>
