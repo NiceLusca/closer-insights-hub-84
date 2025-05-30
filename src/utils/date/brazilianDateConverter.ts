@@ -30,13 +30,22 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
     return null;
   }
 
+  // Limpar e normalizar o valor
+  const cleanValue = dateValue.trim().toLowerCase();
+
   // Padrão para detectar formato brasileiro: "12 fev.", "24 abr.", etc.
   const brazilianPattern = /^(\d{1,2})\s+([a-záêç.]+)\.?$/i;
-  const match = dateValue.trim().match(brazilianPattern);
+  const match = cleanValue.match(brazilianPattern);
   
   if (match) {
     const [, day, monthStr] = match;
-    const monthKey = monthStr.toLowerCase().endsWith('.') ? monthStr.toLowerCase() : monthStr.toLowerCase() + '.';
+    
+    // Tentar com ponto e sem ponto
+    let monthKey = monthStr.toLowerCase();
+    if (!monthKey.endsWith('.')) {
+      monthKey = monthKey + '.';
+    }
+    
     const month = MESES_BRASILEIROS[monthKey];
     
     if (month) {
@@ -48,6 +57,19 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
       console.log(`❌ Mês brasileiro não reconhecido: "${monthStr}" (chave: "${monthKey}")`);
       console.log(`Meses disponíveis:`, Object.keys(MESES_BRASILEIROS));
     }
+  }
+  
+  // Tentar outros padrões comuns brasileiros
+  // Formato: "dia/mês" assumindo ano atual
+  const shortPattern = /^(\d{1,2})\/(\d{1,2})$/;
+  const shortMatch = cleanValue.match(shortPattern);
+  
+  if (shortMatch) {
+    const [, day, month] = shortMatch;
+    const currentYear = new Date().getFullYear();
+    const convertedDate = `${currentYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    console.log(`🇧🇷 Convertendo data curta: "${dateValue}" → "${convertedDate}"`);
+    return convertedDate;
   }
   
   return null;

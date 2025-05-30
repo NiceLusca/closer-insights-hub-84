@@ -8,8 +8,8 @@ import { validateParsedDate, isValidDateString } from './dateValidator';
 export async function parseDate(dateValue: string, sessionId?: string): Promise<Date | undefined> {
   if (!dateValue) {
     await supabaseLogger.log({
-      level: 'warn',
-      message: '❌ dateValue está vazio',
+      level: 'debug',
+      message: '⚠️ dateValue está vazio',
       source: 'date-parser',
       sessionId
     });
@@ -19,8 +19,8 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
   // Validação inicial da string
   if (!isValidDateString(dateValue)) {
     await supabaseLogger.log({
-      level: 'warn',
-      message: '❌ String de data inválida rejeitada',
+      level: 'debug',
+      message: '⚠️ String de data inválida rejeitada (continuando processamento)',
       data: { valorRejeitado: dateValue, motivo: 'formato_invalido' },
       source: 'date-parser',
       sessionId
@@ -39,18 +39,6 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
   // PRIMEIRO: Tentar converter formato brasileiro específico
   const brazilianConverted = convertBrazilianDateFormat(dateValue.toString());
   if (brazilianConverted) {
-    await supabaseLogger.log({
-      level: 'info',
-      message: '🇧🇷 DETECTADO FORMATO BRASILEIRO',
-      data: { 
-        original: dateValue, 
-        convertido: brazilianConverted,
-        metodo: 'conversao_brasileira'
-      },
-      source: 'date-parser',
-      sessionId
-    });
-    
     try {
       const testDate = parseISO(brazilianConverted);
       if (validateParsedDate(testDate)) {
@@ -70,8 +58,8 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
       }
     } catch (e) {
       await supabaseLogger.log({
-        level: 'warn',
-        message: '⚠️ Falha ao parsear data brasileira convertida',
+        level: 'debug',
+        message: '⚠️ Falha ao parsear data brasileira convertida (tentando outros métodos)',
         data: { original: dateValue, convertido: brazilianConverted, erro: e.message },
         source: 'date-parser',
         sessionId
@@ -79,23 +67,11 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
     }
   }
 
-  // Tentar cada formato com logs detalhados
-  const tentativas = [];
-  
+  // Tentar cada formato com tratamento de erro individual
   for (let i = 0; i < DATE_FORMATS.length; i++) {
     const formatStr = DATE_FORMATS[i];
     try {
       const testDate = parse(dateValue.toString(), formatStr, new Date());
-      
-      const tentativa = {
-        formato: formatStr,
-        resultado: testDate.toISOString(),
-        isValid: isValid(testDate),
-        ano: testDate.getFullYear(),
-        anoValido: validateParsedDate(testDate)
-      };
-      
-      tentativas.push(tentativa);
       
       if (validateParsedDate(testDate)) {
         await supabaseLogger.log({
@@ -114,23 +90,14 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
         return testDate;
       }
     } catch (e) {
-      tentativas.push({ formato: formatStr, erro: e.message });
+      // Continuar tentando outros formatos silenciosamente
+      continue;
     }
   }
   
   // Tentar parseISO como penúltimo recurso
   try {
     const isoDate = parseISO(dateValue.toString());
-    
-    const tentativaISO = {
-      metodo: 'parseISO',
-      resultado: isoDate.toISOString(),
-      isValid: isValid(isoDate),
-      ano: isoDate.getFullYear()
-    };
-    
-    tentativas.push(tentativaISO);
-    
     if (validateParsedDate(isoDate)) {
       await supabaseLogger.log({
         level: 'info',
@@ -145,7 +112,7 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
       return isoDate;
     }
   } catch (e) {
-    tentativas.push({ metodo: 'parseISO', erro: e.message });
+    // Continuar para timestamp
   }
 
   // Tentar timestamp como último recurso
@@ -153,16 +120,6 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
     try {
       const timestamp = Number(dateValue);
       const date = new Date(timestamp > 10000000000 ? timestamp : timestamp * 1000);
-      
-      const tentativaTimestamp = {
-        metodo: 'timestamp',
-        timestamp,
-        resultado: date.toISOString(),
-        isValid: isValid(date),
-        ano: date.getFullYear()
-      };
-      
-      tentativas.push(tentativaTimestamp);
       
       if (validateParsedDate(date)) {
         await supabaseLogger.log({
@@ -178,21 +135,23 @@ export async function parseDate(dateValue: string, sessionId?: string): Promise<
         return date;
       }
     } catch (e) {
-      tentativas.push({ metodo: 'timestamp', erro: e.message });
+      // Falha silenciosa
     }
   }
 
-  await supabaseLogger.log({
-    level: 'warn', // Mudado de 'error' para 'warn' para não travar o processamento
-    message: '⚠️ FALHA NO PARSE DA DATA (continuando processamento)',
-    data: {
-      valorQueFalhou: dateValue,
-      totalTentativas: tentativas.length,
-      todasAsTentativas: tentativas
-    },
-    source: 'date-parser',
-    sessionId
-  });
+  // Log apenas se for um valor que esperávamos conseguir parsear
+  if (dateValue.length > 5 && /\d/.test(dateValue)) {
+    await supabaseLogger.log({
+      level: 'debug',
+      message: '⚠️ FALHA NO PARSE DA DATA (continuando processamento)',
+      data: {
+        valorQueFalhou: dateValue,
+        tamanho: dateValue.length
+      },
+      source: 'date-parser',
+      sessionId
+    });
+  }
   
   return undefined;
 }

@@ -1,4 +1,3 @@
-
 import type { Lead } from '@/types/lead';
 import { processRawDataToLeads } from '@/utils/lead';
 import { supabaseLogger } from './supabaseLogger';
@@ -12,6 +11,8 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
     source: 'webhook-service',
     sessionId
   });
+  
+  let webhookDataId: string | null = null;
   
   try {
     const response = await fetch('https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul');
@@ -44,7 +45,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
     });
 
     // Salvar dados brutos no Supabase
-    const webhookDataId = await supabaseLogger.logWebhookRawData({
+    webhookDataId = await supabaseLogger.logWebhookRawData({
       rawData: data,
       totalRecords: Array.isArray(data) ? data.length : 0,
       sessionId
@@ -67,20 +68,6 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
         source: 'webhook-service',
         sessionId
       });
-      
-      // Mostrar alguns outros items para comparar
-      if (data.length > 1) {
-        await supabaseLogger.log({
-          level: 'debug',
-          message: '📋 Comparação com outros itens',
-          data: {
-            segundoItem: data[1],
-            terceiroItem: data.length > 2 ? data[2] : null
-          },
-          source: 'webhook-service',
-          sessionId
-        });
-      }
     }
     
     if (!Array.isArray(data)) {
@@ -102,17 +89,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
             sessionId
           });
           
-          const processedLeads = await processWebhookData(data[key], sessionId, webhookDataId);
-          
-          if (webhookDataId) {
-            await supabaseLogger.updateWebhookStatus(
-              webhookDataId, 
-              'completed', 
-              processedLeads.length,
-              data[key].length - processedLeads.length
-            );
-          }
-          
+          const processedLeads = await processWebhookDataWithErrorHandling(data[key], sessionId, webhookDataId);
           return processedLeads;
         }
       }
@@ -131,17 +108,7 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
       return [];
     }
 
-    const processedLeads = await processWebhookData(data, sessionId, webhookDataId);
-    
-    if (webhookDataId) {
-      await supabaseLogger.updateWebhookStatus(
-        webhookDataId, 
-        'completed',
-        processedLeads.length,
-        data.length - processedLeads.length
-      );
-    }
-    
+    const processedLeads = await processWebhookDataWithErrorHandling(data, sessionId, webhookDataId);
     return processedLeads;
     
   } catch (error) {
@@ -152,7 +119,121 @@ export async function fetchLeadsFromWebhook(): Promise<Lead[]> {
       source: 'webhook-service',
       sessionId
     });
+    
+    // Garantir que o status seja atualizado mesmo em caso de erro
+    if (webhookDataId) {
+      try {
+        await supabaseLogger.updateWebhookStatus(webhookDataId, 'failed', 0, 0, { 
+          error: error.message,
+          timestamp: new Date().toISOString()
+        });
+      } catch (updateError) {
+        console.error('Erro ao atualizar status do webhook:', updateError);
+      }
+    }
+    
     throw error;
+  }
+}
+
+async function processWebhookDataWithErrorHandling(data: any[], sessionId: string, webhookDataId: string | null): Promise<Lead[]> {
+  try {
+    if (data.length === 0) {
+      await supabaseLogger.log({
+        level: 'warn',
+        message: '⚠️ Array vazio recebido',
+        source: 'webhook-service',
+        sessionId
+      });
+      
+      if (webhookDataId) {
+        await supabaseLogger.updateWebhookStatus(webhookDataId, 'completed', 0, 0);
+      }
+      
+      return [];
+    }
+
+    await supabaseLogger.log({
+      level: 'info',
+      message: '🔍 Iniciando processamento dos dados do webhook',
+      data: {
+        totalRegistros: data.length,
+        chavesDoTopo: data[0] ? Object.keys(data[0]) : [],
+        valoresDoTopo: data[0] || null
+      },
+      source: 'webhook-service',
+      sessionId
+    });
+
+    // Processar dados com tratamento de erro robusto
+    const processedLeads = await processRawDataToLeads(data, sessionId, webhookDataId);
+
+    await supabaseLogger.log({
+      level: 'info',
+      message: '✅ Processamento do webhook concluído com sucesso',
+      data: {
+        recebidos: data.length,
+        processados: processedLeads.length,
+        comDataValida: processedLeads.filter(l => l.parsedDate).length,
+        comStatus: processedLeads.filter(l => l.Status && l.Status.trim() !== '').length,
+        statusEncontrados: [...new Set(processedLeads.map(l => l.Status).filter(Boolean))]
+      },
+      source: 'webhook-service',
+      sessionId
+    });
+    
+    // SEMPRE atualizar o status para completed após processamento
+    if (webhookDataId) {
+      const failedRecords = data.length - processedLeads.length;
+      await supabaseLogger.updateWebhookStatus(
+        webhookDataId, 
+        'completed',
+        processedLeads.length,
+        failedRecords,
+        {
+          completedAt: new Date().toISOString(),
+          successRate: ((processedLeads.length / data.length) * 100).toFixed(1) + '%'
+        }
+      );
+      
+      await supabaseLogger.log({
+        level: 'info',
+        message: '✅ Status do webhook atualizado para COMPLETED',
+        data: {
+          webhookDataId,
+          processedLeads: processedLeads.length,
+          failedRecords
+        },
+        source: 'webhook-service',
+        sessionId
+      });
+    }
+    
+    return processedLeads;
+    
+  } catch (error) {
+    await supabaseLogger.log({
+      level: 'error',
+      message: '❌ Erro durante processamento dos dados',
+      data: { error: error.message },
+      source: 'webhook-service',
+      sessionId
+    });
+    
+    // Atualizar status para failed em caso de erro
+    if (webhookDataId) {
+      try {
+        await supabaseLogger.updateWebhookStatus(webhookDataId, 'failed', 0, data.length, {
+          error: error.message,
+          failedAt: new Date().toISOString()
+        });
+      } catch (updateError) {
+        console.error('Erro ao atualizar status do webhook para failed:', updateError);
+      }
+    }
+    
+    // Retornar array vazio em vez de throw para não quebrar a interface
+    return [];
   }
 }
 
@@ -178,46 +259,4 @@ async function analyzeDataFields(item: any, sessionId: string) {
   }
   
   return analysis;
-}
-
-async function processWebhookData(data: any[], sessionId: string, webhookDataId: string | null): Promise<Lead[]> {
-  if (data.length === 0) {
-    await supabaseLogger.log({
-      level: 'warn',
-      message: '⚠️ Array vazio recebido',
-      source: 'webhook-service',
-      sessionId
-    });
-    return [];
-  }
-
-  await supabaseLogger.log({
-    level: 'info',
-    message: '🔍 Iniciando processamento dos dados do webhook',
-    data: {
-      totalRegistros: data.length,
-      chavesDoTopo: data[0] ? Object.keys(data[0]) : [],
-      valoresDoTopo: data[0] || null
-    },
-    source: 'webhook-service',
-    sessionId
-  });
-
-  const processedLeads = await processRawDataToLeads(data, sessionId, webhookDataId);
-
-  await supabaseLogger.log({
-    level: 'info',
-    message: '✅ Processamento do webhook concluído',
-    data: {
-      recebidos: data.length,
-      processados: processedLeads.length,
-      comDataValida: processedLeads.filter(l => l.parsedDate).length,
-      comStatus: processedLeads.filter(l => l.Status && l.Status.trim() !== '').length,
-      statusEncontrados: [...new Set(processedLeads.map(l => l.Status).filter(Boolean))]
-    },
-    source: 'webhook-service',
-    sessionId
-  });
-  
-  return processedLeads;
 }

@@ -11,7 +11,7 @@ export function validateParsedDate(date: Date): boolean {
   return isValidDate(date) && isValidYear(date.getFullYear());
 }
 
-// Nova função para validar se uma string pode ser uma data
+// Função melhorada para validar se uma string pode ser uma data
 export function isValidDateString(dateString: string): boolean {
   if (!dateString || typeof dateString !== 'string') return false;
   
@@ -20,15 +20,27 @@ export function isValidDateString(dateString: string): boolean {
   // Rejeitar strings muito curtas
   if (trimmed.length < 3) return false;
   
-  // Rejeitar se for apenas um número (como "2")
+  // Rejeitar se for apenas um número (como "2", "123", etc.)
   if (/^\d+$/.test(trimmed)) return false;
   
+  // Rejeitar strings claramente não-data
+  if (/^[a-z]+$/i.test(trimmed)) return false; // apenas letras
+  if (trimmed === '' || trimmed === '-' || trimmed === '/') return false;
+  
   // Aceitar se contém padrões de data reconhecíveis
-  return /\d/.test(trimmed) && (
-    trimmed.includes('-') || 
-    trimmed.includes('/') || 
-    trimmed.includes('.') || 
-    trimmed.includes(' ') ||
-    trimmed.includes('T')
+  const hasDatePatterns = (
+    // Contém números E separadores
+    /\d/.test(trimmed) && (
+      trimmed.includes('-') || 
+      trimmed.includes('/') || 
+      trimmed.includes('.') || 
+      trimmed.includes(' ') ||
+      trimmed.includes('T')
+    )
+  ) || (
+    // Ou formato brasileiro com texto de mês
+    /\d+\s+[a-záêç.]+/i.test(trimmed)
   );
+  
+  return hasDatePatterns;
 }
