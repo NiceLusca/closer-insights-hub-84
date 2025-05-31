@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { webhookService } from "@/services/webhookService";
-import { generateMockData } from "@/utils/mockData";
 import { useToast } from "@/hooks/use-toast";
 import type { Lead } from "@/types/lead";
 
@@ -17,42 +16,76 @@ export function useLeadsData() {
     setDataReady(false);
     
     try {
-      console.log('🔄 Iniciando busca de dados do webhook...');
-      const webhookLeads = await webhookService.getAllWebhookData();
+      console.log('🔄 Iniciando busca de dados do webhook externo...');
+      const leads = await webhookService.getAllWebhookData();
       
-      if (webhookLeads.length > 0) {
-        console.log('✅ Dados carregados do webhook:', webhookLeads.length, 'leads');
-        setAllLeads(webhookLeads);
+      if (leads.length > 0) {
+        console.log('✅ Dados carregados do webhook:', leads.length, 'leads');
+        setAllLeads(leads);
         setLastUpdated(new Date());
+        
+        // Verificar status do cache
+        const cacheStatus = webhookService.getCacheStatus();
+        const fromCache = cacheStatus.cached && !cacheStatus.expired;
         
         toast({
           title: "✅ Dados atualizados!",
-          description: `${webhookLeads.length} leads carregados do webhook com sucesso.`,
+          description: `${leads.length} leads carregados ${fromCache ? 'do cache' : 'do webhook'} com sucesso.`,
         });
       } else {
-        console.log('⚠️ Webhook vazio, usando dados de demonstração');
-        const mockLeads = generateMockData(100);
-        setAllLeads(mockLeads);
+        console.log('⚠️ Webhook retornou dados vazios');
+        setAllLeads([]);
         setLastUpdated(new Date());
         
         toast({
-          title: "⚠️ Usando dados de demonstração",
-          description: "Webhook retornou dados vazios. Usando dados mock para demonstração.",
+          title: "⚠️ Nenhum dado encontrado",
+          description: "O webhook não retornou dados. Verifique se há leads disponíveis.",
+          variant: "destructive"
         });
       }
     } catch (error) {
       console.error('❌ Erro ao buscar dados:', error);
-      const mockLeads = generateMockData(100);
-      setAllLeads(mockLeads);
+      setAllLeads([]);
       setLastUpdated(new Date());
       
       toast({
         title: "❌ Erro ao carregar dados",
-        description: "Erro na conexão com webhook. Usando dados de demonstração.",
+        description: "Erro na conexão com o webhook. Verifique sua conexão com a internet.",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
-      setTimeout(() => setDataReady(true), 100); // Reduzido de 200ms para 100ms
+      setTimeout(() => setDataReady(true), 100);
+    }
+  };
+
+  // Função para forçar recarregamento sem cache
+  const forceRefresh = async () => {
+    setIsLoading(true);
+    setDataReady(false);
+    
+    try {
+      console.log('🔄 Forçando recarregamento completo...');
+      const leads = await webhookService.forceReprocessData();
+      
+      setAllLeads(leads);
+      setLastUpdated(new Date());
+      
+      toast({
+        title: "🔄 Dados recarregados!",
+        description: `${leads.length} leads recarregados diretamente do webhook.`,
+      });
+    } catch (error) {
+      console.error('❌ Erro no recarregamento forçado:', error);
+      
+      toast({
+        title: "❌ Erro no recarregamento",
+        description: "Não foi possível recarregar os dados do webhook.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setDataReady(true), 100);
     }
   };
 
@@ -65,6 +98,7 @@ export function useLeadsData() {
     isLoading,
     lastUpdated,
     dataReady,
-    fetchLeadsData
+    fetchLeadsData,
+    forceRefresh
   };
 }

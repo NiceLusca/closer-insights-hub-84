@@ -14,8 +14,8 @@ import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { LeadsTable } from "@/components/LeadsTable";
 
 const Index = () => {
-  // Estado dos dados
-  const { allLeads, isLoading, lastUpdated, dataReady, fetchLeadsData } = useLeadsData();
+  // Estado dos dados - agora com forceRefresh para recarregamento completo
+  const { allLeads, isLoading, lastUpdated, dataReady, fetchLeadsData, forceRefresh } = useLeadsData();
   
   // Estado dos filtros
   const {
@@ -45,7 +45,7 @@ const Index = () => {
         showFilters={showFilters}
         hasPendingFilters={hasPendingFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        onRefreshData={fetchLeadsData}
+        onRefreshData={forceRefresh} // Usar forceRefresh para limpeza completa do cache
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

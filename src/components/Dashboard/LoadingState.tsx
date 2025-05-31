@@ -9,7 +9,7 @@ export function LoadingState() {
         <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
         <div>
           <h3 className="text-lg font-semibold text-gray-100">Carregando Dados</h3>
-          <p className="text-gray-400">Buscando leads do webhook...</p>
+          <p className="text-gray-400">Buscando leads diretamente do webhook...</p>
         </div>
       </div>
     </div>

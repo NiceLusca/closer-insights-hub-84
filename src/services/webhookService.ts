@@ -1,125 +1,207 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { processRawDataToLeads } from '@/utils/lead';
 import { supabaseLogger } from './supabaseLogger';
+import { processRawDataToLeads } from '@/utils/lead';
+import type { Lead } from '@/types/lead';
+
+// Cache para evitar muitas chamadas ao webhook
+interface CacheData {
+  leads: Lead[];
+  timestamp: number;
+  expiresIn: number; // em milissegundos
+}
+
+let webhookCache: CacheData | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const WEBHOOK_URL = 'https://bot-belas-n8n.easypanel.host/webhook/leads-closer-oceanoazul';
+const REQUEST_TIMEOUT = 15000; // 15 segundos
 
 export const webhookService = {
-  async getAllWebhookData() {
-    console.log('🔍 Buscando todos os dados de webhook...');
+  async getAllWebhookData(): Promise<Lead[]> {
+    const sessionId = `webhook-direct-${Date.now()}`;
+    
+    // Verificar cache primeiro
+    if (webhookCache && (Date.now() - webhookCache.timestamp) < webhookCache.expiresIn) {
+      console.log('📦 Retornando dados do cache');
+      await supabaseLogger.log({
+        level: 'info',
+        message: '📦 DADOS RETORNADOS DO CACHE',
+        data: { 
+          totalLeads: webhookCache.leads.length,
+          cacheAge: Date.now() - webhookCache.timestamp
+        },
+        source: 'webhook-service-cache',
+        sessionId
+      });
+      return webhookCache.leads;
+    }
+
+    console.log('🔄 Buscando dados diretamente do webhook...');
     
     try {
-      const { data, error } = await supabase
-        .from('webhook_raw_data')
-        .select('*')
-        .order('created_at', { ascending: false });
+      await supabaseLogger.log({
+        level: 'info',
+        message: '🌐 INICIANDO CHAMADA PARA WEBHOOK EXTERNO',
+        data: { 
+          webhookUrl: WEBHOOK_URL,
+          timeout: REQUEST_TIMEOUT
+        },
+        source: 'webhook-service',
+        sessionId
+      });
 
-      if (error) {
-        console.error('❌ Erro ao buscar dados de webhook:', error);
-        throw error;
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log(`✅ ${data?.length || 0} registros de webhook encontrados`);
+      const rawData = await response.json();
       
-      // Processar todos os dados em leads
-      if (data && data.length > 0) {
-        const allRawData = data.flatMap(record => {
-          if (Array.isArray(record.raw_data)) {
-            return record.raw_data;
-          }
-          return [record.raw_data];
-        });
+      await supabaseLogger.log({
+        level: 'info',
+        message: '✅ WEBHOOK RESPONDEU COM SUCESSO',
+        data: { 
+          statusCode: response.status,
+          contentType: response.headers.get('content-type'),
+          dataType: typeof rawData,
+          isArray: Array.isArray(rawData),
+          totalRecords: Array.isArray(rawData) ? rawData.length : 1
+        },
+        source: 'webhook-service',
+        sessionId
+      });
 
-        console.log(`📊 Processando ${allRawData.length} registros de dados brutos...`);
-        
-        const sessionId = `webhook-service-${Date.now()}`;
-        
-        try {
-          const leads = await processRawDataToLeads(allRawData, sessionId);
-          console.log(`✅ ${leads.length} leads processados com sucesso`);
-          
-          // Log estatísticas de processamento
-          const leadsComData = leads.filter(l => l.parsedDate).length;
-          const leadsSemData = leads.length - leadsComData;
-          
-          await supabaseLogger.log({
-            level: 'info',
-            message: '📈 DADOS CARREGADOS NO DASHBOARD',
-            data: {
-              totalWebhookRecords: data.length,
-              totalRawData: allRawData.length,
-              leadsProcessados: leads.length,
-              leadsComDataValida: leadsComData,
-              leadsSemDataValida: leadsSemData,
-              percentualComData: ((leadsComData / leads.length) * 100).toFixed(1),
-              statusEncontrados: [...new Set(leads.map(l => l.Status).filter(Boolean))],
-              origensEncontradas: [...new Set(leads.map(l => l.origem).filter(Boolean))],
-              closersEncontrados: [...new Set(leads.map(l => l.Closer).filter(Boolean))]
-            },
-            source: 'webhook-service',
-            sessionId
-          });
-          
-          return leads;
-        } catch (processingError) {
-          console.error('❌ Erro ao processar leads:', processingError);
-          
-          await supabaseLogger.log({
-            level: 'error',
-            message: '❌ ERRO NO PROCESSAMENTO DE LEADS',
-            data: { 
-              erro: processingError.message,
-              totalRegistros: allRawData.length
-            },
-            source: 'webhook-service',
-            sessionId
-          });
-          
-          // Retornar array vazio em caso de erro para não quebrar o dashboard
-          return [];
-        }
+      // Processar dados recebidos
+      let dataToProcess = rawData;
+      
+      // Se não for array, transformar em array
+      if (!Array.isArray(rawData)) {
+        dataToProcess = [rawData];
       }
 
-      return [];
+      console.log(`📊 Processando ${dataToProcess.length} registros do webhook...`);
+      
+      const leads = await processRawDataToLeads(dataToProcess, sessionId);
+      
+      // Atualizar cache
+      webhookCache = {
+        leads,
+        timestamp: Date.now(),
+        expiresIn: CACHE_DURATION
+      };
+
+      await supabaseLogger.log({
+        level: 'info',
+        message: '🎯 DADOS PROCESSADOS COM SUCESSO',
+        data: {
+          totalRawRecords: dataToProcess.length,
+          leadsProcessados: leads.length,
+          leadsComData: leads.filter(l => l.parsedDate).length,
+          leadsSemData: leads.filter(l => !l.parsedDate).length,
+          statusEncontrados: [...new Set(leads.map(l => l.Status).filter(Boolean))],
+          origensEncontradas: [...new Set(leads.map(l => l.origem).filter(Boolean))],
+          closersEncontrados: [...new Set(leads.map(l => l.Closer).filter(Boolean))],
+          cacheAtualizado: true
+        },
+        source: 'webhook-service',
+        sessionId
+      });
+
+      console.log(`✅ ${leads.length} leads processados e armazenados em cache`);
+      return leads;
+
     } catch (error) {
-      console.error('❌ Erro crítico no webhookService:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      console.error('❌ Erro ao buscar dados do webhook:', errorMessage);
       
       await supabaseLogger.log({
         level: 'error',
-        message: '❌ ERRO CRÍTICO NO WEBHOOK SERVICE',
-        data: { erro: error.message },
-        source: 'webhook-service'
+        message: '❌ ERRO NA CHAMADA DO WEBHOOK',
+        data: { 
+          erro: errorMessage,
+          webhookUrl: WEBHOOK_URL,
+          isAbortError: error.name === 'AbortError',
+          isNetworkError: error instanceof TypeError
+        },
+        source: 'webhook-service',
+        sessionId
       });
-      
-      // Retornar array vazio para não quebrar o dashboard
+
+      // Se houver dados em cache mesmo expirados, usar como fallback
+      if (webhookCache && webhookCache.leads.length > 0) {
+        console.log('⚠️ Usando cache expirado como fallback');
+        
+        await supabaseLogger.log({
+          level: 'warn',
+          message: '⚠️ USANDO CACHE EXPIRADO COMO FALLBACK',
+          data: { 
+            totalLeads: webhookCache.leads.length,
+            cacheAge: Date.now() - webhookCache.timestamp
+          },
+          source: 'webhook-service-fallback',
+          sessionId
+        });
+        
+        return webhookCache.leads;
+      }
+
+      // Se não há cache, retornar array vazio
+      console.log('❌ Sem dados disponíveis - retornando array vazio');
       return [];
     }
   },
 
-  async forceReprocessData() {
-    console.log('🔄 Forçando reprocessamento de dados...');
+  async forceReprocessData(): Promise<Lead[]> {
+    console.log('🔄 Forçando limpeza de cache e recarregamento...');
     
-    try {
-      // Marcar todos os registros como pending para reprocessamento
-      const { error } = await supabase
-        .from('webhook_raw_data')
-        .update({ 
-          processing_status: 'pending',
-          error_details: null
-        })
-        .neq('processing_status', 'pending');
+    // Limpar cache
+    webhookCache = null;
+    
+    await supabaseLogger.log({
+      level: 'info',
+      message: '🗑️ CACHE LIMPO - FORÇANDO RECARREGAMENTO',
+      data: { action: 'force_reload' },
+      source: 'webhook-service'
+    });
+    
+    // Recarregar dados
+    return await this.getAllWebhookData();
+  },
 
-      if (error) {
-        console.error('❌ Erro ao marcar dados para reprocessamento:', error);
-        throw error;
-      }
-
-      console.log('✅ Dados marcados para reprocessamento');
-      
-      // Recarregar dados
-      return await this.getAllWebhookData();
-    } catch (error) {
-      console.error('❌ Erro no reprocessamento forçado:', error);
-      throw error;
+  // Método para verificar status do cache
+  getCacheStatus() {
+    if (!webhookCache) {
+      return { cached: false, age: 0, expired: true };
     }
+    
+    const age = Date.now() - webhookCache.timestamp;
+    const expired = age >= webhookCache.expiresIn;
+    
+    return {
+      cached: true,
+      age,
+      expired,
+      totalLeads: webhookCache.leads.length
+    };
+  },
+
+  // Método para limpar cache manualmente
+  clearCache() {
+    webhookCache = null;
+    console.log('🗑️ Cache limpo manualmente');
   }
 };
