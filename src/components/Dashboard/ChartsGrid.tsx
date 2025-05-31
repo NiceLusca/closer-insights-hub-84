@@ -1,22 +1,24 @@
 
 import React from 'react';
-import { LeadsChart } from "@/components/LeadsChart";
-import { RevenueChart } from "@/components/RevenueChart";
-import { StatusDistribution } from "@/components/StatusDistribution";
-import { CloserPerformance } from "@/components/CloserPerformance";
+import { LazyLeadsChart } from "@/components/LazyCharts/LazyLeadsChart";
+import { LazyRevenueChart } from "@/components/LazyCharts/LazyRevenueChart";
+import { LazyStatusDistribution } from "@/components/LazyCharts/LazyStatusDistribution";
+import { LazyCloserPerformance } from "@/components/LazyCharts/LazyCloserPerformance";
 import type { Lead } from "@/types/lead";
 
 interface ChartsGridProps {
   leads: Lead[];
 }
 
-export function ChartsGrid({ leads }: ChartsGridProps) {
+export const ChartsGrid = React.memo(({ leads }: ChartsGridProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <LeadsChart leads={leads} />
-      <RevenueChart leads={leads} />
-      <StatusDistribution leads={leads} />
-      <CloserPerformance leads={leads} />
+      <LazyLeadsChart leads={leads} />
+      <LazyRevenueChart leads={leads} />
+      <LazyStatusDistribution leads={leads} />
+      <LazyCloserPerformance leads={leads} />
     </div>
   );
-}
+});
+
+ChartsGrid.displayName = 'ChartsGrid';

@@ -9,7 +9,7 @@ interface OriginAnalysisProps {
   leads: Lead[];
 }
 
-export function OriginAnalysis({ leads }: OriginAnalysisProps) {
+export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
   const originData = useMemo(() => generateOriginAnalysisData(leads), [leads]);
 
   const formatCurrency = (value: number) => {
@@ -19,6 +19,26 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
       minimumFractionDigits: 0
     }).format(value);
   };
+
+  const CustomTooltip = React.memo(({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl">
+          <p className="text-gray-200 font-medium mb-2">{`Origem: ${label}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name === 'leads' && `Total de Leads: ${entry.value}`}
+              {entry.name === 'vendas' && `Vendas: ${entry.value}`}
+              {entry.name === 'conversao' && `Taxa de Conversão: ${entry.value}%`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  });
+
+  CustomTooltip.displayName = 'CustomTooltip';
 
   return (
     <Card className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
@@ -40,25 +60,7 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
               height={80}
             />
             <YAxis stroke="#9ca3af" fontSize={12} />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6'
-              }}
-              formatter={(value, name) => {
-                if (name === 'leads') return [value, 'Total de Leads'];
-                if (name === 'vendas') return [value, 'Vendas'];
-                if (name === 'conversao') return [`${value}%`, 'Taxa de Conversão'];
-                return [value, name];
-              }}
-              labelFormatter={(label) => `Origem: ${label}`}
-              labelStyle={{ color: '#f3f4f6' }}
-              separator=": "
-              itemStyle={{ color: '#f3f4f6' }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar 
               dataKey="leads" 
@@ -90,4 +92,6 @@ export function OriginAnalysis({ leads }: OriginAnalysisProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+OriginAnalysis.displayName = 'OriginAnalysis';

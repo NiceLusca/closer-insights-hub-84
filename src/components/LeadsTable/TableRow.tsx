@@ -7,30 +7,30 @@ interface TableRowProps {
   lead: Lead;
 }
 
-export function TableRow({ lead }: TableRowProps) {
-  const getStatusBadgeColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'Fechou': 'bg-green-100 text-green-800',
-      'Agendado': 'bg-blue-100 text-blue-800',
-      'Confirmado': 'bg-indigo-100 text-indigo-800',
-      'Não Apareceu': 'bg-red-100 text-red-800',
-      'Desmarcou': 'bg-yellow-100 text-yellow-800',
-      'Remarcou': 'bg-orange-100 text-orange-800',
-      'Aguardando resposta': 'bg-gray-100 text-gray-800',
-      'Mentorado': 'bg-purple-100 text-purple-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+const getStatusBadgeColor = (status: string) => {
+  const colors: Record<string, string> = {
+    'Fechou': 'bg-green-100 text-green-800',
+    'Agendado': 'bg-blue-100 text-blue-800',
+    'Confirmado': 'bg-indigo-100 text-indigo-800',
+    'Não Apareceu': 'bg-red-100 text-red-800',
+    'Desmarcou': 'bg-yellow-100 text-yellow-800',
+    'Remarcou': 'bg-orange-100 text-orange-800',
+    'Aguardando resposta': 'bg-gray-100 text-gray-800',
+    'Mentorado': 'bg-purple-100 text-purple-800'
   };
+  return colors[status] || 'bg-gray-100 text-gray-800';
+};
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+};
 
+export const TableRow = React.memo(({ lead }: TableRowProps) => {
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-gray-50 transition-colors duration-150">
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         {lead?.data || '-'} {lead?.Hora || ''}
       </td>
@@ -65,4 +65,6 @@ export function TableRow({ lead }: TableRowProps) {
       </td>
     </tr>
   );
-}
+});
+
+TableRow.displayName = 'TableRow';

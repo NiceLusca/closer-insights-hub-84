@@ -1,5 +1,6 @@
 
 import { useState, useMemo } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import type { Lead } from '@/types/lead';
 
 type SortField = keyof Lead;
@@ -10,7 +11,10 @@ export function useLeadsTable(leads: Lead[]) {
   const [sortField, setSortField] = useState<SortField>('row_number');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const leadsPerPage = 10;
+  const leadsPerPage = 50; // Aumentado de 10 para 50 para melhor performance
+
+  // Debounce da busca para evitar muitos re-renders
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const filteredAndSortedLeads = useMemo(() => {
     console.log('Processando leads na tabela:', leads?.length || 0);
@@ -19,22 +23,27 @@ export function useLeadsTable(leads: Lead[]) {
       return [];
     }
 
-    let filtered = leads.filter(lead => {
-      const nome = lead?.Nome || '';
-      const email = lead?.['e-mail'] || '';
-      const origem = lead?.origem || '';
-      const closer = lead?.Closer || '';
-      const status = lead?.Status || '';
-      
-      const searchLower = searchTerm.toLowerCase();
-      
-      return nome.toLowerCase().includes(searchLower) ||
-             email.toLowerCase().includes(searchLower) ||
-             origem.toLowerCase().includes(searchLower) ||
-             closer.toLowerCase().includes(searchLower) ||
-             status.toLowerCase().includes(searchLower);
-    });
+    let filtered = leads;
 
+    // Aplicar filtro apenas se houver termo de busca
+    if (debouncedSearchTerm.trim()) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      filtered = leads.filter(lead => {
+        const nome = lead?.Nome || '';
+        const email = lead?.['e-mail'] || '';
+        const origem = lead?.origem || '';
+        const closer = lead?.Closer || '';
+        const status = lead?.Status || '';
+        
+        return nome.toLowerCase().includes(searchLower) ||
+               email.toLowerCase().includes(searchLower) ||
+               origem.toLowerCase().includes(searchLower) ||
+               closer.toLowerCase().includes(searchLower) ||
+               status.toLowerCase().includes(searchLower);
+      });
+    }
+
+    // Otimização: usar sort estável e cache do sort
     filtered.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
@@ -51,7 +60,7 @@ export function useLeadsTable(leads: Lead[]) {
     });
 
     return filtered;
-  }, [leads, searchTerm, sortField, sortDirection]);
+  }, [leads, debouncedSearchTerm, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -60,6 +69,7 @@ export function useLeadsTable(leads: Lead[]) {
       setSortField(field);
       setSortDirection('asc');
     }
+    setCurrentPage(1); // Reset para primeira página ao ordenar
   };
 
   const totalPages = Math.ceil(filteredAndSortedLeads.length / leadsPerPage);
@@ -69,6 +79,7 @@ export function useLeadsTable(leads: Lead[]) {
   return {
     searchTerm,
     setSearchTerm,
+    debouncedSearchTerm,
     sortField,
     sortDirection,
     currentPage,

@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { TableHeader } from "./LeadsTable/TableHeader";
 import { TableRow } from "./LeadsTable/TableRow";
 import { TablePagination } from "./LeadsTable/TablePagination";
+import { VirtualizedTable } from "./LeadsTable/VirtualizedTable";
 import { useLeadsTable } from "./LeadsTable/useLeadsTable";
 import type { Lead } from "@/types/lead";
 
@@ -13,7 +14,7 @@ interface LeadsTableProps {
   leads: Lead[];
 }
 
-export function LeadsTable({ leads }: LeadsTableProps) {
+export const LeadsTable = React.memo(({ leads }: LeadsTableProps) => {
   const {
     searchTerm,
     setSearchTerm,
@@ -27,6 +28,8 @@ export function LeadsTable({ leads }: LeadsTableProps) {
     totalPages,
     handleSort
   } = useLeadsTable(leads);
+
+  const shouldUseVirtualization = filteredAndSortedLeads.length > 100;
 
   if (!leads || leads.length === 0) {
     return (
@@ -62,31 +65,56 @@ export function LeadsTable({ leads }: LeadsTableProps) {
             />
           </div>
         </div>
+        {shouldUseVirtualization && (
+          <p className="text-sm text-gray-500 mt-2">
+            ⚡ Tabela virtualizada para melhor performance
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <TableHeader
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-            />
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedLeads.map((lead) => (
-                <TableRow key={lead.row_number} lead={lead} />
-              ))}
-            </tbody>
-          </table>
+          {shouldUseVirtualization ? (
+            <div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <TableHeader
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                />
+              </table>
+              <VirtualizedTable 
+                leads={filteredAndSortedLeads} 
+                height={600}
+              />
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200">
+              <TableHeader
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              />
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedLeads.map((lead) => (
+                  <TableRow key={lead.row_number} lead={lead} />
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
         
-        <TablePagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          leadsPerPage={leadsPerPage}
-          totalLeads={filteredAndSortedLeads.length}
-          onPageChange={setCurrentPage}
-        />
+        {!shouldUseVirtualization && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            leadsPerPage={leadsPerPage}
+            totalLeads={filteredAndSortedLeads.length}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </CardContent>
     </Card>
   );
-}
+});
+
+LeadsTable.displayName = 'LeadsTable';
