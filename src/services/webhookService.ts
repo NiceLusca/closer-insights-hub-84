@@ -12,7 +12,7 @@ interface CacheData {
 
 let webhookCache: CacheData | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
-const WEBHOOK_URL = 'https://bot-belas-n8n.easypanel.host/webhook/leads-closer-oceanoazul';
+const WEBHOOK_URL = 'https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul';
 const REQUEST_TIMEOUT = 15000; // 15 segundos
 
 export const webhookService = {
