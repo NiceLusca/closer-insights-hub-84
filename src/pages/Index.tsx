@@ -15,7 +15,16 @@ import { LeadsTable } from "@/components/LeadsTable";
 
 const Index = () => {
   // Estado dos dados - agora com forceRefresh para recarregamento completo
-  const { allLeads, isLoading, lastUpdated, dataReady, fetchLeadsData, forceRefresh } = useLeadsData();
+  const { 
+    allLeads, 
+    isLoading, 
+    lastUpdated, 
+    dataReady, 
+    loadingProgress, 
+    loadingStage, 
+    fetchLeadsData, 
+    forceRefresh 
+  } = useLeadsData();
   
   // Estado dos filtros
   const {
@@ -45,7 +54,7 @@ const Index = () => {
         showFilters={showFilters}
         hasPendingFilters={hasPendingFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
-        onRefreshData={forceRefresh} // Usar forceRefresh para limpeza completa do cache
+        onRefreshData={forceRefresh}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -63,9 +72,15 @@ const Index = () => {
           onClearFilters={clearFilters}
         />
 
-        {/* Loading State */}
-        {isLoading && <LoadingState />}
+        {/* Loading State com progresso */}
+        {isLoading && (
+          <LoadingState 
+            progress={loadingProgress} 
+            stage={loadingStage}
+          />
+        )}
 
+        {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
             {/* Debug Info */}

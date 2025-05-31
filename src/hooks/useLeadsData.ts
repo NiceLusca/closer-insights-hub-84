@@ -10,14 +10,25 @@ export function useLeadsData() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dataReady, setDataReady] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState('');
 
   const fetchLeadsData = async () => {
     setIsLoading(true);
     setDataReady(false);
+    setLoadingProgress(0);
+    setLoadingStage('Conectando ao webhook...');
     
     try {
       console.log('🔄 Iniciando busca de dados do webhook externo...');
+      
+      setLoadingProgress(10);
+      setLoadingStage('Baixando dados do servidor...');
+      
       const leads = await webhookService.getAllWebhookData();
+      
+      setLoadingProgress(90);
+      setLoadingStage('Finalizando carregamento...');
       
       if (leads.length > 0) {
         console.log('✅ Dados carregados do webhook:', leads.length, 'leads');
@@ -28,6 +39,9 @@ export function useLeadsData() {
         const cacheStatus = webhookService.getCacheStatus();
         const fromCache = cacheStatus.cached && !cacheStatus.expired;
         
+        setLoadingProgress(100);
+        setLoadingStage('Dados carregados com sucesso!');
+        
         toast({
           title: "✅ Dados atualizados!",
           description: `${leads.length} leads carregados ${fromCache ? 'do cache' : 'do webhook'} com sucesso.`,
@@ -36,6 +50,8 @@ export function useLeadsData() {
         console.log('⚠️ Webhook retornou dados vazios');
         setAllLeads([]);
         setLastUpdated(new Date());
+        setLoadingProgress(100);
+        setLoadingStage('Nenhum dado encontrado');
         
         toast({
           title: "⚠️ Nenhum dado encontrado",
@@ -47,6 +63,8 @@ export function useLeadsData() {
       console.error('❌ Erro ao buscar dados:', error);
       setAllLeads([]);
       setLastUpdated(new Date());
+      setLoadingProgress(0);
+      setLoadingStage('Erro no carregamento');
       
       toast({
         title: "❌ Erro ao carregar dados",
@@ -55,7 +73,11 @@ export function useLeadsData() {
       });
     } finally {
       setIsLoading(false);
-      setTimeout(() => setDataReady(true), 100);
+      setTimeout(() => {
+        setDataReady(true);
+        setLoadingProgress(0);
+        setLoadingStage('');
+      }, 500);
     }
   };
 
@@ -63,13 +85,23 @@ export function useLeadsData() {
   const forceRefresh = async () => {
     setIsLoading(true);
     setDataReady(false);
+    setLoadingProgress(0);
+    setLoadingStage('Limpando cache e recarregando...');
     
     try {
       console.log('🔄 Forçando recarregamento completo...');
+      
+      setLoadingProgress(10);
+      setLoadingStage('Baixando dados atualizados...');
+      
       const leads = await webhookService.forceReprocessData();
+      
+      setLoadingProgress(90);
+      setLoadingStage('Processamento finalizado!');
       
       setAllLeads(leads);
       setLastUpdated(new Date());
+      setLoadingProgress(100);
       
       toast({
         title: "🔄 Dados recarregados!",
@@ -77,6 +109,8 @@ export function useLeadsData() {
       });
     } catch (error) {
       console.error('❌ Erro no recarregamento forçado:', error);
+      setLoadingProgress(0);
+      setLoadingStage('Erro no recarregamento');
       
       toast({
         title: "❌ Erro no recarregamento",
@@ -85,7 +119,11 @@ export function useLeadsData() {
       });
     } finally {
       setIsLoading(false);
-      setTimeout(() => setDataReady(true), 100);
+      setTimeout(() => {
+        setDataReady(true);
+        setLoadingProgress(0);
+        setLoadingStage('');
+      }, 500);
     }
   };
 
@@ -98,6 +136,8 @@ export function useLeadsData() {
     isLoading,
     lastUpdated,
     dataReady,
+    loadingProgress,
+    loadingStage,
     fetchLeadsData,
     forceRefresh
   };

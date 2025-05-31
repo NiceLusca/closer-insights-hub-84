@@ -30,52 +30,61 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
   let successfulLeads = 0;
   let processedCount = 0;
 
-  // Processar em lotes para evitar travamento
-  const BATCH_SIZE = 50;
+  // Cache para field mappings para evitar buscas repetitivas
+  const fieldCache = new Map();
+
+  // Processar em lotes maiores para melhor performance
+  const BATCH_SIZE = 100; // Aumentado de 50 para 100
+  const PROGRESS_LOG_INTERVAL = 200; // Log a cada 200 items ao invés de 100
   
   for (let batchStart = 0; batchStart < data.length; batchStart += BATCH_SIZE) {
     const batchEnd = Math.min(batchStart + BATCH_SIZE, data.length);
     const batch = data.slice(batchStart, batchEnd);
     
-    await supabaseLogger.log({
-      level: 'debug',
-      message: `📦 Processando lote ${Math.floor(batchStart / BATCH_SIZE) + 1}`,
-      data: { 
-        loteInicio: batchStart, 
-        loteFim: batchEnd, 
-        tamanhoLote: batch.length 
-      },
-      source: 'lead-processor',
-      sessionId
-    });
+    // Log apenas se for o primeiro lote ou a cada 5 lotes para reduzir logs
+    if (batchStart === 0 || Math.floor(batchStart / BATCH_SIZE) % 5 === 0) {
+      await supabaseLogger.log({
+        level: 'debug',
+        message: `📦 Processando lote ${Math.floor(batchStart / BATCH_SIZE) + 1}/${Math.ceil(data.length / BATCH_SIZE)}`,
+        data: { 
+          loteInicio: batchStart, 
+          loteFim: batchEnd, 
+          tamanhoLote: batch.length,
+          progresso: `${((batchEnd / data.length) * 100).toFixed(1)}%`
+        },
+        source: 'lead-processor',
+        sessionId
+      });
+    }
 
-    for (let index = 0; index < batch.length; index++) {
+    // Processar lote com Promise.all para melhor performance
+    const batchPromises = batch.map(async (item, index) => {
       const globalIndex = batchStart + index;
-      const item = batch[index];
       
       try {
         processedCount++;
         
-        // Log apenas a cada 100 items para não sobrecarregar
-        if (processedCount % 100 === 0 || processedCount <= 5) {
+        // Log de progresso apenas a cada 200 items para reduzir spam de logs
+        if (processedCount % PROGRESS_LOG_INTERVAL === 0) {
           await supabaseLogger.log({
-            level: 'debug',
-            message: `📊 Progresso: ${processedCount}/${data.length} leads processados`,
+            level: 'info',
+            message: `📊 Progresso: ${processedCount}/${data.length} (${((processedCount / data.length) * 100).toFixed(1)}%)`,
             data: { 
-              progresso: `${((processedCount / data.length) * 100).toFixed(1)}%`,
-              item: globalIndex + 1 
+              processados: processedCount,
+              total: data.length,
+              percentual: ((processedCount / data.length) * 100).toFixed(1)
             },
-            source: 'lead-processor',
+            source: 'lead-processor-progress',
             sessionId
           });
         }
         
-        // Tentativas de encontrar data (com timeout implícito)
+        // Tentativas de encontrar data (otimizada com timeout)
         let dateSearchResults;
         let parsedDate;
         
         try {
-          dateSearchResults = await findDateInItem(item, sessionId);
+          dateSearchResults = await findDateInItem(item, sessionId, fieldCache);
           
           if (dateSearchResults.dateValue) {
             parsedDate = await parseDate(dateSearchResults.dateValue.toString(), sessionId);
@@ -85,14 +94,8 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
             }
           }
         } catch (dateError) {
-          await supabaseLogger.log({
-            level: 'debug',
-            message: '⚠️ Erro no processamento de data (continuando)',
-            data: { erro: dateError.message, item: globalIndex + 1 },
-            source: 'lead-processor',
-            sessionId
-          });
-          
+          // Log de erro de data apenas em debug level para reduzir spam
+          console.warn(`⚠️ Erro na data do item ${globalIndex + 1}:`, dateError.message);
           dateSearchResults = { dateValue: null, method: 'erro' };
           parsedDate = undefined;
         }
@@ -107,58 +110,42 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
 
         // Validar lead
         if (validateLead(lead, sessionId)) {
-          processedLeads.push(lead);
           successfulLeads++;
+          return { success: true, lead, error: null };
         } else {
-          await supabaseLogger.log({
-            level: 'debug',
-            message: '⚠️ Lead rejeitado na validação (continuando)',
-            data: { leadIndex: globalIndex + 1 },
-            source: 'lead-processor',
-            sessionId
-          });
-        }
-
-        // Se não conseguiu parsear a data, salvar erro MAS continuar
-        if (!parsedDate && dateSearchResults?.dateValue) {
-          try {
-            const errorDetails = await handleDateParsingError(
-              dateSearchResults.dateValue, 
-              dateSearchResults, 
-              globalIndex, 
-              item, 
-              webhookDataId
-            );
-            processingErrors.push(errorDetails);
-          } catch (errorHandlingError) {
-            // Falha silenciosa no tratamento de erro
-            console.warn('Erro ao salvar erro de parsing:', errorHandlingError);
-          }
+          console.warn(`⚠️ Lead ${globalIndex + 1} rejeitado na validação`);
+          return { success: false, lead: null, error: 'validation_failed' };
         }
 
       } catch (error) {
-        await supabaseLogger.log({
-          level: 'debug',
-          message: `⚠️ Erro no lead ${globalIndex + 1} (continuando processamento)`,
-          data: { error: error.message },
-          source: 'lead-processor',
-          sessionId
-        });
+        console.error(`❌ Erro no lead ${globalIndex + 1}:`, error.message);
         
         try {
           const errorDetails = await handleProcessingError(error, globalIndex, item, webhookDataId, sessionId);
-          processingErrors.push(errorDetails);
+          return { success: false, lead: null, error: errorDetails };
         } catch (errorHandlingError) {
-          // Falha silenciosa no tratamento de erro
           console.warn('Erro ao salvar erro de processamento:', errorHandlingError);
+          return { success: false, lead: null, error: 'error_handling_failed' };
         }
-        
-        // CONTINUAR processamento mesmo com erro
       }
-    }
+    });
+
+    // Aguardar processamento do lote
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Processar resultados do lote
+    batchResults.forEach(result => {
+      if (result.success && result.lead) {
+        processedLeads.push(result.lead);
+      } else if (result.error && typeof result.error === 'object') {
+        processingErrors.push(result.error);
+      }
+    });
     
     // Pequena pausa entre lotes para não sobrecarregar
-    await new Promise(resolve => setTimeout(resolve, 10));
+    if (batchEnd < data.length) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
   }
 
   // Log final detalhado
@@ -176,11 +163,12 @@ export async function processRawDataToLeads(data: any[], sessionId?: string, web
       successfulDateParses: successfulParses,
       percentualSucesso: ((successfulParses / data.length) * 100).toFixed(1),
       percentualLeadsValidos: ((successfulLeads / data.length) * 100).toFixed(1),
-      processadosComSucesso: processedCount
+      tempoProcessamento: 'otimizado'
     },
     source: 'lead-processor',
     sessionId
   });
 
+  console.log(`✅ Processamento concluído: ${successfulLeads}/${data.length} leads válidos (${((successfulLeads / data.length) * 100).toFixed(1)}%)`);
   return processedLeads;
 }

@@ -2,18 +2,34 @@
 import { supabaseLogger } from '@/services/supabaseLogger';
 import { findFieldValue, FIELD_MAPPINGS, detectDateColumn } from '../field';
 
-export async function findDateInItem(item: any, sessionId?: string) {
+export async function findDateInItem(item: any, sessionId?: string, fieldCache?: Map<string, string>) {
+  // Usar cache se disponível
+  const cacheKey = JSON.stringify(Object.keys(item).sort());
+  if (fieldCache?.has(cacheKey)) {
+    const cachedField = fieldCache.get(cacheKey);
+    if (cachedField && item[cachedField]) {
+      return { 
+        dateValue: item[cachedField], 
+        method: 'cache',
+        cachedField 
+      };
+    }
+  }
+
   // Método 1: Usar mapeamentos conhecidos
   let dateValue = findFieldValue(item, FIELD_MAPPINGS.data, '');
   let method = 'mapeamentos_conhecidos';
+  let foundField = null;
   
-  await supabaseLogger.log({
-    level: 'debug',
-    message: '📅 Método 1 (mapeamentos conhecidos)',
-    data: { dateValue, metodo: method },
-    source: 'date-finder',
-    sessionId
-  });
+  // Encontrar qual campo foi usado
+  if (dateValue) {
+    for (const key of FIELD_MAPPINGS.data) {
+      if (item[key] === dateValue) {
+        foundField = key;
+        break;
+      }
+    }
+  }
   
   // Método 2: Se não encontrou, tentar detecção automática
   if (!dateValue) {
@@ -21,13 +37,7 @@ export async function findDateInItem(item: any, sessionId?: string) {
     if (detectedColumn) {
       dateValue = item[detectedColumn];
       method = 'deteccao_automatica';
-      await supabaseLogger.log({
-        level: 'debug',
-        message: '📅 Método 2 (detecção automática)',
-        data: { dateValue, coluna: detectedColumn, metodo: method },
-        source: 'date-finder',
-        sessionId
-      });
+      foundField = detectedColumn;
     }
   }
   
@@ -37,46 +47,35 @@ export async function findDateInItem(item: any, sessionId?: string) {
       /data|date|created|timestamp|time|criacao|cadastro|registro/i.test(key)
     );
     
-    await supabaseLogger.log({
-      level: 'debug',
-      message: '📅 Método 3 - Chaves que podem ser data',
-      data: { chavesEncontradas: possibleDateKeys },
-      source: 'date-finder',
-      sessionId
-    });
-    
     for (const key of possibleDateKeys) {
       if (item[key]) {
         dateValue = item[key];
         method = 'busca_por_nome_campo';
-        await supabaseLogger.log({
-          level: 'debug',
-          message: '📅 Método 3 encontrou data',
-          data: { chave: key, dateValue, metodo: method },
-          source: 'date-finder',
-          sessionId
-        });
+        foundField = key;
         break;
       }
     }
   }
   
-  // Método 4: Se AINDA não encontrou, mostrar TODAS as chaves e valores
-  if (!dateValue) {
-    const todasAsChaves = {};
-    Object.entries(item).forEach(([key, value]) => {
-      todasAsChaves[key] = value;
-    });
-    
+  // Salvar no cache se encontrou um campo válido
+  if (foundField && fieldCache) {
+    fieldCache.set(cacheKey, foundField);
+  }
+  
+  // Log apenas se não encontrou data (reduzir spam de logs)
+  if (!dateValue && sessionId) {
     await supabaseLogger.log({
-      level: 'error',
-      message: '❌ NENHUM campo de data encontrado! Todas as chaves e valores',
-      data: todasAsChaves,
+      level: 'warn',
+      message: '❌ Campo de data não encontrado',
+      data: { 
+        chavesDisponiveis: Object.keys(item).slice(0, 10),
+        totalChaves: Object.keys(item).length
+      },
       source: 'date-finder',
       sessionId
     });
     method = 'nao_encontrado';
   }
   
-  return { dateValue, method, allFields: item };
+  return { dateValue, method, foundField, allFields: dateValue ? undefined : item };
 }
