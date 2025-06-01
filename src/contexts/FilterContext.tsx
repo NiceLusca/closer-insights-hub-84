@@ -1,9 +1,35 @@
 
-import { useState } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import type { DateRange, Filters } from "@/types/lead";
 
-export function useFilters() {
+interface FilterContextType {
+  dateRange: DateRange;
+  filters: Filters;
+  tempDateRange: DateRange;
+  tempFilters: Filters;
+  hasPendingFilters: boolean;
+  setTempDateRange: (dateRange: DateRange) => void;
+  handleTempFilterChange: (filterType: keyof Filters, values: string[]) => void;
+  applyFilters: () => void;
+  clearFilters: () => void;
+}
+
+const FilterContext = createContext<FilterContextType | undefined>(undefined);
+
+export function useGlobalFilters() {
+  const context = useContext(FilterContext);
+  if (context === undefined) {
+    throw new Error('useGlobalFilters must be used within a FilterProvider');
+  }
+  return context;
+}
+
+interface FilterProviderProps {
+  children: ReactNode;
+}
+
+export function FilterProvider({ children }: FilterProviderProps) {
   const { toast } = useToast();
   
   const defaultDateRange = {
@@ -34,12 +60,12 @@ export function useFilters() {
   };
 
   const applyFilters = () => {
-    console.log('✅ Aplicando filtros:', { tempDateRange, tempFilters });
+    console.log('✅ Aplicando filtros globais:', { tempDateRange, tempFilters });
     setDateRange(tempDateRange);
     setFilters(tempFilters);
     toast({
       title: "✅ Filtros aplicados!",
-      description: "Dashboard atualizado com os novos filtros.",
+      description: "Todos os dashboards foram atualizados com os novos filtros.",
     });
   };
 
@@ -59,15 +85,19 @@ export function useFilters() {
     JSON.stringify(filters) !== JSON.stringify(tempFilters) ||
     JSON.stringify(dateRange) !== JSON.stringify(tempDateRange);
 
-  return {
-    dateRange,
-    filters,
-    tempDateRange,
-    tempFilters,
-    hasPendingFilters,
-    setTempDateRange,
-    handleTempFilterChange,
-    applyFilters,
-    clearFilters
-  };
+  return (
+    <FilterContext.Provider value={{
+      dateRange,
+      filters,
+      tempDateRange,
+      tempFilters,
+      hasPendingFilters,
+      setTempDateRange,
+      handleTempFilterChange,
+      applyFilters,
+      clearFilters
+    }}>
+      {children}
+    </FilterContext.Provider>
+  );
 }

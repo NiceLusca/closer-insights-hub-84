@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
-import { useFilters } from "@/hooks/useFilters";
+import { useGlobalFilters } from "@/contexts/FilterContext";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
@@ -27,7 +27,7 @@ const Dashboard = () => {
     forceRefresh 
   } = useLeadsData();
   
-  // Estado dos filtros
+  // Estado dos filtros globais
   const {
     dateRange,
     filters,
@@ -38,7 +38,7 @@ const Dashboard = () => {
     handleTempFilterChange,
     applyFilters,
     clearFilters
-  } = useFilters();
+  } = useGlobalFilters();
 
   // Estado da UI
   const [showFilters, setShowFilters] = useState(true);

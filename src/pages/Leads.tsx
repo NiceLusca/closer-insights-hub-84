@@ -2,7 +2,7 @@
 import React from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
-import { useFilters } from "@/hooks/useFilters";
+import { useGlobalFilters } from "@/contexts/FilterContext";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { LeadsTable } from "@/components/LeadsTable";
 
@@ -15,11 +15,8 @@ const Leads = () => {
     loadingStage 
   } = useLeadsData();
   
-  // Estado dos filtros
-  const {
-    dateRange,
-    filters
-  } = useFilters();
+  // Estado dos filtros globais
+  const { dateRange, filters } = useGlobalFilters();
 
   // Dados processados
   const filteredLeads = useFilteredLeads(allLeads, dateRange, filters);
@@ -30,6 +27,9 @@ const Leads = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Gestão de Leads</h1>
           <p className="text-gray-300">Visualize e gerencie todos os seus leads</p>
+          <p className="text-sm text-gray-400 mt-2">
+            Mostrando: {filteredLeads.length} leads de {allLeads.length} total
+          </p>
         </div>
 
         {/* Loading State com progresso */}

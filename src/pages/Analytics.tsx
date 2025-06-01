@@ -2,7 +2,7 @@
 import React from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
-import { useFilters } from "@/hooks/useFilters";
+import { useGlobalFilters } from "@/contexts/FilterContext";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { CloserPerformanceAnalysis } from "@/components/CloserPerformanceAnalysis";
 import { TemporalAnalysis } from "@/components/TemporalAnalysis";
@@ -17,11 +17,8 @@ const Analytics = () => {
     loadingStage 
   } = useLeadsData();
   
-  // Estado dos filtros
-  const {
-    dateRange,
-    filters
-  } = useFilters();
+  // Estado dos filtros globais
+  const { dateRange, filters } = useGlobalFilters();
 
   // Dados processados
   const filteredLeads = useFilteredLeads(allLeads, dateRange, filters);
@@ -32,6 +29,9 @@ const Analytics = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Análises Detalhadas</h1>
           <p className="text-gray-300">Performance, tendências e insights avançados</p>
+          <p className="text-sm text-gray-400 mt-2">
+            Filtros ativos: {filteredLeads.length} leads de {allLeads.length} total
+          </p>
         </div>
 
         {/* Loading State com progresso */}

@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Calendar, TrendingUp, Clock, Activity } from "lucide-react";
 import { format, parseISO, isValid, getHours, getDay, subDays, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getLeadsExcludingMentorados, formatPercentage } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface TemporalAnalysisProps {
@@ -13,11 +14,9 @@ interface TemporalAnalysisProps {
 
 export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) => {
   const temporalData = useMemo(() => {
-    // Filtrar leads válidos com data
-    const validLeads = leads.filter(lead => 
-      lead.Status !== 'Mentorado' && 
-      lead.parsedDate && 
-      isValid(lead.parsedDate)
+    // Filtrar leads válidos com data (excluindo mentorados)
+    const validLeads = getLeadsExcludingMentorados(leads).filter(lead => 
+      lead.parsedDate && isValid(lead.parsedDate)
     );
 
     // Análise por dia da semana
@@ -75,7 +74,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
       h.taxa = h.leads > 0 ? (h.conversoes / h.leads) * 100 : 0;
     });
 
-    // Análise temporal (últimos 30 dias)
+    // Análise temporal simplificada (últimos 30 dias)
     const last30Days = eachDayOfInterval({
       start: subDays(new Date(), 29),
       end: new Date()
@@ -91,16 +90,12 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
       });
 
       const conversoes = dayLeads.filter(lead => lead.Status === 'Fechou').length;
-      const agendamentos = dayLeads.filter(lead => 
-        ['Agendado', 'Confirmado'].includes(lead.Status || '')
-      ).length;
 
       return {
         date: format(date, 'dd/MM', { locale: ptBR }),
         fullDate: dateStr,
         leads: dayLeads.length,
         conversoes,
-        agendamentos,
         taxa: dayLeads.length > 0 ? (conversoes / dayLeads.length) * 100 : 0
       };
     });
@@ -139,7 +134,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
           <p className="text-gray-200 font-medium mb-2">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}{entry.name.includes('Taxa') ? '%' : ''}
+              {entry.name}: {entry.value}{entry.name.includes('Taxa') || entry.name.includes('Conversão') ? '%' : ''}
             </p>
           ))}
         </div>
@@ -161,7 +156,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
               <span className="text-xs text-blue-400 font-medium">MELHOR DIA</span>
             </div>
             <p className="text-lg font-bold text-white">{temporalData.insights.bestDay.day}</p>
-            <p className="text-sm text-blue-300">{temporalData.insights.bestDay.taxa.toFixed(1)}% conversão</p>
+            <p className="text-sm text-blue-300">{formatPercentage(temporalData.insights.bestDay.taxa)}% conversão</p>
             <p className="text-xs text-gray-400">{temporalData.insights.bestDay.leads} leads</p>
           </CardContent>
         </Card>
@@ -173,7 +168,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
               <span className="text-xs text-green-400 font-medium">MELHOR HORÁRIO</span>
             </div>
             <p className="text-lg font-bold text-white">{temporalData.insights.bestHour.hourLabel}</p>
-            <p className="text-sm text-green-300">{temporalData.insights.bestHour.taxa.toFixed(1)}% conversão</p>
+            <p className="text-sm text-green-300">{formatPercentage(temporalData.insights.bestHour.taxa)}% conversão</p>
             <p className="text-xs text-gray-400">{temporalData.insights.bestHour.leads} leads</p>
           </CardContent>
         </Card>
@@ -182,11 +177,11 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Activity className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-purple-400 font-medium">LEADS COM DATA</span>
+              <span className="text-xs text-purple-400 font-medium">LEADS ANALISADOS</span>
             </div>
             <p className="text-lg font-bold text-white">{temporalData.insights.totalValidLeads}</p>
-            <p className="text-sm text-purple-300">analisados</p>
-            <p className="text-xs text-gray-400">com timestamp válido</p>
+            <p className="text-sm text-purple-300">com data válida</p>
+            <p className="text-xs text-gray-400">excluindo mentorados</p>
           </CardContent>
         </Card>
       </div>
@@ -205,7 +200,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
               <XAxis dataKey="day" stroke="#9ca3af" fontSize={12} />
               <YAxis stroke="#9ca3af" fontSize={12} />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="leads" fill="#60a5fa" name="Leads" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="leads" fill="#60a5fa" name="Leads Recebidos" radius={[2, 2, 0, 0]} />
               <Bar dataKey="conversoes" fill="#34d399" name="Conversões" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -231,7 +226,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
                 type="monotone" 
                 dataKey="leads" 
                 stroke="#60a5fa" 
-                name="Leads"
+                name="Leads Recebidos"
                 strokeWidth={2}
                 dot={{ fill: '#60a5fa', strokeWidth: 2, r: 4 }}
               />
@@ -263,7 +258,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
                     <span className="text-sm font-medium text-white">{hour.hourLabel}</span>
                   </div>
                   <p className="text-xs text-gray-400">
-                    {hour.conversoes}/{hour.leads} leads • {hour.taxa.toFixed(1)}% conversão
+                    {hour.conversoes}/{hour.leads} leads • {formatPercentage(hour.taxa)}% conversão
                   </p>
                 </div>
               ))}
@@ -272,12 +267,15 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
         </CardContent>
       </Card>
 
-      {/* Tendência dos Últimos 30 Dias */}
+      {/* Tendência Simplificada dos Últimos 30 Dias */}
       <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-100">
             Tendência dos Últimos 30 Dias
           </CardTitle>
+          <p className="text-sm text-gray-400">
+            Acompanhe o volume diário de leads recebidos e conversões realizadas
+          </p>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={350}>
@@ -291,28 +289,27 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
                 type="monotone" 
                 dataKey="leads" 
                 stroke="#60a5fa" 
-                name="Leads Diários"
-                strokeWidth={2}
-                dot={{ fill: '#60a5fa', strokeWidth: 2, r: 3 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="agendamentos" 
-                stroke="#34d399" 
-                name="Agendamentos"
-                strokeWidth={2}
-                dot={{ fill: '#34d399', strokeWidth: 2, r: 3 }}
+                name="Leads Recebidos"
+                strokeWidth={3}
+                dot={{ fill: '#60a5fa', strokeWidth: 2, r: 4 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="conversoes" 
-                stroke="#f59e0b" 
-                name="Conversões"
-                strokeWidth={2}
-                dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
+                stroke="#34d399" 
+                name="Conversões (Fechou)"
+                strokeWidth={3}
+                dot={{ fill: '#34d399', strokeWidth: 2, r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
+          
+          <div className="mt-4 p-3 bg-gray-700/50 rounded-lg">
+            <p className="text-xs text-gray-400">
+              <strong className="text-blue-400">Leads Recebidos:</strong> Total de leads que chegaram em cada dia<br/>
+              <strong className="text-green-400">Conversões:</strong> Quantidade de leads que fecharam venda naquele dia
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
