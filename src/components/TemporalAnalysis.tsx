@@ -14,7 +14,6 @@ interface TemporalAnalysisProps {
 
 export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) => {
   const temporalData = useMemo(() => {
-    // Filtrar leads válidos com data (excluindo mentorados)
     const validLeads = getLeadsExcludingMentorados(leads).filter(lead => 
       lead.parsedDate && isValid(lead.parsedDate)
     );
@@ -37,10 +36,10 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     });
 
     dayOfWeekData.forEach(day => {
-      day.taxa = day.leads > 0 ? (day.conversoes / day.leads) * 100 : 0;
+      day.taxa = day.leads > 0 ? Number(((day.conversoes / day.leads) * 100).toFixed(1)) : 0;
     });
 
-    // Análise por hora do dia (usando Hora field se disponível)
+    // Análise por hora do dia
     const hourData = Array.from({ length: 24 }, (_, i) => ({
       hour: i,
       hourLabel: `${i.toString().padStart(2, '0')}:00`,
@@ -50,9 +49,8 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     }));
 
     validLeads.forEach(lead => {
-      let hour = 12; // Default para meio-dia se não conseguir extrair
+      let hour = 12;
       
-      // Tentar extrair hora do campo Hora
       if (lead.Hora && typeof lead.Hora === 'string') {
         const timeMatch = lead.Hora.match(/(\d{1,2}):?(\d{0,2})/);
         if (timeMatch) {
@@ -60,7 +58,6 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
           if (hour < 0 || hour > 23) hour = 12;
         }
       } else if (lead.parsedDate) {
-        // Fallback: usar hora da parsedDate
         hour = getHours(lead.parsedDate);
       }
 
@@ -71,10 +68,10 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     });
 
     hourData.forEach(h => {
-      h.taxa = h.leads > 0 ? (h.conversoes / h.leads) * 100 : 0;
+      h.taxa = h.leads > 0 ? Number(((h.conversoes / h.leads) * 100).toFixed(1)) : 0;
     });
 
-    // Análise temporal simplificada (últimos 30 dias)
+    // Análise temporal dos últimos 30 dias
     const last30Days = eachDayOfInterval({
       start: subDays(new Date(), 29),
       end: new Date()
@@ -96,7 +93,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
         fullDate: dateStr,
         leads: dayLeads.length,
         conversoes,
-        taxa: dayLeads.length > 0 ? (conversoes / dayLeads.length) * 100 : 0
+        taxa: dayLeads.length > 0 ? Number(((conversoes / dayLeads.length) * 100).toFixed(1)) : 0
       };
     });
 
@@ -110,13 +107,13 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     );
 
     const peakHours = hourData
-      .filter(h => h.leads >= 3) // Mínimo de 3 leads para ser considerado
+      .filter(h => h.leads >= 3)
       .sort((a, b) => b.taxa - a.taxa)
       .slice(0, 3);
 
     return {
       dayOfWeekData,
-      hourData: hourData.filter(h => h.leads > 0), // Mostrar apenas horas com leads
+      hourData: hourData.filter(h => h.leads > 0),
       dailyData,
       insights: {
         bestDay,
@@ -156,7 +153,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
               <span className="text-xs text-blue-400 font-medium">MELHOR DIA</span>
             </div>
             <p className="text-lg font-bold text-white">{temporalData.insights.bestDay.day}</p>
-            <p className="text-sm text-blue-300">{formatPercentage(temporalData.insights.bestDay.taxa)}% conversão</p>
+            <p className="text-sm text-blue-300">{temporalData.insights.bestDay.taxa}% conversão</p>
             <p className="text-xs text-gray-400">{temporalData.insights.bestDay.leads} leads</p>
           </CardContent>
         </Card>
@@ -168,7 +165,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
               <span className="text-xs text-green-400 font-medium">MELHOR HORÁRIO</span>
             </div>
             <p className="text-lg font-bold text-white">{temporalData.insights.bestHour.hourLabel}</p>
-            <p className="text-sm text-green-300">{formatPercentage(temporalData.insights.bestHour.taxa)}% conversão</p>
+            <p className="text-sm text-green-300">{temporalData.insights.bestHour.taxa}% conversão</p>
             <p className="text-xs text-gray-400">{temporalData.insights.bestHour.leads} leads</p>
           </CardContent>
         </Card>
@@ -211,8 +208,11 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
       <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-100">
-            Heatmap por Horário do Dia
+            Performance por Horário do Dia
           </CardTitle>
+          <p className="text-sm text-gray-400">
+            Identifique os melhores horários para conversão (dados com 1 casa decimal)
+          </p>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -258,7 +258,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
                     <span className="text-sm font-medium text-white">{hour.hourLabel}</span>
                   </div>
                   <p className="text-xs text-gray-400">
-                    {hour.conversoes}/{hour.leads} leads • {formatPercentage(hour.taxa)}% conversão
+                    {hour.conversoes}/{hour.leads} leads • {hour.taxa}% conversão
                   </p>
                 </div>
               ))}
@@ -267,14 +267,14 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
         </CardContent>
       </Card>
 
-      {/* Tendência Simplificada dos Últimos 30 Dias */}
+      {/* Tendência dos Últimos 30 Dias */}
       <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-100">
             Tendência dos Últimos 30 Dias
           </CardTitle>
           <p className="text-sm text-gray-400">
-            Acompanhe o volume diário de leads recebidos e conversões realizadas
+            Volume diário de leads e vendas efetivadas
           </p>
         </CardHeader>
         <CardContent>
@@ -297,7 +297,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
                 type="monotone" 
                 dataKey="conversoes" 
                 stroke="#34d399" 
-                name="Conversões (Fechou)"
+                name="Vendas Fechadas"
                 strokeWidth={3}
                 dot={{ fill: '#34d399', strokeWidth: 2, r: 4 }}
               />
@@ -306,8 +306,8 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
           
           <div className="mt-4 p-3 bg-gray-700/50 rounded-lg">
             <p className="text-xs text-gray-400">
-              <strong className="text-blue-400">Leads Recebidos:</strong> Total de leads que chegaram em cada dia<br/>
-              <strong className="text-green-400">Conversões:</strong> Quantidade de leads que fecharam venda naquele dia
+              <strong className="text-blue-400">Leads Recebidos:</strong> Número de novos leads que chegaram em cada dia<br/>
+              <strong className="text-green-400">Vendas Fechadas:</strong> Quantidade de leads que efetivamente compraram (status "Fechou")
             </p>
           </div>
         </CardContent>

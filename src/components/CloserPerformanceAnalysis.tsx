@@ -2,7 +2,9 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Trophy, TrendingUp, Users, Target } from "lucide-react";
+import { Users } from "lucide-react";
+import { CloserMetricsCards } from "./CloserPerformance/CloserMetrics";
+import { CloserRanking } from "./CloserPerformance/CloserRanking";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceAnalysisProps {
@@ -25,14 +27,12 @@ interface CloserMetrics {
 
 export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanceAnalysisProps) => {
   const closerData = useMemo(() => {
-    // Filtrar leads válidos (excluindo mentorados e sem closer)
     const validLeads = leads.filter(lead => 
       lead.Status !== 'Mentorado' && 
       lead.Closer && 
       lead.Closer.trim() !== ''
     );
 
-    // Agrupar por closer
     const closerGroups = validLeads.reduce((acc, lead) => {
       const closerName = lead.Closer.trim();
       if (!acc[closerName]) {
@@ -42,7 +42,6 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       return acc;
     }, {} as Record<string, Lead[]>);
 
-    // Calcular métricas para cada closer
     const closerMetrics: CloserMetrics[] = Object.entries(closerGroups).map(([closerName, closerLeads]) => {
       const totalLeads = closerLeads.length;
       const agendamentos = closerLeads.filter(lead => 
@@ -72,11 +71,10 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
         taxaFechamento,
         aproveitamento,
         receitaMedia,
-        rank: 0 // Será calculado depois
+        rank: 0
       };
     });
 
-    // Ordenar por aproveitamento e adicionar ranking
     closerMetrics.sort((a, b) => b.aproveitamento - a.aproveitamento);
     closerMetrics.forEach((closer, index) => {
       closer.rank = index + 1;
@@ -85,12 +83,14 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
     return closerMetrics;
   }, [leads]);
 
-  const chartData = closerData.slice(0, 10).map(closer => ({
-    closer: closer.closer.length > 12 ? closer.closer.substring(0, 12) + '...' : closer.closer,
-    totalLeads: closer.totalLeads,
-    fechamentos: closer.fechamentos,
-    aproveitamento: Number(closer.aproveitamento.toFixed(1))
-  }));
+  const chartData = useMemo(() => {
+    return closerData.slice(0, 10).map(closer => ({
+      closer: closer.closer.length > 12 ? closer.closer.substring(0, 12) + '...' : closer.closer,
+      totalLeads: closer.totalLeads,
+      fechamentos: closer.fechamentos,
+      aproveitamento: Number(closer.aproveitamento.toFixed(1))
+    }));
+  }, [closerData]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -144,44 +144,12 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       </CardHeader>
       <CardContent>
         {/* Estatísticas Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 p-4 rounded-lg border border-yellow-500/30">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-4 h-4 text-yellow-400" />
-              <span className="text-xs text-yellow-400 font-medium">TOP PERFORMER</span>
-            </div>
-            {topPerformer && (
-              <>
-                <p className="text-sm font-bold text-white truncate">{topPerformer.closer}</p>
-                <p className="text-lg font-bold text-yellow-400">{topPerformer.aproveitamento.toFixed(1)}%</p>
-                <p className="text-xs text-gray-300">{topPerformer.fechamentos} vendas</p>
-              </>
-            )}
-          </div>
-
-          <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-gray-400">MÉDIA GERAL</span>
-            </div>
-            <p className="text-lg font-bold text-blue-400">{avgAproveitamento.toFixed(1)}%</p>
-            <p className="text-xs text-gray-300">aproveitamento</p>
-          </div>
-
-          <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
-            <span className="text-xs text-gray-400">CLOSERS ATIVOS</span>
-            <p className="text-lg font-bold text-green-400">{closerData.length}</p>
-            <p className="text-xs text-gray-300">com leads ativos</p>
-          </div>
-
-          <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600/50">
-            <span className="text-xs text-gray-400">RECEITA TOTAL</span>
-            <p className="text-lg font-bold text-purple-400">
-              {formatCurrency(closerData.reduce((sum, c) => sum + c.receita, 0))}
-            </p>
-            <p className="text-xs text-gray-300">todos os closers</p>
-          </div>
-        </div>
+        <CloserMetricsCards
+          topPerformer={topPerformer}
+          avgAproveitamento={avgAproveitamento}
+          totalClosers={closerData.length}
+          totalReceita={closerData.reduce((sum, c) => sum + c.receita, 0)}
+        />
 
         {/* Gráfico de Performance */}
         <div className="mb-6">
@@ -217,51 +185,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
         </div>
 
         {/* Ranking Detalhado */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-200 mb-4">Ranking Completo</h4>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {closerData.map((closer) => (
-              <div 
-                key={closer.closer} 
-                className={`p-3 rounded-lg border ${
-                  closer.rank === 1 
-                    ? 'bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-yellow-500/30' 
-                    : closer.rank <= 3 
-                    ? 'bg-gradient-to-r from-green-500/20 to-green-600/20 border-green-500/30'
-                    : 'bg-gray-700/50 border-gray-600/50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${
-                      closer.rank === 1 ? 'bg-yellow-500 text-black' :
-                      closer.rank <= 3 ? 'bg-green-500 text-white' :
-                      'bg-gray-600 text-gray-200'
-                    }`}>
-                      #{closer.rank}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-white truncate max-w-32">
-                        {closer.closer}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {closer.totalLeads} leads • {closer.fechamentos} vendas
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-white">
-                      {closer.aproveitamento.toFixed(1)}%
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {formatCurrency(closer.receita)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CloserRanking closerData={closerData} />
       </CardContent>
     </Card>
   );
