@@ -1,19 +1,39 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { webhookService } from "@/services/webhookService";
 import { useToast } from "@/hooks/use-toast";
 import type { Lead } from "@/types/lead";
 
+// Cache global para persistir dados entre navegações
+let globalLeadsCache: Lead[] = [];
+let globalCacheTimestamp: Date | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 export function useLeadsData() {
   const { toast } = useToast();
-  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>(globalLeadsCache);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [dataReady, setDataReady] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(globalCacheTimestamp);
+  const [dataReady, setDataReady] = useState(globalLeadsCache.length > 0);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
+  const hasFetchedRef = useRef(false);
 
-  const fetchLeadsData = async () => {
+  const isCacheValid = () => {
+    if (!globalCacheTimestamp || globalLeadsCache.length === 0) return false;
+    return (Date.now() - globalCacheTimestamp.getTime()) < CACHE_DURATION;
+  };
+
+  const fetchLeadsData = async (force = false) => {
+    // Se já tem dados válidos no cache e não é força, não recarregar
+    if (!force && isCacheValid() && globalLeadsCache.length > 0) {
+      console.log('📦 Usando dados do cache global');
+      setAllLeads(globalLeadsCache);
+      setLastUpdated(globalCacheTimestamp);
+      setDataReady(true);
+      return;
+    }
+
     setIsLoading(true);
     setDataReady(false);
     setLoadingProgress(0);
@@ -32,10 +52,14 @@ export function useLeadsData() {
       
       if (leads.length > 0) {
         console.log('✅ Dados carregados do webhook:', leads.length, 'leads');
-        setAllLeads(leads);
-        setLastUpdated(new Date());
         
-        // Verificar status do cache
+        // Atualizar cache global
+        globalLeadsCache = leads;
+        globalCacheTimestamp = new Date();
+        
+        setAllLeads(leads);
+        setLastUpdated(globalCacheTimestamp);
+        
         const cacheStatus = webhookService.getCacheStatus();
         const fromCache = cacheStatus.cached && !cacheStatus.expired;
         
@@ -81,16 +105,19 @@ export function useLeadsData() {
     }
   };
 
-  // Função para forçar recarregamento sem cache
   const forceRefresh = async () => {
+    console.log('🔄 Forçando recarregamento completo...');
+    
+    // Limpar cache global
+    globalLeadsCache = [];
+    globalCacheTimestamp = null;
+    
     setIsLoading(true);
     setDataReady(false);
     setLoadingProgress(0);
     setLoadingStage('Limpando cache e recarregando...');
     
     try {
-      console.log('🔄 Forçando recarregamento completo...');
-      
       setLoadingProgress(10);
       setLoadingStage('Baixando dados atualizados...');
       
@@ -99,8 +126,12 @@ export function useLeadsData() {
       setLoadingProgress(90);
       setLoadingStage('Processamento finalizado!');
       
+      // Atualizar cache global
+      globalLeadsCache = leads;
+      globalCacheTimestamp = new Date();
+      
       setAllLeads(leads);
-      setLastUpdated(new Date());
+      setLastUpdated(globalCacheTimestamp);
       setLoadingProgress(100);
       
       toast({
@@ -128,7 +159,11 @@ export function useLeadsData() {
   };
 
   useEffect(() => {
-    fetchLeadsData();
+    // Só buscar dados na primeira montagem se não tem cache válido
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchLeadsData();
+    }
   }, []);
 
   return {
@@ -139,6 +174,7 @@ export function useLeadsData() {
     loadingProgress,
     loadingStage,
     fetchLeadsData,
-    forceRefresh
+    forceRefresh,
+    isCacheValid: isCacheValid()
   };
 }

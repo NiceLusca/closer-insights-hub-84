@@ -14,7 +14,8 @@ const Analytics = () => {
     allLeads, 
     isLoading, 
     loadingProgress, 
-    loadingStage 
+    loadingStage,
+    isCacheValid
   } = useLeadsData();
   
   // Estado dos filtros globais
@@ -29,9 +30,16 @@ const Analytics = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Análises Detalhadas</h1>
           <p className="text-gray-300">Performance, tendências e insights avançados</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Filtros ativos: {filteredLeads.length} leads de {allLeads.length} total
-          </p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-sm text-gray-400">
+              Filtros ativos: {filteredLeads.length} leads de {allLeads.length} total
+            </p>
+            <span className={`text-xs px-2 py-1 rounded ${
+              isCacheValid ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+            }`}>
+              {isCacheValid ? 'Cache válido' : 'Cache expirado'}
+            </span>
+          </div>
         </div>
 
         {/* Loading State com progresso */}
@@ -45,14 +53,14 @@ const Analytics = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
-            {/* Alertas de Performance */}
-            <PerformanceAlerts leads={filteredLeads} />
-
             {/* Performance dos Closers */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
 
             {/* Análise Temporal */}
             <TemporalAnalysis leads={filteredLeads} />
+
+            {/* Alertas de Performance - Movido para o final */}
+            <PerformanceAlerts leads={filteredLeads} position="bottom" />
           </>
         )}
       </div>

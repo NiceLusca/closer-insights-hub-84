@@ -1,7 +1,7 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, AlertTriangle, Users, UserX } from "lucide-react";
+import { TrendingUp, TrendingDown, AlertTriangle, Users, UserX, Target } from "lucide-react";
 import { getLeadsByStatusGroup, STATUS_GROUPS, formatPercentage } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
@@ -77,13 +77,14 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       },
     ];
 
-    // Calcular estatísticas de perda
+    // Calcular estatísticas de perda com mais detalhes
     const lossStats = {
       perdidoInativo,
       atendidoNaoFechou,
       totalPerdidos: perdidoInativo + atendidoNaoFechou,
       taxaPerdaGeral: totalLeads > 0 ? ((perdidoInativo + atendidoNaoFechou) / totalLeads) * 100 : 0,
-      taxaPerdaApresentacao: apresentacoes > 0 ? (perdidoInativo / apresentacoes) * 100 : 0
+      taxaPerdaApresentacao: apresentacoes > 0 ? (perdidoInativo / apresentacoes) * 100 : 0,
+      taxaIneficiencia: apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0
     };
 
     return { stages, conversionRates, statusGroups, lossStats };
@@ -99,24 +100,42 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
     <Card className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+          <Target className="w-5 h-5" />
           Funil de Conversão
-          <span className="text-sm font-normal text-gray-400">(análise por grupos)</span>
+          <span className="text-sm font-normal text-gray-400">(análise detalhada de perdas)</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Alerta sobre Leads Perdidos */}
-          {funnelData.lossStats.taxaPerdaGeral > 30 && (
+          {/* Destaque de Leads Perdidos */}
+          {funnelData.lossStats.taxaPerdaGeral > 25 && (
             <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <UserX className="w-5 h-5 text-red-400" />
-                <span className="text-red-400 font-medium">Alto Índice de Perda</span>
+                <span className="text-red-400 font-medium text-lg">⚠️ ALERTA: Alto Índice de Perda</span>
               </div>
-              <p className="text-sm text-gray-300">
-                <strong>{formatPercentage(funnelData.lossStats.taxaPerdaGeral)}%</strong> dos leads foram perdidos 
-                ({funnelData.lossStats.totalPerdidos} de {leads.filter(l => l.Status !== 'Mentorado').length} leads).
-                Considere revisar o processo de acompanhamento.
-              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-red-400">{funnelData.lossStats.totalPerdidos}</p>
+                  <p className="text-sm text-gray-300">Leads Perdidos</p>
+                  <p className="text-xs text-red-300">{formatPercentage(funnelData.lossStats.taxaPerdaGeral)}% do total</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-yellow-400">{funnelData.lossStats.perdidoInativo}</p>
+                  <p className="text-sm text-gray-300">Não Compareceram</p>
+                  <p className="text-xs text-yellow-300">{formatPercentage(funnelData.lossStats.taxaPerdaApresentacao)}% das apresentações</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-400">{funnelData.lossStats.atendidoNaoFechou}</p>
+                  <p className="text-sm text-gray-300">Atendidos sem Conversão</p>
+                  <p className="text-xs text-orange-300">{formatPercentage(funnelData.lossStats.taxaIneficiencia)}% das apresentações</p>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <p className="text-sm text-gray-300">
+                  🎯 <strong>Ação Recomendada:</strong> Revisar processo de confirmação e técnicas de fechamento
+                </p>
+              </div>
             </div>
           )}
 
@@ -179,7 +198,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
           <div className="mt-6 p-4 bg-gray-700/50 rounded-lg border border-gray-600/50">
             <div className="flex items-center gap-2 mb-3">
               <UserX className="w-4 h-4 text-red-400" />
-              <h4 className="text-sm font-medium text-gray-200">Análise de Perdas</h4>
+              <h4 className="text-sm font-medium text-gray-200">📊 Breakdown Detalhado de Perdas</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/30">
@@ -191,7 +210,10 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                 <p className="text-xs text-red-300">
                   {formatPercentage((funnelData.lossStats.perdidoInativo / leads.filter(l => l.Status !== 'Mentorado').length) * 100)}% do total
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Não apareceram, desmarcaram</p>
+                <p className="text-xs text-gray-400 mt-1">Não apareceram, desmarcaram ou não atenderam</p>
+                <div className="mt-2 text-xs">
+                  <p className="text-red-200">💡 <strong>Causa:</strong> Falta de confirmação/acompanhamento</p>
+                </div>
               </div>
 
               <div className="p-3 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
@@ -204,30 +226,49 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                   {formatPercentage((funnelData.lossStats.atendidoNaoFechou / leads.filter(l => l.Status !== 'Mentorado').length) * 100)}% do total
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Atendidos mas sem conversão</p>
+                <div className="mt-2 text-xs">
+                  <p className="text-yellow-200">💡 <strong>Causa:</strong> Técnica de vendas ou timing</p>
+                </div>
               </div>
 
               <div className="p-3 rounded-lg bg-green-500/20 border border-green-500/30">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm">✅</span>
-                  <span className="text-xs font-medium text-green-400">FECHARAM</span>
+                  <span className="text-xs font-medium text-green-400">CONVERSÕES</span>
                 </div>
                 <p className="text-lg font-bold text-white">{funnelData.statusGroups.fechado.length}</p>
                 <p className="text-xs text-green-300">
                   {formatPercentage((funnelData.statusGroups.fechado.length / leads.filter(l => l.Status !== 'Mentorado').length) * 100)}% do total
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Conversões efetivadas</p>
+                <p className="text-xs text-gray-400 mt-1">Vendas efetivadas com sucesso</p>
+                <div className="mt-2 text-xs">
+                  <p className="text-green-200">🎯 <strong>Meta:</strong> Aumentar este percentual</p>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 text-xs text-gray-400">
-              <p>
-                <strong>Total de Perdas:</strong> {funnelData.lossStats.totalPerdidos} leads 
-                ({formatPercentage(funnelData.lossStats.taxaPerdaGeral)}% dos leads totais)
-              </p>
-              <p className="mt-1">
-                <strong>Taxa de Não Comparecimento:</strong> {formatPercentage(funnelData.lossStats.taxaPerdaApresentacao)}% 
-                das apresentações agendadas
-              </p>
+            <div className="mt-4 p-3 bg-gray-600/50 rounded-lg">
+              <h5 className="text-xs font-medium text-gray-200 mb-2">📈 Métricas de Performance</h5>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400">Taxa de Comparecimento:</p>
+                  <p className="text-white font-bold">
+                    {formatPercentage(100 - funnelData.lossStats.taxaPerdaApresentacao)}%
+                    <span className={`ml-1 ${funnelData.lossStats.taxaPerdaApresentacao > 30 ? 'text-red-400' : 'text-green-400'}`}>
+                      {funnelData.lossStats.taxaPerdaApresentacao > 30 ? '⚠️' : '✅'}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Eficiência de Fechamento:</p>
+                  <p className="text-white font-bold">
+                    {formatPercentage(100 - funnelData.lossStats.taxaIneficiencia)}%
+                    <span className={`ml-1 ${funnelData.lossStats.taxaIneficiencia > 40 ? 'text-red-400' : 'text-green-400'}`}>
+                      {funnelData.lossStats.taxaIneficiencia > 40 ? '⚠️' : '✅'}
+                    </span>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

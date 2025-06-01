@@ -24,7 +24,8 @@ const Dashboard = () => {
     loadingProgress, 
     loadingStage, 
     fetchLeadsData, 
-    forceRefresh 
+    forceRefresh,
+    isCacheValid
   } = useLeadsData();
   
   // Estado dos filtros globais
@@ -88,11 +89,9 @@ const Dashboard = () => {
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
-              dateRange={dateRange} 
+              dateRange={dateRange}
+              cacheStatus={isCacheValid ? 'válido' : 'expirado'}
             />
-
-            {/* Alertas de Performance */}
-            <PerformanceAlerts leads={filteredLeads} />
 
             {/* Metrics Cards */}
             <MetricsCards leads={filteredLeads} />
@@ -105,6 +104,9 @@ const Dashboard = () => {
 
             {/* Origin Analysis */}
             <OriginAnalysis leads={filteredLeads} />
+
+            {/* Alertas de Performance - Movido para o final */}
+            <PerformanceAlerts leads={filteredLeads} position="bottom" />
           </>
         )}
       </div>
