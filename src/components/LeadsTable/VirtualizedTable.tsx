@@ -31,6 +31,7 @@ export const VirtualizedTable = React.memo(({ leads, height }: VirtualizedTableP
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <List
         height={height}
+        width="100%"
         itemCount={itemCount}
         itemSize={itemSize}
         itemData={leads}
