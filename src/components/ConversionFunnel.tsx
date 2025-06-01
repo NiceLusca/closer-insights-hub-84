@@ -11,13 +11,13 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
   const funnelData = useMemo(() => {
     const totalLeads = leads.length;
     const contatos = leads.filter(lead => 
-      lead.status && ['Contato Realizado', 'Em Negociação', 'Fechado'].includes(lead.status)
+      lead.Status && ['Contato Realizado', 'Em Negociação', 'Fechou'].includes(lead.Status)
     ).length;
     const negociacao = leads.filter(lead => 
-      lead.status && ['Em Negociação', 'Fechado'].includes(lead.status)
+      lead.Status && ['Em Negociação', 'Fechou'].includes(lead.Status)
     ).length;
     const fechados = leads.filter(lead => 
-      lead.status === 'Fechado'
+      lead.Status === 'Fechou'
     ).length;
 
     return [
