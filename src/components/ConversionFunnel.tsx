@@ -1,6 +1,7 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
 import type { Lead } from "@/types/lead";
 
 interface ConversionFunnelProps {
@@ -9,23 +10,58 @@ interface ConversionFunnelProps {
 
 export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) => {
   const funnelData = useMemo(() => {
-    const totalLeads = leads.length;
-    const contatos = leads.filter(lead => 
-      lead.Status && ['Contato Realizado', 'Em Negociação', 'Fechou'].includes(lead.Status)
+    // Excluir mentorados da análise
+    const validLeads = leads.filter(lead => lead.Status !== 'Mentorado');
+    const totalLeads = validLeads.length;
+    
+    // Etapas do funil baseadas nos status reais
+    const agendados = validLeads.filter(lead => 
+      lead.Status && ['Agendado', 'Confirmado'].includes(lead.Status)
     ).length;
-    const negociacao = leads.filter(lead => 
-      lead.Status && ['Em Negociação', 'Fechou'].includes(lead.Status)
+    
+    const apresentacoes = validLeads.filter(lead => 
+      lead.Status && ['Fechou', 'Não Apareceu', 'Não Fechou'].includes(lead.Status)
     ).length;
-    const fechados = leads.filter(lead => 
+    
+    const fechados = validLeads.filter(lead => 
       lead.Status === 'Fechou'
     ).length;
 
-    return [
-      { name: 'Total de Leads', count: totalLeads, percentage: 100 },
-      { name: 'Contatos Realizados', count: contatos, percentage: totalLeads > 0 ? (contatos / totalLeads) * 100 : 0 },
-      { name: 'Em Negociação', count: negociacao, percentage: totalLeads > 0 ? (negociacao / totalLeads) * 100 : 0 },
-      { name: 'Fechados', count: fechados, percentage: totalLeads > 0 ? (fechados / totalLeads) * 100 : 0 },
+    const stages = [
+      { 
+        name: 'Total de Leads', 
+        count: totalLeads, 
+        percentage: 100,
+        description: 'Todos os leads recebidos'
+      },
+      { 
+        name: 'Agendamentos', 
+        count: agendados, 
+        percentage: totalLeads > 0 ? (agendados / totalLeads) * 100 : 0,
+        description: 'Leads que agendaram apresentação'
+      },
+      { 
+        name: 'Apresentações', 
+        count: apresentacoes, 
+        percentage: totalLeads > 0 ? (apresentacoes / totalLeads) * 100 : 0,
+        description: 'Leads que tiveram apresentação'
+      },
+      { 
+        name: 'Fechamentos', 
+        count: fechados, 
+        percentage: totalLeads > 0 ? (fechados / totalLeads) * 100 : 0,
+        description: 'Leads que fecharam venda'
+      },
     ];
+
+    // Calcular taxas de conversão entre etapas
+    const conversionRates = [
+      { from: 'Leads', to: 'Agendamentos', rate: totalLeads > 0 ? (agendados / totalLeads) * 100 : 0 },
+      { from: 'Agendamentos', to: 'Apresentações', rate: agendados > 0 ? (apresentacoes / agendados) * 100 : 0 },
+      { from: 'Apresentações', to: 'Fechamentos', rate: apresentacoes > 0 ? (fechados / apresentacoes) * 100 : 0 },
+    ];
+
+    return { stages, conversionRates };
   }, [leads]);
 
   const getColor = (index: number) => {
@@ -33,19 +69,30 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
     return colors[index] || 'bg-gray-500';
   };
 
+  const getConversionStatus = (rate: number, threshold: number = 25) => {
+    if (rate >= threshold) return { icon: TrendingUp, color: 'text-green-400' };
+    if (rate >= threshold * 0.7) return { icon: TrendingDown, color: 'text-yellow-400' };
+    return { icon: AlertTriangle, color: 'text-red-400' };
+  };
+
   return (
     <Card className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-lg font-semibold text-gray-100 flex items-center gap-2">
           Funil de Conversão
+          <span className="text-sm font-normal text-gray-400">(excluindo mentorados)</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {funnelData.map((stage, index) => (
+        <div className="space-y-6">
+          {/* Etapas do Funil */}
+          {funnelData.stages.map((stage, index) => (
             <div key={stage.name} className="relative">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-200">{stage.name}</span>
+                <div>
+                  <span className="text-sm font-medium text-gray-200">{stage.name}</span>
+                  <p className="text-xs text-gray-400">{stage.description}</p>
+                </div>
                 <div className="text-right">
                   <span className="text-lg font-bold text-white">{stage.count}</span>
                   <span className="text-sm text-gray-400 ml-2">
@@ -63,17 +110,58 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                   </span>
                 </div>
               </div>
-              {index < funnelData.length - 1 && (
-                <div className="mt-2 text-xs text-gray-500 text-center">
-                  Taxa de conversão: {
-                    funnelData[index].count > 0 
-                      ? ((funnelData[index + 1].count / funnelData[index].count) * 100).toFixed(1)
-                      : '0'
-                  }%
+              
+              {/* Taxa de conversão para próxima etapa */}
+              {index < funnelData.conversionRates.length && (
+                <div className="mt-3 flex items-center justify-center gap-2 text-xs">
+                  {(() => {
+                    const conversionRate = funnelData.conversionRates[index];
+                    const status = getConversionStatus(conversionRate.rate);
+                    const Icon = status.icon;
+                    
+                    return (
+                      <>
+                        <Icon className={`w-4 h-4 ${status.color}`} />
+                        <span className="text-gray-300">
+                          {conversionRate.from} → {conversionRate.to}: 
+                          <span className={`ml-1 font-medium ${status.color}`}>
+                            {conversionRate.rate.toFixed(1)}%
+                          </span>
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
+              )}
+              
+              {index < funnelData.stages.length - 1 && (
+                <div className="mt-4 border-b border-gray-600/30"></div>
               )}
             </div>
           ))}
+
+          {/* Resumo de Performance */}
+          <div className="mt-6 p-4 bg-gray-700/50 rounded-lg border border-gray-600/50">
+            <h4 className="text-sm font-medium text-gray-200 mb-3">Resumo de Performance</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              {funnelData.conversionRates.map((rate, index) => {
+                const status = getConversionStatus(rate.rate);
+                const Icon = status.icon;
+                
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <Icon className={`w-3 h-3 ${status.color}`} />
+                    <span className="text-gray-300">
+                      {rate.from.slice(0, 6)}→{rate.to.slice(0, 6)}: 
+                      <span className={`ml-1 font-medium ${status.color}`}>
+                        {rate.rate.toFixed(1)}%
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

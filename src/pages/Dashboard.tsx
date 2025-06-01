@@ -12,6 +12,7 @@ import { MetricsCards } from "@/components/MetricsCards";
 import { ChartsGrid } from "@/components/Dashboard/ChartsGrid";
 import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { ConversionFunnel } from "@/components/ConversionFunnel";
+import { PerformanceAlerts } from "@/components/PerformanceAlerts";
 
 const Dashboard = () => {
   // Estado dos dados
@@ -89,6 +90,9 @@ const Dashboard = () => {
               filteredLeads={filteredLeads} 
               dateRange={dateRange} 
             />
+
+            {/* Alertas de Performance */}
+            <PerformanceAlerts leads={filteredLeads} />
 
             {/* Metrics Cards */}
             <MetricsCards leads={filteredLeads} />
