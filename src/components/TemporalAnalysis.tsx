@@ -20,22 +20,36 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     );
 
     const totalLeads = validLeads.length;
+    console.log(`📊 Analisando ${totalLeads} leads válidos`);
 
-    // Análise por dia da semana
-    const dayOfWeekData = Array.from({ length: 7 }, (_, i) => ({
-      day: format(new Date(2024, 0, i + 1), 'EEEE', { locale: ptBR }),
-      dayIndex: i,
+    // Corrigir análise por dia da semana
+    // getDay() retorna: 0=Domingo, 1=Segunda, 2=Terça, 3=Quarta, 4=Quinta, 5=Sexta, 6=Sábado
+    const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const dayOfWeekData = dayNames.map((name, index) => ({
+      day: name,
+      dayIndex: index,
       leads: 0,
       conversoes: 0,
       taxa: 0
     }));
 
+    // Debug: contador por dia da semana
+    const dayDebugCount: Record<number, number> = {};
+
     validLeads.forEach(lead => {
       const dayIndex = getDay(lead.parsedDate!);
+      dayDebugCount[dayIndex] = (dayDebugCount[dayIndex] || 0) + 1;
       dayOfWeekData[dayIndex].leads++;
       if (lead.Status === 'Fechou') {
         dayOfWeekData[dayIndex].conversoes++;
       }
+    });
+
+    // Log de debug para verificar distribuição
+    console.log('🗓️ Distribuição por dia da semana:');
+    dayNames.forEach((name, index) => {
+      const count = dayDebugCount[index] || 0;
+      console.log(`  ${name}: ${count} leads`);
     });
 
     dayOfWeekData.forEach(day => {
@@ -51,23 +65,44 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
       taxa: 0
     }));
 
+    // Debug: contador por hora
+    const hourDebugCount: Record<number, number> = {};
+
     validLeads.forEach(lead => {
-      let hour = 12;
+      let hour = 12; // Default fallback
       
+      // Primeiro, tentar extrair hora do campo Hora
       if (lead.Hora && typeof lead.Hora === 'string') {
         const timeMatch = lead.Hora.match(/(\d{1,2}):?(\d{0,2})/);
         if (timeMatch) {
-          hour = parseInt(timeMatch[1]);
-          if (hour < 0 || hour > 23) hour = 12;
+          const extractedHour = parseInt(timeMatch[1]);
+          if (extractedHour >= 0 && extractedHour <= 23) {
+            hour = extractedHour;
+          }
         }
-      } else if (lead.parsedDate) {
+      } 
+      // Fallback: usar hora da parsedDate
+      else if (lead.parsedDate) {
         hour = getHours(lead.parsedDate);
       }
 
+      // Validar se hora está no range correto
+      if (hour < 0 || hour > 23) {
+        console.warn(`⚠️ Hora inválida detectada: ${hour}, usando 12 como fallback`);
+        hour = 12;
+      }
+
+      hourDebugCount[hour] = (hourDebugCount[hour] || 0) + 1;
       hourData[hour].leads++;
       if (lead.Status === 'Fechou') {
         hourData[hour].conversoes++;
       }
+    });
+
+    // Log de debug para verificar distribuição de horas
+    console.log('🕐 Distribuição por hora do dia:');
+    Object.entries(hourDebugCount).forEach(([hour, count]) => {
+      console.log(`  ${hour}h: ${count} leads`);
     });
 
     hourData.forEach(h => {
@@ -120,6 +155,13 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
     const peakHours = significantHours
       .sort((a, b) => b.taxa - a.taxa)
       .slice(0, 3);
+
+    // Log final de insights
+    console.log('🎯 Insights calculados:');
+    console.log('  Melhor dia:', bestDay?.day, `(${bestDay?.taxa}% conversão)`);
+    console.log('  Melhor hora:', bestHour?.hourLabel, `(${bestHour?.taxa}% conversão)`);
+    console.log('  Dias significativos:', significantDays.length, 'de 7');
+    console.log('  Horas significativas:', significantHours.length, 'de 24');
 
     return {
       dayOfWeekData,

@@ -7,7 +7,7 @@ import type { Lead } from "@/types/lead";
 // Cache global para persistir dados entre navegações
 let globalLeadsCache: Lead[] = [];
 let globalCacheTimestamp: Date | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hora (60 minutos)
 
 export function useLeadsData() {
   const { toast } = useToast();
@@ -21,13 +21,16 @@ export function useLeadsData() {
 
   const isCacheValid = () => {
     if (!globalCacheTimestamp || globalLeadsCache.length === 0) return false;
-    return (Date.now() - globalCacheTimestamp.getTime()) < CACHE_DURATION;
+    const cacheAge = Date.now() - globalCacheTimestamp.getTime();
+    console.log(`🕐 Cache age: ${Math.round(cacheAge / 1000 / 60)} minutos`);
+    return cacheAge < CACHE_DURATION;
   };
 
   const fetchLeadsData = async (force = false) => {
     // Se já tem dados válidos no cache e não é força, não recarregar
     if (!force && isCacheValid() && globalLeadsCache.length > 0) {
-      console.log('📦 Usando dados do cache global');
+      const cacheAge = Math.round((Date.now() - globalCacheTimestamp!.getTime()) / 1000 / 60);
+      console.log(`📦 Usando dados do cache global (${cacheAge} min de idade)`);
       setAllLeads(globalLeadsCache);
       setLastUpdated(globalCacheTimestamp);
       setDataReady(true);
@@ -68,7 +71,7 @@ export function useLeadsData() {
         
         toast({
           title: "✅ Dados atualizados!",
-          description: `${leads.length} leads carregados ${fromCache ? 'do cache' : 'do webhook'} com sucesso.`,
+          description: `${leads.length} leads carregados ${fromCache ? 'do cache' : 'do webhook'} com sucesso. Cache válido por 1 hora.`,
         });
       } else {
         console.log('⚠️ Webhook retornou dados vazios');
@@ -136,7 +139,7 @@ export function useLeadsData() {
       
       toast({
         title: "🔄 Dados recarregados!",
-        description: `${leads.length} leads recarregados diretamente do webhook.`,
+        description: `${leads.length} leads recarregados diretamente do webhook. Cache válido por 1 hora.`,
       });
     } catch (error) {
       console.error('❌ Erro no recarregamento forçado:', error);
