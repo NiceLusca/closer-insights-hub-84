@@ -79,6 +79,7 @@ export function classifyLeadByStatus(status: string | undefined): StatusGroup {
     case 'Desmarcou':
     case 'Não Apareceu':
     case 'Número errado':
+    case 'Numero Errado': // Adicionando versão sem acento
       return 'perdidoInativo';
     
     case 'Mentorado':

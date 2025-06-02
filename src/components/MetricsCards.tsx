@@ -32,7 +32,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-blue-600/20 to-blue-800/20",
       iconColor: "text-blue-400",
       borderColor: "border-l-blue-500",
-      tooltip: "Número total de leads com status válido no período selecionado"
+      tooltip: "Número total de leads com status válido no período selecionado (excluindo mentorados)"
     },
     {
       title: "Aproveitamento Geral",
@@ -41,7 +41,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-indigo-600/20 to-indigo-800/20",
       iconColor: "text-indigo-400",
       borderColor: "border-l-indigo-500",
-      tooltip: "Percentual de fechamentos em relação ao total de leads aproveitáveis (excluindo mentorados)"
+      tooltip: "Percentual de fechamentos em relação ao total de leads válidos (Fechados ÷ Total de Leads)"
     },
     {
       title: "Receita Total",
@@ -59,7 +59,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-orange-600/20 to-orange-800/20",
       iconColor: "text-orange-400",
       borderColor: "border-l-orange-500",
-      tooltip: "Percentual de fechamentos em relação ao total de apresentações realizadas"
+      tooltip: "Percentual de conversão de leads que foram atendidos (Fechados ÷ (Fechados + Atendidos que Não Fecharam))"
     },
     {
       title: "Taxa de Comparecimento",
@@ -68,7 +68,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-purple-600/20 to-purple-800/20",
       iconColor: "text-purple-400",
       borderColor: "border-l-purple-500",
-      tooltip: "Percentual de leads que compareceram (confirmados + agendados) vs total elegível"
+      tooltip: "Percentual de leads que compareceram ao atendimento ((A Ser Atendido + Fechados) ÷ (A Ser Atendido + Fechados + Perdidos/Inativos))"
     },
     {
       title: "Vendas Completas",
@@ -95,7 +95,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-red-600/20 to-red-800/20",
       iconColor: "text-red-400",
       borderColor: "border-l-red-500",
-      tooltip: "Percentual de leads que desmarcaram em relação aos agendamentos"
+      tooltip: "Percentual de leads perdidos ou inativos (Perdidos/Inativos ÷ (A Ser Atendido + Perdidos/Inativos))"
     }
   ];
 
@@ -118,7 +118,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
                     <TooltipTrigger asChild>
                       <Info className="h-4 w-4 text-gray-500 hover:text-gray-300 cursor-help transition-colors" />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs bg-gray-800 border-gray-700 text-gray-200">
+                    <TooltipContent side="top" className="max-w-xs bg-gray-800 border-gray-700 text-gray-200 z-[9999]">
                       <p>{metric.tooltip}</p>
                     </TooltipContent>
                   </Tooltip>
