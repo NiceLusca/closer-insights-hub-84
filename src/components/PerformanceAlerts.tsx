@@ -1,8 +1,9 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Target } from "lucide-react";
+import { Target, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { generateConversionAlerts, generateNoShowAlerts, getAlertStyles, getIconColor } from "./PerformanceAlerts/AlertTypes";
 import { LostLeadsAlert } from "./PerformanceAlerts/LostLeadsAlert";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
@@ -15,7 +16,6 @@ interface PerformanceAlertsProps {
   showTitle?: boolean;
 }
 
-// Mover a função formatPercentage para fora do componente
 const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
 export const PerformanceAlerts = React.memo(({ 
@@ -23,14 +23,16 @@ export const PerformanceAlerts = React.memo(({
   position = 'bottom',
   showTitle = true 
 }: PerformanceAlertsProps) => {
-  const alerts = useMemo(() => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const { alerts, criticalCount } = useMemo(() => {
     console.log('🚨 [ALERTAS] Calculando alertas com métricas padronizadas');
     
     const metrics = calculateStandardizedMetrics(leads);
     const alertsList: AlertItem[] = [];
 
     if (metrics.totalLeads === 0) {
-      return alertsList;
+      return { alerts: alertsList, criticalCount: 0 };
     }
 
     // Gerar alertas usando métricas padronizadas
@@ -55,7 +57,7 @@ export const PerformanceAlerts = React.memo(({
       alertsList.push({
         id: 'high-no-show',
         type: 'danger',
-        icon: Target,
+        icon: AlertTriangle,
         title: 'Taxa de desmarque muito alta',
         description: `${formatPercentage(metrics.taxaDesmarque)} dos leads estão desmarcando ou sumindo.`,
         metric: `${formatPercentage(metrics.taxaDesmarque)}`,
@@ -76,8 +78,11 @@ export const PerformanceAlerts = React.memo(({
       });
     }
 
-    console.log(`🚨 [ALERTAS] ${alertsList.length} alertas gerados`);
-    return alertsList.sort((a, b) => b.priority - a.priority);
+    const sortedAlerts = alertsList.sort((a, b) => b.priority - a.priority);
+    const criticalCount = sortedAlerts.filter(alert => alert.type === 'danger').length;
+
+    console.log(`🚨 [ALERTAS] ${alertsList.length} alertas gerados (${criticalCount} críticos)`);
+    return { alerts: sortedAlerts, criticalCount };
   }, [leads]);
 
   // Não renderizar se não há alertas significativos
@@ -89,52 +94,86 @@ export const PerformanceAlerts = React.memo(({
     );
   }
 
+  // Mostrar apenas alertas críticos por padrão
+  const displayAlerts = isExpanded ? alerts : alerts.filter(alert => alert.type === 'danger');
+
   return (
     <div className={position === 'bottom' ? 'mt-8' : 'mb-8'}>
       <LostLeadsAlert leads={leads} />
       
-      <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
-        {showTitle && (
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              Alertas de Performance
-              <span className="text-sm font-normal text-gray-400">
-                ({alerts.length} alerta{alerts.length !== 1 ? 's' : ''}) - Métricas Padronizadas
-              </span>
-            </CardTitle>
-          </CardHeader>
-        )}
-        <CardContent className={showTitle ? '' : 'pt-6'}>
-          <div className="space-y-4">
-            {alerts.map((alert) => {
-              const Icon = alert.icon;
-              return (
-                <Alert 
-                  key={alert.id} 
-                  className={`${getAlertStyles(alert.type)} border`}
-                >
-                  <Icon className={`h-4 w-4 ${getIconColor(alert.type)}`} />
-                  <AlertDescription>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-white mb-1">{alert.title}</p>
-                        <p className="text-sm text-gray-300">{alert.description}</p>
-                      </div>
-                      {alert.metric && (
-                        <div className="ml-4 text-right">
-                          <p className={`font-bold text-sm ${getIconColor(alert.type)}`}>
-                            {alert.metric}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              );
-            })}
+      <Card className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-gray-400" />
+              <CardTitle className="text-base font-medium text-gray-200">
+                Alertas de Performance
+              </CardTitle>
+              {criticalCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                  <span className="text-xs text-red-400 font-medium">
+                    {criticalCount} crítico{criticalCount !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {alerts.length > displayAlerts.length && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-gray-400 hover:text-gray-200 text-xs"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Menos
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Ver todos ({alerts.length})
+                  </>
+                )}
+              </Button>
+            )}
           </div>
-        </CardContent>
+        </CardHeader>
+        
+        {displayAlerts.length > 0 && (
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {displayAlerts.map((alert) => {
+                const Icon = alert.icon;
+                return (
+                  <Alert 
+                    key={alert.id} 
+                    className={`${getAlertStyles(alert.type)} border-l-4`}
+                  >
+                    <Icon className={`h-4 w-4 ${getIconColor(alert.type)}`} />
+                    <AlertDescription>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-white text-sm mb-1">{alert.title}</p>
+                          <p className="text-xs text-gray-300">{alert.description}</p>
+                        </div>
+                        {alert.metric && (
+                          <div className="ml-3 text-right">
+                            <p className={`font-bold text-sm ${getIconColor(alert.type)}`}>
+                              {alert.metric}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                );
+              })}
+            </div>
+          </CardContent>
+        )}
       </Card>
     </div>
   );

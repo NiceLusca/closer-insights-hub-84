@@ -1,0 +1,32 @@
+
+/* Sistema de Z-Index Global */
+:root {
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* Garantir que tooltips sempre fiquem no topo */
+[data-radix-tooltip-content],
+.tooltip-content,
+[role="tooltip"] {
+  z-index: var(--z-tooltip) !important;
+  position: relative;
+}
+
+/* Popover e dropdown também precisam de z-index alto */
+[data-radix-popover-content],
+[data-radix-dropdown-menu-content] {
+  z-index: var(--z-popover) !important;
+}
+
+/* Charts e gráficos devem ter z-index baixo */
+.recharts-wrapper,
+.recharts-surface {
+  z-index: 1 !important;
+}
