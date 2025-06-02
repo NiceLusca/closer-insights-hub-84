@@ -35,6 +35,7 @@ const Dashboard = () => {
     tempDateRange,
     tempFilters,
     hasPendingFilters,
+    isApplyingFilters,
     setTempDateRange,
     handleTempFilterChange,
     applyFilters,
@@ -44,14 +45,14 @@ const Dashboard = () => {
   // Estado da UI
   const [showFilters, setShowFilters] = useState(true);
 
-  // Dados processados
-  const filteredLeads = useFilteredLeads(allLeads, dateRange, filters);
+  // Dados processados com validação
+  const { filteredLeads, validation } = useFilteredLeads(allLeads, dateRange, filters, 'dashboard');
   const filterOptions = useFilterOptions(allLeads, dataReady, isLoading);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
       <DashboardHeader
-        isLoading={isLoading}
+        isLoading={isLoading || isApplyingFilters}
         lastUpdated={lastUpdated}
         showFilters={showFilters}
         hasPendingFilters={hasPendingFilters}
@@ -67,7 +68,7 @@ const Dashboard = () => {
           filterOptions={filterOptions}
           hasPendingFilters={hasPendingFilters}
           allLeads={allLeads}
-          isLoading={!dataReady}
+          isLoading={!dataReady || isApplyingFilters}
           onTempDateRangeChange={setTempDateRange}
           onTempFilterChange={handleTempFilterChange}
           onApplyFilters={applyFilters}
@@ -75,22 +76,23 @@ const Dashboard = () => {
         />
 
         {/* Loading State com progresso */}
-        {isLoading && (
+        {(isLoading || isApplyingFilters) && (
           <LoadingState 
-            progress={loadingProgress} 
-            stage={loadingStage}
+            progress={isApplyingFilters ? 100 : loadingProgress} 
+            stage={isApplyingFilters ? 'Aplicando filtros...' : loadingStage}
           />
         )}
 
         {/* Conteúdo principal apenas quando não está carregando */}
-        {!isLoading && (
+        {!isLoading && !isApplyingFilters && (
           <>
-            {/* Debug Info */}
+            {/* Debug Info com validação */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
               dateRange={dateRange}
               cacheStatus={isCacheValid ? 'válido' : 'expirado'}
+              validation={validation}
             />
 
             {/* Metrics Cards */}
