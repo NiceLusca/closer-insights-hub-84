@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Calendar, Target, DollarSign, Info, CheckCircle, CreditCard, RotateCcw, Zap, AlertTriangle } from "lucide-react";
-import { calculateMetrics } from "@/utils/metricsCalculations";
+import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
 import type { Lead } from "@/types/lead";
 
 interface MetricsCardsProps {
@@ -11,7 +11,7 @@ interface MetricsCardsProps {
 }
 
 export function MetricsCards({ leads }: MetricsCardsProps) {
-  const metrics = calculateMetrics(leads);
+  const metrics = calculateStandardizedMetrics(leads);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -32,7 +32,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-blue-600/20 to-blue-800/20",
       iconColor: "text-blue-400",
       borderColor: "border-l-blue-500",
-      tooltip: `Total de leads válidos no período (excluindo mentorados): ${metrics.totalLeads} leads`
+      tooltip: `📊 DEFINIÇÃO: Total de leads válidos no período (excluindo mentorados)\n\n🔢 VALOR: ${metrics.totalLeads} leads\n\n📋 COMPOSIÇÃO:\n• ✅ Fechados: ${metrics.fechados}\n• ⏳ A Ser Atendido: ${metrics.aSerAtendido}\n• 🕐 Atendido Não Fechou: ${metrics.atendidoNaoFechou}\n• ❌ Perdido/Inativo: ${metrics.perdidoInativo}`
     },
     {
       title: "Aproveitamento Geral",
@@ -41,7 +41,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-indigo-600/20 to-indigo-800/20",
       iconColor: "text-indigo-400",
       borderColor: "border-l-indigo-500",
-      tooltip: `Percentual geral de conversão: ${metrics.fechados} fechados ÷ ${metrics.totalLeads} leads totais = ${formatPercentage(metrics.aproveitamentoGeral)}`
+      tooltip: `📊 DEFINIÇÃO: Percentual geral de conversão de todos os leads\n\n🧮 FÓRMULA: Fechados ÷ Total de Leads\n\n🔢 CÁLCULO: ${metrics.fechados} ÷ ${metrics.totalLeads} = ${formatPercentage(metrics.aproveitamentoGeral)}\n\n💡 SIGNIFICADO: Do total de leads recebidos, qual % efetivamente comprou`
     },
     {
       title: "Receita Total",
@@ -50,7 +50,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-green-600/20 to-green-800/20",
       iconColor: "text-green-400",
       borderColor: "border-l-green-500",
-      tooltip: `Receita total: ${formatCurrency(metrics.receitaCompleta)} (vendas completas) + ${formatCurrency(metrics.receitaRecorrente)} (recorrentes) = ${formatCurrency(metrics.receitaTotal)}`
+      tooltip: `📊 DEFINIÇÃO: Soma de todas as receitas geradas\n\n🔢 COMPOSIÇÃO:\n• 💰 Vendas Completas: ${formatCurrency(metrics.receitaCompleta)}\n• 🔄 Vendas Recorrentes: ${formatCurrency(metrics.receitaRecorrente)}\n• 🎯 TOTAL: ${formatCurrency(metrics.receitaTotal)}`
     },
     {
       title: "Taxa de Fechamento",
@@ -59,7 +59,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-orange-600/20 to-orange-800/20",
       iconColor: "text-orange-400",
       borderColor: "border-l-orange-500",
-      tooltip: `Taxa de conversão nas apresentações: ${metrics.fechados} fechados ÷ ${metrics.apresentacoes} apresentações (${metrics.fechados} fechados + ${metrics.atendidoNaoFechou} que não fecharam) = ${formatPercentage(metrics.taxaFechamento)}`
+      tooltip: `📊 DEFINIÇÃO: Eficiência de conversão nas apresentações realizadas\n\n🧮 FÓRMULA: Fechados ÷ Apresentações\n\n🔢 CÁLCULO: ${metrics.fechados} ÷ ${metrics.apresentacoes} = ${formatPercentage(metrics.taxaFechamento)}\n\n📋 APRESENTAÇÕES:\n• ✅ Fechados: ${metrics.fechados}\n• 🕐 Atendidos Não Fecharam: ${metrics.atendidoNaoFechou}\n• 🎪 Total Apresentações: ${metrics.apresentacoes}`
     },
     {
       title: "Taxa de Comparecimento",
@@ -68,7 +68,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-purple-600/20 to-purple-800/20",
       iconColor: "text-purple-400",
       borderColor: "border-l-purple-500",
-      tooltip: `Percentual que compareceu: ${metrics.compareceram} compareceram (${metrics.aSerAtendido} a ser atendido + ${metrics.apresentacoes} apresentações) ÷ ${metrics.elegiveisParaComparecimento} elegíveis = ${formatPercentage(metrics.taxaComparecimento)}`
+      tooltip: `📊 DEFINIÇÃO: Percentual de leads que não desmarcaram/sumiram\n\n🧮 FÓRMULA: (Total - Perdidos/Inativos) ÷ Total\n\n🔢 CÁLCULO: (${metrics.totalLeads} - ${metrics.perdidoInativo}) ÷ ${metrics.totalLeads} = ${formatPercentage(metrics.taxaComparecimento)}\n\n📋 COMPARECERAM:\n• ✅ Fechados: ${metrics.fechados}\n• ⏳ A Ser Atendido: ${metrics.aSerAtendido}\n• 🕐 Atendidos Não Fecharam: ${metrics.atendidoNaoFechou}\n• 👥 Total Compareceram: ${metrics.compareceram}`
     },
     {
       title: "Vendas Completas",
@@ -77,7 +77,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-emerald-600/20 to-emerald-800/20",
       iconColor: "text-emerald-400",
       borderColor: "border-l-emerald-500",
-      tooltip: `Vendas à vista: ${metrics.vendasCompletas} vendas totalizando ${formatCurrency(metrics.receitaCompleta)}`
+      tooltip: `📊 DEFINIÇÃO: Vendas pagas à vista\n\n🔢 QUANTIDADE: ${metrics.vendasCompletas} vendas\n\n💰 RECEITA: ${formatCurrency(metrics.receitaCompleta)}\n\n💡 TIPO: Pagamento único/à vista`
     },
     {
       title: "Vendas Recorrentes",
@@ -86,7 +86,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-cyan-600/20 to-cyan-800/20",
       iconColor: "text-cyan-400",
       borderColor: "border-l-cyan-500",
-      tooltip: `Vendas mensais recorrentes: ${metrics.vendasRecorrentes} vendas totalizando ${formatCurrency(metrics.receitaRecorrente)}/mês`
+      tooltip: `📊 DEFINIÇÃO: Vendas com pagamento mensal\n\n🔢 QUANTIDADE: ${metrics.vendasRecorrentes} vendas\n\n🔄 RECEITA MENSAL: ${formatCurrency(metrics.receitaRecorrente)}/mês\n\n💡 TIPO: Assinatura/pagamento recorrente`
     },
     {
       title: "Taxa de Desmarque",
@@ -95,7 +95,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-red-600/20 to-red-800/20",
       iconColor: "text-red-400",
       borderColor: "border-l-red-500",
-      tooltip: `Percentual de leads perdidos: ${metrics.perdidoInativo} perdidos/inativos ÷ ${metrics.baseParaDesmarque} elegíveis (${metrics.aSerAtendido} a ser atendido + ${metrics.perdidoInativo} perdidos) = ${formatPercentage(metrics.taxaDesmarque)}`
+      tooltip: `📊 DEFINIÇÃO: Percentual de leads perdidos/inativos\n\n🧮 FÓRMULA: Perdidos/Inativos ÷ Total de Leads\n\n🔢 CÁLCULO: ${metrics.perdidoInativo} ÷ ${metrics.totalLeads} = ${formatPercentage(metrics.taxaDesmarque)}\n\n📋 PERDIDOS/INATIVOS:\n• Desmarcaram\n• Não apareceram\n• Número errado\n• Total: ${metrics.perdidoInativo} leads\n\n⚖️ VALIDAÇÃO: Taxa Comparecimento (${formatPercentage(metrics.taxaComparecimento)}) + Taxa Desmarque (${formatPercentage(metrics.taxaDesmarque)}) = ${formatPercentage(metrics.taxaComparecimento + metrics.taxaDesmarque)} (deve ser ~100%)`
     }
   ];
 
@@ -119,7 +119,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
                       <Info className="h-4 w-4 text-gray-500 hover:text-gray-300 cursor-help transition-colors" />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm bg-gray-800 border-gray-700 text-gray-200 z-[9999]">
-                      <p className="text-sm">{metric.tooltip}</p>
+                      <pre className="text-xs whitespace-pre-wrap">{metric.tooltip}</pre>
                     </TooltipContent>
                   </Tooltip>
                 </div>

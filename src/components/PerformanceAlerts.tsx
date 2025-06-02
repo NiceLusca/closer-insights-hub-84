@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Target } from "lucide-react";
 import { generateConversionAlerts, generateNoShowAlerts, getAlertStyles, getIconColor } from "./PerformanceAlerts/AlertTypes";
 import { LostLeadsAlert } from "./PerformanceAlerts/LostLeadsAlert";
+import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
 import type { Lead } from "@/types/lead";
 import type { AlertItem } from "./PerformanceAlerts/AlertTypes";
 
@@ -20,34 +21,63 @@ export const PerformanceAlerts = React.memo(({
   showTitle = true 
 }: PerformanceAlertsProps) => {
   const alerts = useMemo(() => {
-    const validLeads = leads.filter(lead => lead.Status !== 'Mentorado');
+    console.log('🚨 [ALERTAS] Calculando alertas com métricas padronizadas');
+    
+    const metrics = calculateStandardizedMetrics(leads);
     const alertsList: AlertItem[] = [];
 
-    if (validLeads.length === 0) {
+    if (metrics.totalLeads === 0) {
       return alertsList;
     }
 
-    // Gerar alertas por categoria
-    alertsList.push(...generateConversionAlerts(validLeads));
-    alertsList.push(...generateNoShowAlerts(validLeads));
+    // Gerar alertas usando métricas padronizadas
+    alertsList.push(...generateConversionAlerts(leads));
+    alertsList.push(...generateNoShowAlerts(leads));
 
-    // Análise de Leads Estagnados
-    const totalLeads = validLeads.length;
-    const aguardandoResposta = validLeads.filter(lead => lead.Status === 'Aguardando resposta').length;
-    if (aguardandoResposta > totalLeads * 0.3) {
+    // Análise de Leads Estagnados usando métricas padronizadas
+    if (metrics.aSerAtendido > metrics.totalLeads * 0.3) {
       alertsList.push({
         id: 'stagnant-leads',
         type: 'warning',
         icon: Target,
-        title: 'Muitos leads aguardando resposta',
-        description: `${aguardandoResposta} leads (${((aguardandoResposta/totalLeads)*100).toFixed(1)}%) sem definição.`,
-        metric: `${aguardandoResposta} leads`,
+        title: 'Muitos leads a ser atendido',
+        description: `${metrics.aSerAtendido} leads (${((metrics.aSerAtendido/metrics.totalLeads)*100).toFixed(1)}%) ainda aguardando atendimento.`,
+        metric: `${metrics.aSerAtendido} leads`,
         priority: 6
       });
     }
 
+    // Alerta de Taxa de Desmarque Alta
+    if (metrics.taxaDesmarque > 40) {
+      alertsList.push({
+        id: 'high-no-show',
+        type: 'error',
+        icon: Target,
+        title: 'Taxa de desmarque muito alta',
+        description: `${formatPercentage(metrics.taxaDesmarque)} dos leads estão desmarcando ou sumindo.`,
+        metric: `${formatPercentage(metrics.taxaDesmarque)}`,
+        priority: 8
+      });
+    }
+
+    // Alerta de Taxa de Fechamento Baixa
+    if (metrics.taxaFechamento < 20 && metrics.apresentacoes > 5) {
+      alertsList.push({
+        id: 'low-closing-rate',
+        type: 'error',
+        icon: Target,
+        title: 'Taxa de fechamento baixa',
+        description: `Apenas ${formatPercentage(metrics.taxaFechamento)} das apresentações estão fechando.`,
+        metric: `${formatPercentage(metrics.taxaFechamento)}`,
+        priority: 9
+      });
+    }
+
+    console.log(`🚨 [ALERTAS] ${alertsList.length} alertas gerados`);
     return alertsList.sort((a, b) => b.priority - a.priority);
   }, [leads]);
+
+  const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
   // Não renderizar se não há alertas significativos
   if (alerts.length === 0) {
@@ -69,7 +99,7 @@ export const PerformanceAlerts = React.memo(({
               <Target className="w-5 h-5" />
               Alertas de Performance
               <span className="text-sm font-normal text-gray-400">
-                ({alerts.length} alerta{alerts.length !== 1 ? 's' : ''})
+                ({alerts.length} alerta{alerts.length !== 1 ? 's' : ''}) - Métricas Padronizadas
               </span>
             </CardTitle>
           </CardHeader>
