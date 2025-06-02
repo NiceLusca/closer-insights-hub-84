@@ -51,7 +51,7 @@ export const PerformanceAlerts = React.memo(({
     if (metrics.taxaDesmarque > 40) {
       alertsList.push({
         id: 'high-no-show',
-        type: 'error',
+        type: 'danger',
         icon: Target,
         title: 'Taxa de desmarque muito alta',
         description: `${formatPercentage(metrics.taxaDesmarque)} dos leads estão desmarcando ou sumindo.`,
@@ -64,7 +64,7 @@ export const PerformanceAlerts = React.memo(({
     if (metrics.taxaFechamento < 20 && metrics.apresentacoes > 5) {
       alertsList.push({
         id: 'low-closing-rate',
-        type: 'error',
+        type: 'danger',
         icon: Target,
         title: 'Taxa de fechamento baixa',
         description: `Apenas ${formatPercentage(metrics.taxaFechamento)} das apresentações estão fechando.`,
