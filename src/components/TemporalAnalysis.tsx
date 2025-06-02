@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useTemporalData } from "@/hooks/useTemporalData";
-import { TemporalInsights } from "./TemporalAnalysis/TemporalInsights";
+import { TemporalInsightsCard } from "./TemporalAnalysis/TemporalInsights";
 import { DayOfWeekChart } from "./TemporalAnalysis/DayOfWeekChart";
 import { HourlyChart } from "./TemporalAnalysis/HourlyChart";
 import { DailyTrendChart } from "./TemporalAnalysis/DailyTrendChart";
@@ -17,7 +17,7 @@ export const TemporalAnalysis = React.memo(({ leads }: TemporalAnalysisProps) =>
   return (
     <div className="space-y-8">
       {/* Insights Cards */}
-      <TemporalInsights insights={temporalData.insights} />
+      <TemporalInsightsCard insights={temporalData.insights} />
 
       {/* Análise por Dia da Semana */}
       <DayOfWeekChart data={temporalData.dayOfWeekData} />

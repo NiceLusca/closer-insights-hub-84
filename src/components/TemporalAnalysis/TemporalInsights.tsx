@@ -1,15 +1,14 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, Activity, AlertTriangle } from "lucide-react";
 import { getVolumeIndicator } from "@/utils/volumeAnalysis";
 import type { TemporalInsights } from "@/hooks/useTemporalData";
 
-interface TemporalInsightsProps {
+interface TemporalInsightsCardProps {
   insights: TemporalInsights;
 }
 
-export const TemporalInsights = React.memo(({ insights }: TemporalInsightsProps) => {
+export const TemporalInsightsCard = React.memo(({ insights }: TemporalInsightsCardProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card className={`${insights.bestDay ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30' : 'bg-gray-700/50 border border-gray-600/50'}`}>
@@ -91,4 +90,4 @@ export const TemporalInsights = React.memo(({ insights }: TemporalInsightsProps)
   );
 });
 
-TemporalInsights.displayName = 'TemporalInsights';
+TemporalInsightsCard.displayName = 'TemporalInsightsCard';
