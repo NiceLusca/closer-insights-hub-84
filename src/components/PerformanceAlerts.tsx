@@ -15,6 +15,9 @@ interface PerformanceAlertsProps {
   showTitle?: boolean;
 }
 
+// Mover a função formatPercentage para fora do componente
+const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
+
 export const PerformanceAlerts = React.memo(({ 
   leads, 
   position = 'bottom',
@@ -76,8 +79,6 @@ export const PerformanceAlerts = React.memo(({
     console.log(`🚨 [ALERTAS] ${alertsList.length} alertas gerados`);
     return alertsList.sort((a, b) => b.priority - a.priority);
   }, [leads]);
-
-  const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
   // Não renderizar se não há alertas significativos
   if (alerts.length === 0) {

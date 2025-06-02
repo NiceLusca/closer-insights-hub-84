@@ -22,7 +22,7 @@ const Analytics = () => {
   const { dateRange, filters } = useGlobalFilters();
 
   // Dados processados
-  const filteredLeads = useFilteredLeads(allLeads, dateRange, filters);
+  const { filteredLeads } = useFilteredLeads(allLeads, dateRange, filters, 'analytics');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
