@@ -33,6 +33,9 @@ export interface StandardizedMetrics {
 /**
  * DEFINIÇÕES PADRONIZADAS PARA TODA A PLATAFORMA:
  * 
+ * CORREÇÃO APLICADA: calculateStandardizedMetrics() agora é a ÚNICA responsável por 
+ * filtrar mentorados. Todos os componentes devem passar leads "brutos" para esta função.
+ * 
  * 1. GRUPOS DE STATUS (5 GRUPOS):
  *    - Fechado: Leads que compraram
  *    - A Ser Atendido: Leads no processo (Agendado, Confirmado, Remarcou, DCAUSENTE)
@@ -53,7 +56,7 @@ export interface StandardizedMetrics {
  */
 
 export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics {
-  console.log('🔄 [MÉTRICAS PADRONIZADAS] Calculando para', leads.length, 'leads');
+  console.log('🔄 [MÉTRICAS PADRONIZADAS] Calculando para', leads.length, 'leads BRUTOS');
   
   // 0. Validar classificação de status
   const validation = validateStatusClassification(leads);
@@ -65,14 +68,14 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   const allStatusGroups = getLeadsByStatusGroup(leads, false);
   const mentorados = allStatusGroups.mentorado.length;
   
-  // 2. Filtrar leads válidos (excluindo mentorados para cálculos)
+  // 2. CORREÇÃO: Esta função deve ser a ÚNICA responsável por filtrar mentorados
   const validLeads = getLeadsExcludingMentorados(leads);
   const statusGroups = getLeadsByStatusGroup(validLeads, true);
   
-  console.log('✅ [MÉTRICAS] Leads processados:');
+  console.log('✅ [MÉTRICAS] Base de cálculo padronizada:');
   console.log(`  📊 Total original: ${leads.length}`);
-  console.log(`  🎓 Mentorados (excluídos): ${mentorados}`);
-  console.log(`  ✅ Válidos para cálculo: ${validLeads.length}`);
+  console.log(`  🎓 Mentorados (SEMPRE excluídos): ${mentorados}`);
+  console.log(`  ✅ Base válida para cálculo: ${validLeads.length}`);
   
   // 3. Contadores básicos dos 4 grupos principais (excluindo mentorados)
   const totalLeads = validLeads.length;
@@ -124,7 +127,7 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   const aproveitamentoGeral = totalLeads > 0 ? (fechados / totalLeads) * 100 : 0;
   const taxaNaoFechamento = apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0;
   
-  console.log('📈 [MÉTRICAS] Taxas padronizadas (excluindo mentorados):');
+  console.log('📈 [MÉTRICAS] Taxas padronizadas (BASE ÚNICA para todos os componentes):');
   console.log(`  🎯 Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${apresentacoes})`);
   console.log(`  ✅ Taxa de Comparecimento: ${taxaComparecimento.toFixed(1)}% (${compareceram}/${totalLeads})`);
   console.log(`  ❌ Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${totalLeads})`);
@@ -175,7 +178,7 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     vendasRecorrentes
   };
   
-  console.log('✅ [MÉTRICAS] Cálculo padronizado concluído');
+  console.log('✅ [MÉTRICAS] Cálculo padronizado concluído - BASE ÚNICA GARANTIDA');
   console.log(`🎓 [EXCLUSÃO] Mentorados excluídos: ${mentorados} leads`);
   
   return metrics;
@@ -198,7 +201,7 @@ export function validateMetricsConsistency(metrics: StandardizedMetrics): boolea
     return false;
   }
   
-  console.log('✅ [VALIDAÇÃO] Métricas consistentes');
+  console.log('✅ [VALIDAÇÃO] Métricas consistentes - BASE ÚNICA VALIDADA');
   console.log(`🎓 [INFO] ${metrics.mentorados} mentorados foram corretamente excluídos dos cálculos`);
   return true;
 }

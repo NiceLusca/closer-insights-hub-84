@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Percent, Hash } from "lucide-react";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
-import { getLeadsExcludingMentorados } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceProps {
@@ -15,17 +14,13 @@ interface CloserPerformanceProps {
 export function CloserPerformance({ leads }: CloserPerformanceProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('percentage');
   
-  console.log('🎯 [CLOSER PERFORMANCE] Processando', leads.length, 'leads usando métricas padronizadas');
+  console.log('🎯 [CLOSER PERFORMANCE] Processando', leads.length, 'leads BRUTOS (com mentorados)');
 
   const closerData = useMemo(() => {
-    // Usar leads válidos (excluindo mentorados)
-    const validLeads = getLeadsExcludingMentorados(leads);
-    console.log('🎯 [CLOSER PERFORMANCE] Leads válidos:', validLeads.length);
-    
+    // Agrupar leads por closer ANTES de qualquer filtragem
     const closerStats: Record<string, Lead[]> = {};
     
-    // Agrupar leads por closer
-    validLeads.forEach(lead => {
+    leads.forEach(lead => {
       const closer = lead.Closer || 'Sem Closer';
       if (!closerStats[closer]) {
         closerStats[closer] = [];
@@ -33,20 +28,42 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
       closerStats[closer].push(lead);
     });
 
+    console.log('🎯 [CLOSER PERFORMANCE] Closers encontrados:', Object.keys(closerStats).length);
+
     const result = Object.entries(closerStats).map(([closer, closerLeads]) => {
-      // Usar métricas padronizadas para cada closer
+      console.log(`👤 [${closer}] Processando ${closerLeads.length} leads brutos`);
+      
+      // Usar métricas padronizadas (que já filtra mentorados internamente)
       const metrics = calculateStandardizedMetrics(closerLeads);
+      
+      console.log(`👤 [${closer}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados`);
+      console.log(`👤 [${closer}] Aproveitamento: ${metrics.aproveitamentoGeral.toFixed(1)}%`);
       
       return {
         closer: closer.split(' ')[0], // Mostrar apenas primeiro nome
         leads: metrics.totalLeads,
         vendas: metrics.fechados,
-        conversao: metrics.aproveitamentoGeral, // Usar aproveitamento geral padronizado
+        conversao: metrics.aproveitamentoGeral,
         receita: metrics.receitaTotal
       };
-    }).sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
+    }).filter(item => item.leads > 0) // Filtrar closers sem leads válidos
+      .sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
 
-    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com métricas padronizadas:', result);
+    // Validação cruzada: verificar se a soma dos leads válidos por closer = total de leads válidos geral
+    const totalLeadsValidosPorCloser = result.reduce((sum, item) => sum + item.leads, 0);
+    const metricsGerais = calculateStandardizedMetrics(leads);
+    
+    console.log('🔍 [VALIDAÇÃO CRUZADA] Verificando consistência:');
+    console.log(`  📊 Total leads válidos (soma closers): ${totalLeadsValidosPorCloser}`);
+    console.log(`  📊 Total leads válidos (geral): ${metricsGerais.totalLeads}`);
+    console.log(`  📊 Fechados (soma closers): ${result.reduce((sum, item) => sum + item.vendas, 0)}`);
+    console.log(`  📊 Fechados (geral): ${metricsGerais.fechados}`);
+    
+    if (totalLeadsValidosPorCloser !== metricsGerais.totalLeads) {
+      console.warn('⚠️ [INCONSISTÊNCIA] Soma dos leads por closer ≠ total geral!');
+    }
+
+    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com base consistente:', result.length, 'closers');
     return result;
   }, [leads, viewMode]);
 
@@ -69,7 +86,7 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               Performance por Closer
             </CardTitle>
             <p className="text-sm text-gray-400">
-              {totalLeads} leads analisados (usando métricas padronizadas, excluindo mentorados)
+              {totalLeads} leads válidos analisados (base consistente com métricas gerais)
             </p>
           </div>
           <div className="flex items-center space-x-2">

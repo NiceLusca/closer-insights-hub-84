@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -6,7 +5,6 @@ import { Users } from "lucide-react";
 import { CloserMetricsCards } from "./CloserPerformance/CloserMetrics";
 import { CloserRanking } from "./CloserPerformance/CloserRanking";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
-import { getLeadsExcludingMentorados } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceAnalysisProps {
@@ -29,12 +27,10 @@ interface CloserMetrics {
 
 export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanceAnalysisProps) => {
   const closerData = useMemo(() => {
-    console.log('🎯 [CLOSER ANALYSIS] Processando', leads.length, 'leads usando métricas padronizadas');
+    console.log('🎯 [CLOSER ANALYSIS] Processando', leads.length, 'leads BRUTOS (com mentorados)');
     
-    // Usar apenas leads válidos (excluindo mentorados)
-    const validLeads = getLeadsExcludingMentorados(leads);
-    
-    const closerGroups = validLeads.reduce((acc, lead) => {
+    // Agrupar leads por closer ANTES de qualquer filtragem
+    const closerGroups = leads.reduce((acc, lead) => {
       const closerName = lead.Closer?.trim() || 'Sem Closer';
       if (closerName && closerName !== '') {
         if (!acc[closerName]) {
@@ -45,9 +41,16 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       return acc;
     }, {} as Record<string, Lead[]>);
 
+    console.log('🎯 [CLOSER ANALYSIS] Closers encontrados:', Object.keys(closerGroups).length);
+
     const closerMetrics: CloserMetrics[] = Object.entries(closerGroups).map(([closerName, closerLeads]) => {
-      // Usar métricas padronizadas para cada closer
+      console.log(`👤 [${closerName}] Processando ${closerLeads.length} leads brutos`);
+      
+      // Usar métricas padronizadas (que já filtra mentorados internamente)
       const metrics = calculateStandardizedMetrics(closerLeads);
+      
+      console.log(`👤 [${closerName}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados`);
+      console.log(`👤 [${closerName}] Aproveitamento: ${metrics.aproveitamentoGeral.toFixed(1)}%`);
       
       return {
         closer: closerName,
@@ -62,7 +65,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
         receitaMedia: metrics.fechados > 0 ? metrics.receitaTotal / metrics.fechados : 0,
         rank: 0
       };
-    });
+    }).filter(closer => closer.totalLeads > 0); // Filtrar closers sem leads válidos
 
     // Ordenar por aproveitamento geral (fechados / total)
     closerMetrics.sort((a, b) => b.aproveitamento - a.aproveitamento);
@@ -70,7 +73,21 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       closer.rank = index + 1;
     });
 
-    console.log('🎯 [CLOSER ANALYSIS] Processados', closerMetrics.length, 'closers com métricas padronizadas');
+    // Validação cruzada: verificar se a soma dos leads válidos por closer = total de leads válidos geral
+    const totalLeadsValidosPorCloser = closerMetrics.reduce((sum, closer) => sum + closer.totalLeads, 0);
+    const metricsGerais = calculateStandardizedMetrics(leads);
+    
+    console.log('🔍 [VALIDAÇÃO CRUZADA] Verificando consistência na análise:');
+    console.log(`  📊 Total leads válidos (soma closers): ${totalLeadsValidosPorCloser}`);
+    console.log(`  📊 Total leads válidos (geral): ${metricsGerais.totalLeads}`);
+    console.log(`  📊 Fechados (soma closers): ${closerMetrics.reduce((sum, c) => sum + c.fechamentos, 0)}`);
+    console.log(`  📊 Fechados (geral): ${metricsGerais.fechados}`);
+    
+    if (totalLeadsValidosPorCloser !== metricsGerais.totalLeads) {
+      console.warn('⚠️ [INCONSISTÊNCIA] Soma dos leads por closer ≠ total geral na análise!');
+    }
+
+    console.log('🎯 [CLOSER ANALYSIS] Processados', closerMetrics.length, 'closers com base consistente');
     return closerMetrics;
   }, [leads]);
 
@@ -130,7 +147,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
           <Users className="w-5 h-5" />
           Performance dos Closers
           <span className="text-sm font-normal text-gray-400">
-            (métricas padronizadas - excluindo mentorados)
+            (base de cálculo consistente com métricas gerais)
           </span>
         </CardTitle>
       </CardHeader>
