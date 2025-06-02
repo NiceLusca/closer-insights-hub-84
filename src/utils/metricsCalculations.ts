@@ -26,12 +26,6 @@ export function calculateMetrics(leads: Lead[]) {
   const atendidoNaoFechou = statusGroups.atendidoNaoFechou.length;
   const perdidoInativo = statusGroups.perdidoInativo.length;
   
-  // Para retrocompatibilidade, mapear para os nomes antigos
-  const fechou = fechados;
-  const agendados = aSerAtendido; // A Ser Atendido = Agendado, Confirmado, Remarcou
-  const naoFecharam = atendidoNaoFechou; // Não Fechou, Aguardando resposta
-  const perdidos = perdidoInativo; // Desmarcou, Não Apareceu, Número errado
-  
   // Cálculo de receitas
   const receitaCompleta = validLeads.reduce((sum, lead) => {
     const venda = lead['Venda Completa'];
@@ -54,15 +48,17 @@ export function calculateMetrics(leads: Lead[]) {
     lead.recorrente && lead.recorrente > 0
   ).length;
   
-  // CÁLCULOS CORRIGIDOS BASEADOS NOS GRUPOS DE STATUS:
+  // CÁLCULOS CORRIGIDOS E PADRONIZADOS:
   
-  // Taxa de Fechamento = Fechados / (Fechados + Atendidos que Não Fecharam)
-  const baseParaFechamento = fechados + atendidoNaoFechou;
-  const taxaFechamento = baseParaFechamento > 0 ? (fechados / baseParaFechamento) * 100 : 0;
+  // Definição de "Apresentações": Leads que foram efetivamente atendidos (Fechados + Atendidos que Não Fecharam)
+  const apresentacoes = fechados + atendidoNaoFechou;
   
-  // Taxa de Comparecimento = A Ser Atendido + Fechados / (A Ser Atendido + Fechados + Perdidos/Inativos)
-  const compareceram = aSerAtendido + fechados;
-  const elegiveisParaComparecimento = aSerAtendido + fechados + perdidoInativo;
+  // Taxa de Fechamento = Fechados / Total de Apresentações (Fechados + Atendidos que Não Fecharam)
+  const taxaFechamento = apresentacoes > 0 ? (fechados / apresentacoes) * 100 : 0;
+  
+  // Taxa de Comparecimento = (A Ser Atendido + Apresentações) / (A Ser Atendido + Apresentações + Perdidos/Inativos)
+  const compareceram = aSerAtendido + apresentacoes;
+  const elegiveisParaComparecimento = aSerAtendido + apresentacoes + perdidoInativo;
   const taxaComparecimento = elegiveisParaComparecimento > 0 ? (compareceram / elegiveisParaComparecimento) * 100 : 0;
   
   // Taxa de Desmarque = Perdidos/Inativos / (A Ser Atendido + Perdidos/Inativos)
@@ -71,6 +67,9 @@ export function calculateMetrics(leads: Lead[]) {
   
   // Aproveitamento geral = Fechamentos / Total de leads válidos
   const aproveitamentoGeral = totalLeads > 0 ? (fechados / totalLeads) * 100 : 0;
+  
+  // Taxa de Não Fechamento nas Apresentações = Atendidos que Não Fecharam / Total de Apresentações
+  const taxaNaoFechamento = apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0;
   
   const metrics = {
     totalLeads,
@@ -81,17 +80,27 @@ export function calculateMetrics(leads: Lead[]) {
     taxaFechamento,
     taxaComparecimento,
     taxaDesmarque,
+    taxaNaoFechamento,
     vendasCompletas,
     vendasRecorrentes,
     
-    // Dados adicionais para compatibilidade e debug
-    fechou: fechados,
-    agendados: aSerAtendido,
-    naoApareceu: perdidoInativo, // Simplificado para o grupo perdido/inativo
-    desmarcou: perdidoInativo, // Simplificado para o grupo perdido/inativo
-    apresentacoes: fechados + atendidoNaoFechou, // Leads que tiveram apresentação
+    // Dados detalhados para debug e funil
+    fechados,
+    aSerAtendido,
+    atendidoNaoFechou,
+    perdidoInativo,
+    apresentacoes,
     compareceram,
     elegiveisParaComparecimento,
+    baseParaDesmarque,
+    
+    // Para retrocompatibilidade
+    fechou: fechados,
+    agendados: aSerAtendido,
+    naoFecharam: atendidoNaoFechou,
+    perdidos: perdidoInativo,
+    naoApareceu: perdidoInativo,
+    desmarcou: perdidoInativo,
     leadsAproveitaveis: totalLeads,
     
     // Grupos de status para debug
@@ -103,11 +112,13 @@ export function calculateMetrics(leads: Lead[]) {
     }
   };
   
-  console.log('📈 Métricas calculadas com grupos de status:');
-  console.log(`  Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${baseParaFechamento})`);
-  console.log(`  Taxa de Comparecimento: ${taxaComparecimento.toFixed(1)}% (${compareceram}/${elegiveisParaComparecimento})`);
-  console.log(`  Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${baseParaDesmarque})`);
-  console.log(`  Aproveitamento Geral: ${aproveitamentoGeral.toFixed(1)}% (${fechados}/${totalLeads})`);
+  console.log('📈 Métricas calculadas (PADRONIZADAS):');
+  console.log(`  📊 Apresentações (base para fechamento): ${apresentacoes} (${fechados} + ${atendidoNaoFechou})`);
+  console.log(`  🎯 Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${apresentacoes})`);
+  console.log(`  📈 Taxa de Não Fechamento: ${taxaNaoFechamento.toFixed(1)}% (${atendidoNaoFechou}/${apresentacoes})`);
+  console.log(`  ✅ Taxa de Comparecimento: ${taxaComparecimento.toFixed(1)}% (${compareceram}/${elegiveisParaComparecimento})`);
+  console.log(`  ❌ Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${baseParaDesmarque})`);
+  console.log(`  ⚡ Aproveitamento Geral: ${aproveitamentoGeral.toFixed(1)}% (${fechados}/${totalLeads})`);
   
   return metrics;
 }

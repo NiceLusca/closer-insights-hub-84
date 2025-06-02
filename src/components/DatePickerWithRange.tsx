@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { format, parse, subDays, startOfMonth, endOfMonth, subMonths, min, max } from "date-fns";
+import { format, parse, subDays, startOfMonth, endOfMonth, subMonths, min, max, startOfDay, endOfDay, startOfToday, endOfToday, startOfYesterday, endOfYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,6 +53,20 @@ export function DatePickerWithRange({
   };
 
   const presetRanges = [
+    {
+      label: "Hoje",
+      range: {
+        from: startOfToday(),
+        to: endOfToday()
+      }
+    },
+    {
+      label: "Ontem",
+      range: {
+        from: startOfYesterday(),
+        to: endOfYesterday()
+      }
+    },
     {
       label: "Últimos 7 dias",
       range: {
