@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Percent, Hash } from "lucide-react";
+import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
+import { getLeadsExcludingMentorados } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceProps {
@@ -13,42 +15,38 @@ interface CloserPerformanceProps {
 export function CloserPerformance({ leads }: CloserPerformanceProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('percentage');
   
-  console.log('CloserPerformance recebendo leads:', leads.length);
+  console.log('🎯 [CLOSER PERFORMANCE] Processando', leads.length, 'leads usando métricas padronizadas');
 
   const closerData = useMemo(() => {
-    console.log('Processando dados do CloserPerformance com', leads.length, 'leads');
+    // Usar leads válidos (excluindo mentorados)
+    const validLeads = getLeadsExcludingMentorados(leads);
+    console.log('🎯 [CLOSER PERFORMANCE] Leads válidos:', validLeads.length);
     
-    // Incluir TODOS os leads, excluindo apenas mentorados
-    const validLeads = leads.filter(lead => lead.Status !== 'Mentorado');
+    const closerStats: Record<string, Lead[]> = {};
     
-    const closerStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
-    
+    // Agrupar leads por closer
     validLeads.forEach(lead => {
       const closer = lead.Closer || 'Sem Closer';
-      
       if (!closerStats[closer]) {
-        closerStats[closer] = { leads: 0, vendas: 0, receita: 0 };
+        closerStats[closer] = [];
       }
-      
-      closerStats[closer].leads++;
-      
-      if (lead.Status === 'Fechou') {
-        closerStats[closer].vendas++;
-        closerStats[closer].receita += lead['Venda Completa'] || 0;
-      }
+      closerStats[closer].push(lead);
     });
 
-    const result = Object.entries(closerStats)
-      .map(([closer, stats]) => ({
-        closer: closer.split(' ')[0], // Show only first name for better display
-        leads: stats.leads,
-        vendas: stats.vendas,
-        conversao: stats.leads > 0 ? ((stats.vendas / stats.leads) * 100) : 0,
-        receita: stats.receita
-      }))
-      .sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
+    const result = Object.entries(closerStats).map(([closer, closerLeads]) => {
+      // Usar métricas padronizadas para cada closer
+      const metrics = calculateStandardizedMetrics(closerLeads);
+      
+      return {
+        closer: closer.split(' ')[0], // Mostrar apenas primeiro nome
+        leads: metrics.totalLeads,
+        vendas: metrics.fechados,
+        conversao: metrics.aproveitamentoGeral, // Usar aproveitamento geral padronizado
+        receita: metrics.receitaTotal
+      };
+    }).sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
 
-    console.log('Dados processados do CloserPerformance:', result);
+    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com métricas padronizadas:', result);
     return result;
   }, [leads, viewMode]);
 
@@ -71,7 +69,7 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               Performance por Closer
             </CardTitle>
             <p className="text-sm text-gray-400">
-              {totalLeads} leads analisados (excluindo mentorados)
+              {totalLeads} leads analisados (usando métricas padronizadas, excluindo mentorados)
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -112,11 +110,12 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
                 border: '1px solid #374151',
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6'
+                color: '#f3f4f6',
+                zIndex: 10000
               }}
               formatter={(value, name) => {
                 if (name === 'Total de Leads') return [value, 'Total de Leads'];
-                if (name === 'Taxa de Conversão (%)') return [`${(value as number).toFixed(1)}%`, 'Taxa de Conversão'];
+                if (name === 'Aproveitamento Geral (%)') return [`${(value as number).toFixed(1)}%`, 'Aproveitamento Geral'];
                 if (name === 'Número de Vendas') return [value, 'Número de Vendas'];
                 return [value, name];
               }}
@@ -126,7 +125,7 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               <Bar 
                 dataKey="conversao" 
                 fill="#10b981" 
-                name="Taxa de Conversão (%)"
+                name="Aproveitamento Geral (%)"
                 radius={[2, 2, 0, 0]}
               />
             ) : (

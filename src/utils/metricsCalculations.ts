@@ -32,8 +32,8 @@ export function calculateMetrics(leads: Lead[]) {
     perdidoInativo: standardMetrics.perdidoInativo,
     apresentacoes: standardMetrics.apresentacoes,
     compareceram: standardMetrics.compareceram,
-    elegiveisParaComparecimento: standardMetrics.totalLeads, // Total é elegível
-    baseParaDesmarque: standardMetrics.totalLeads, // Total é a base
+    elegiveisParaComparecimento: standardMetrics.totalLeads, // Total válido é elegível
+    baseParaDesmarque: standardMetrics.totalLeads, // Total válido é a base
     
     // Para retrocompatibilidade
     fechou: standardMetrics.fechados,
@@ -49,10 +49,12 @@ export function calculateMetrics(leads: Lead[]) {
       fechados: standardMetrics.fechados,
       aSerAtendido: standardMetrics.aSerAtendido,
       atendidoNaoFechou: standardMetrics.atendidoNaoFechou,
-      perdidoInativo: standardMetrics.perdidoInativo
+      perdidoInativo: standardMetrics.perdidoInativo,
+      mentorados: standardMetrics.mentorados // Adicionar para visibilidade
     }
   };
   
   console.log('✅ [LEGACY] Métricas calculadas usando definições padronizadas');
+  console.log(`🎓 [INFO] ${standardMetrics.mentorados} mentorados excluídos dos cálculos`);
   return metrics;
 }

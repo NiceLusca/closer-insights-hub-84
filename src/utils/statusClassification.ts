@@ -49,7 +49,7 @@ export const STATUS_GROUPS: Record<StatusGroup, StatusGroupInfo> = {
     key: 'mentorado',
     label: 'Mentorado',
     emoji: '🎓',
-    description: 'Leads mentorados (excluídos por padrão)',
+    description: 'Leads mentorados (excluídos dos cálculos de conversão)',
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20'
   }
@@ -79,7 +79,7 @@ export function classifyLeadByStatus(status: string | undefined): StatusGroup {
     case 'Desmarcou':
     case 'Não Apareceu':
     case 'Número errado':
-    case 'Numero Errado': // Adicionando versão sem acento
+    case 'Numero Errado': // Versão sem acento
       return 'perdidoInativo';
     
     case 'Mentorado':
@@ -105,15 +105,20 @@ export function getLeadsByStatusGroup(leads: Lead[], excludeMentorados: boolean 
     groups[group].push(lead);
   });
 
+  // Se excludeMentorados for true, limpar o grupo de mentorados
   if (excludeMentorados) {
-    groups.mentorado = [];
+    console.log(`🎓 [STATUS] Excluindo ${groups.mentorado.length} leads mentorados dos cálculos`);
+  } else {
+    console.log(`🎓 [STATUS] Incluindo ${groups.mentorado.length} leads mentorados`);
   }
 
   return groups;
 }
 
 export function getLeadsExcludingMentorados(leads: Lead[]): Lead[] {
-  return leads.filter(lead => classifyLeadByStatus(lead.Status) !== 'mentorado');
+  const validLeads = leads.filter(lead => classifyLeadByStatus(lead.Status) !== 'mentorado');
+  console.log(`🎓 [FILTER] Filtrando mentorados: ${leads.length} → ${validLeads.length} leads válidos`);
+  return validLeads;
 }
 
 export function formatPercentage(value: number, decimals: number = 1): string {
@@ -126,4 +131,45 @@ export function formatCurrency(value: number): string {
     currency: 'BRL',
     minimumFractionDigits: 0
   }).format(value);
+}
+
+// Função para validar se todos os leads foram classificados corretamente
+export function validateStatusClassification(leads: Lead[]): {
+  total: number;
+  classified: Record<StatusGroup, number>;
+  unclassified: number;
+} {
+  const classified: Record<StatusGroup, number> = {
+    fechado: 0,
+    aSerAtendido: 0,
+    atendidoNaoFechou: 0,
+    perdidoInativo: 0,
+    mentorado: 0
+  };
+
+  let unclassified = 0;
+
+  leads.forEach(lead => {
+    try {
+      const group = classifyLeadByStatus(lead.Status);
+      classified[group]++;
+    } catch (error) {
+      unclassified++;
+      console.error('Erro ao classificar lead:', lead, error);
+    }
+  });
+
+  const totalClassified = Object.values(classified).reduce((sum, count) => sum + count, 0);
+  
+  console.log('📊 [VALIDATION] Classificação de status:');
+  console.log(`  Total de leads: ${leads.length}`);
+  console.log(`  Classificados: ${totalClassified}`);
+  console.log(`  Não classificados: ${unclassified}`);
+  console.log('  Distribuição:', classified);
+
+  return {
+    total: leads.length,
+    classified,
+    unclassified
+  };
 }
