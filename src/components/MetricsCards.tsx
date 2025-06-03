@@ -68,7 +68,7 @@ export function MetricsCards({ leads }: MetricsCardsProps) {
       bgGradient: "from-purple-600/20 to-purple-800/20",
       iconColor: "text-purple-400",
       borderColor: "border-l-purple-500",
-      tooltip: `Leads que não desmarcaram: ${metrics.compareceram} de ${metrics.totalLeads} leads`
+      tooltip: `Leads que efetivamente compareceram (foram atendidos): ${metrics.apresentacoes} de ${metrics.totalLeads} leads válidos`
     },
     {
       title: "Vendas Completas",

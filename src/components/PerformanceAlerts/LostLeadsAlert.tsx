@@ -14,22 +14,25 @@ export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
   // Usar métricas padronizadas para garantir consistência
   const metrics = calculateStandardizedMetrics(leads);
   
-  console.log('🚨 [LOST LEADS] Usando métricas padronizadas:', {
+  // CORREÇÃO: Somar LEADS (não percentuais) que não converteram
+  const leadsNaoConvertidos = metrics.perdidoInativo + metrics.atendidoNaoFechou;
+  const taxaNaoConversao = metrics.totalLeads > 0 ? (leadsNaoConvertidos / metrics.totalLeads) * 100 : 0;
+  
+  console.log('🚨 [LOST LEADS] Cálculo CORRIGIDO de não conversão:', {
     totalLeads: metrics.totalLeads,
     perdidoInativo: metrics.perdidoInativo,
-    taxaDesmarque: metrics.taxaDesmarque.toFixed(1),
+    atendidoNaoFechou: metrics.atendidoNaoFechou,
+    leadsNaoConvertidos,
+    taxaNaoConversao: taxaNaoConversao.toFixed(1),
     mentoradosExcluidos: metrics.mentorados
   });
 
-  // Usar a taxa de desmarque padronizada (deve ser ~21,0%)
-  const taxaDesmarque = metrics.taxaDesmarque;
-
-  // Só mostrar se taxa de desmarque for realmente alta (>25%)
-  if (taxaDesmarque <= 25) {
+  // Só mostrar se taxa de não conversão for realmente alta (>60%)
+  if (taxaNaoConversao <= 60) {
     return null;
   }
 
-  const alertType = taxaDesmarque > 40 ? 'danger' : 'warning';
+  const alertType = taxaNaoConversao > 75 ? 'danger' : 'warning';
 
   return (
     <Alert className={`${getAlertStyles(alertType)} border-l-4 mb-4`}>
@@ -38,16 +41,16 @@ export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="font-medium text-white text-sm mb-1">
-              Alto índice de leads perdidos
+              Alta taxa de não conversão
             </p>
             <p className="text-xs text-gray-300">
-              {metrics.perdidoInativo} leads perdidos ({taxaDesmarque.toFixed(1)}% do total válido). 
-              Revisar processo de acompanhamento.
+              {leadsNaoConvertidos} leads não converteram ({metrics.perdidoInativo} perdidos + {metrics.atendidoNaoFechou} não fecharam) 
+              = {taxaNaoConversao.toFixed(1)}% do total válido. Revisar estratégia de conversão.
             </p>
           </div>
           <div className="ml-3 text-right">
             <p className={`font-bold text-sm ${getIconColor(alertType)}`}>
-              {taxaDesmarque.toFixed(1)}%
+              {taxaNaoConversao.toFixed(1)}%
             </p>
           </div>
         </div>

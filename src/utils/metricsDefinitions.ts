@@ -13,11 +13,11 @@ export interface StandardizedMetrics {
   
   // Grupos derivados
   apresentacoes: number; // Fechados + Atendidos Não Fecharam
-  compareceram: number; // Total - Perdidos/Inativos - Mentorados
+  compareceram: number; // CORREÇÃO: Apenas quem foi efetivamente atendido (fechados + atendidoNaoFechou)
   
   // Taxas padronizadas
   taxaFechamento: number; // Fechados / Apresentações
-  taxaComparecimento: number; // Compareceram / Total
+  taxaComparecimento: number; // CORREÇÃO: Apresentações / Total (quem efetivamente compareceu)
   taxaDesmarque: number; // Perdidos/Inativos / Total
   aproveitamentoGeral: number; // Fechados / Total
   taxaNaoFechamento: number; // Atendidos Não Fecharam / Apresentações
@@ -33,8 +33,9 @@ export interface StandardizedMetrics {
 /**
  * DEFINIÇÕES PADRONIZADAS PARA TODA A PLATAFORMA:
  * 
- * CORREÇÃO APLICADA: calculateStandardizedMetrics() agora é a ÚNICA responsável por 
- * filtrar mentorados. Todos os componentes devem passar leads "brutos" para esta função.
+ * CORREÇÃO CRÍTICA APLICADA: Taxa de Comparecimento agora representa apenas
+ * quem EFETIVAMENTE foi atendido (fechados + atendidoNaoFechou), não incluindo
+ * leads "A Ser Atendido" que ainda estão no processo.
  * 
  * 1. GRUPOS DE STATUS (5 GRUPOS):
  *    - Fechado: Leads que compraram
@@ -43,13 +44,13 @@ export interface StandardizedMetrics {
  *    - Perdido/Inativo: Leads perdidos (Desmarcou, Não Apareceu, Número errado)
  *    - Mentorado: Leads mentorados (SEMPRE EXCLUÍDOS dos cálculos de conversão)
  * 
- * 2. GRUPOS DERIVADOS:
- *    - Apresentações = Fechados + Atendidos Não Fecharam
- *    - Compareceram = Total Válidos - Perdidos/Inativos (Válidos = excluindo mentorados)
+ * 2. GRUPOS DERIVADOS CORRIGIDOS:
+ *    - Apresentações = Fechados + Atendidos Não Fecharam (quem foi efetivamente atendido)
+ *    - Compareceram = Apresentações (MESMO VALOR - quem compareceu = quem foi atendido)
  * 
- * 3. FÓRMULAS PADRONIZADAS (sempre excluindo mentorados):
+ * 3. FÓRMULAS PADRONIZADAS CORRIGIDAS (sempre excluindo mentorados):
  *    - Taxa de Fechamento = Fechados / Apresentações
- *    - Taxa de Comparecimento = Compareceram / Total Válidos
+ *    - Taxa de Comparecimento = Apresentações / Total Válidos (% que efetivamente compareceu)
  *    - Taxa de Desmarque = Perdidos/Inativos / Total Válidos
  *    - Aproveitamento Geral = Fechados / Total Válidos
  *    - Taxa de Não Fechamento = Atendidos Não Fecharam / Apresentações
@@ -91,13 +92,14 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   console.log(`  ❌ Perdido/Inativo: ${perdidoInativo}`);
   console.log(`  📈 Total Válidos: ${totalLeads} (verificação: ${fechados + aSerAtendido + atendidoNaoFechou + perdidoInativo})`);
   
-  // 4. Grupos derivados (DEFINIÇÕES PADRONIZADAS)
+  // 4. Grupos derivados CORRIGIDOS (DEFINIÇÕES PADRONIZADAS)
   const apresentacoes = fechados + atendidoNaoFechou; // Leads que passaram por atendimento
-  const compareceram = totalLeads - perdidoInativo; // Leads válidos que não sumiram
+  const compareceram = apresentacoes; // CORREÇÃO: Compareceram = Apresentações (quem foi efetivamente atendido)
   
-  console.log('🎯 [MÉTRICAS] Grupos derivados:');
+  console.log('🎯 [MÉTRICAS] Grupos derivados CORRIGIDOS:');
   console.log(`  🎪 Apresentações: ${apresentacoes} (${fechados} fechados + ${atendidoNaoFechou} não fecharam)`);
-  console.log(`  👥 Compareceram: ${compareceram} (${totalLeads} válidos - ${perdidoInativo} perdidos)`);
+  console.log(`  👥 Compareceram: ${compareceram} (MESMO que apresentações - quem efetivamente foi atendido)`);
+  console.log(`  ⏳ A Ser Atendido: ${aSerAtendido} (ainda no processo, NÃO contam como comparecimento)`);
   
   // 5. Cálculo de receitas
   const receitaCompleta = validLeads.reduce((sum, lead) => {
@@ -120,30 +122,30 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     lead.recorrente && lead.recorrente > 0
   ).length;
   
-  // 6. TAXAS PADRONIZADAS (fórmulas definitivas - sempre excluindo mentorados)
+  // 6. TAXAS PADRONIZADAS CORRIGIDAS (fórmulas definitivas - sempre excluindo mentorados)
   const taxaFechamento = apresentacoes > 0 ? (fechados / apresentacoes) * 100 : 0;
-  const taxaComparecimento = totalLeads > 0 ? (compareceram / totalLeads) * 100 : 0;
+  const taxaComparecimento = totalLeads > 0 ? (apresentacoes / totalLeads) * 100 : 0; // CORREÇÃO: apresentações/total
   const taxaDesmarque = totalLeads > 0 ? (perdidoInativo / totalLeads) * 100 : 0;
   const aproveitamentoGeral = totalLeads > 0 ? (fechados / totalLeads) * 100 : 0;
   const taxaNaoFechamento = apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0;
   
-  console.log('📈 [MÉTRICAS] Taxas padronizadas (BASE ÚNICA para todos os componentes):');
+  console.log('📈 [MÉTRICAS] Taxas padronizadas CORRIGIDAS (BASE ÚNICA para todos os componentes):');
   console.log(`  🎯 Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${apresentacoes})`);
-  console.log(`  ✅ Taxa de Comparecimento: ${taxaComparecimento.toFixed(1)}% (${compareceram}/${totalLeads})`);
+  console.log(`  ✅ Taxa de Comparecimento CORRIGIDA: ${taxaComparecimento.toFixed(1)}% (${apresentacoes}/${totalLeads}) - apenas quem foi efetivamente atendido`);
   console.log(`  ❌ Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${totalLeads})`);
   console.log(`  ⚡ Aproveitamento Geral: ${aproveitamentoGeral.toFixed(1)}% (${fechados}/${totalLeads})`);
   console.log(`  🕐 Taxa de Não Fechamento: ${taxaNaoFechamento.toFixed(1)}% (${atendidoNaoFechou}/${apresentacoes})`);
   
-  // 7. Validação matemática
-  const somaComparecimentoDesmarque = taxaComparecimento + taxaDesmarque;
+  // 7. Validação matemática CORRIGIDA
+  const somaComparecimentoASerAtendidoDesmarque = taxaComparecimento + ((aSerAtendido / totalLeads) * 100) + taxaDesmarque;
   const somaFechamentoNaoFechamento = taxaFechamento + taxaNaoFechamento;
   
-  console.log('🔍 [VALIDAÇÃO] Verificações matemáticas:');
-  console.log(`  Comparecimento + Desmarque = ${somaComparecimentoDesmarque.toFixed(1)}% (deve ser ~100%)`);
+  console.log('🔍 [VALIDAÇÃO] Verificações matemáticas CORRIGIDAS:');
+  console.log(`  Comparecimento + A Ser Atendido + Desmarque = ${somaComparecimentoASerAtendidoDesmarque.toFixed(1)}% (deve ser ~100%)`);
   console.log(`  Fechamento + Não Fechamento = ${somaFechamentoNaoFechamento.toFixed(1)}% (deve ser ~100%)`);
   
-  if (Math.abs(somaComparecimentoDesmarque - 100) > 0.1) {
-    console.warn('⚠️ [VALIDAÇÃO] ERRO: Comparecimento + Desmarque não soma 100%');
+  if (Math.abs(somaComparecimentoASerAtendidoDesmarque - 100) > 0.1) {
+    console.warn('⚠️ [VALIDAÇÃO] ERRO: Comparecimento + A Ser Atendido + Desmarque não soma 100%');
   }
   
   if (apresentacoes > 0 && Math.abs(somaFechamentoNaoFechamento - 100) > 0.1) {
@@ -159,13 +161,13 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     perdidoInativo,
     mentorados,
     
-    // Grupos derivados
+    // Grupos derivados CORRIGIDOS
     apresentacoes,
-    compareceram,
+    compareceram, // Agora é igual a apresentações
     
-    // Taxas padronizadas
+    // Taxas padronizadas CORRIGIDAS
     taxaFechamento,
-    taxaComparecimento,
+    taxaComparecimento, // Agora correta: apresentações/total
     taxaDesmarque,
     aproveitamentoGeral,
     taxaNaoFechamento,
@@ -178,8 +180,9 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     vendasRecorrentes
   };
   
-  console.log('✅ [MÉTRICAS] Cálculo padronizado concluído - BASE ÚNICA GARANTIDA');
+  console.log('✅ [MÉTRICAS] Cálculo padronizado CORRIGIDO concluído - BASE ÚNICA GARANTIDA');
   console.log(`🎓 [EXCLUSÃO] Mentorados excluídos: ${mentorados} leads`);
+  console.log(`🔧 [CORREÇÃO] Taxa de Comparecimento agora representa apenas quem foi efetivamente atendido`);
   
   return metrics;
 }
