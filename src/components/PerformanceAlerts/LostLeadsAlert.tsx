@@ -3,6 +3,7 @@ import React from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { UserX } from "lucide-react";
 import { getAlertStyles, getIconColor } from "./AlertTypes";
+import { getLeadsByStatusGroup, classifyLeadByStatus } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface LostLeadsAlertProps {
@@ -10,25 +11,58 @@ interface LostLeadsAlertProps {
 }
 
 export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
-  const validLeads = leads.filter(lead => {
-    const status = lead.Status?.trim();
-    return status && status !== '' && status !== 'Mentorado';
-  });
+  // Usar classificação padronizada para consistência
+  const statusGroups = getLeadsByStatusGroup(leads, true); // Excluir mentorados
+  const totalValidLeads = Object.values(statusGroups).reduce((sum, group) => sum + group.length, 0) - statusGroups.mentorado.length;
   
-  const totalLeads = validLeads.length;
-  
-  const perdidoInativo = validLeads.filter(lead => 
-    ['Não Apareceu', 'Desmarcou', 'Não Atendeu'].includes(lead.Status || '')
-  ).length;
-  
-  const taxaPerdaGeral = totalLeads > 0 ? (perdidoInativo / totalLeads) * 100 : 0;
+  // Leads perdidos = grupo "perdidoInativo" da classificação padrão
+  const leadsPeridos = statusGroups.perdidoInativo.length;
+  const taxaPerdaGeral = totalValidLeads > 0 ? (leadsPeridos / totalValidLeads) * 100 : 0;
 
-  // Só mostrar se taxa de perda for alta (>30%) 
-  if (taxaPerdaGeral <= 30) {
+  // Debug da classificação para identificar discrepâncias
+  console.log('🚨 [LOST LEADS DEBUG] Análise de leads perdidos:', {
+    totalOriginal: leads.length,
+    totalValidLeads,
+    mentoradosExcluidos: statusGroups.mentorado.length,
+    leadsPeridos,
+    taxaPerdaCalculada: taxaPerdaGeral.toFixed(1),
+    distribuicao: {
+      fechados: statusGroups.fechado.length,
+      aSerAtendido: statusGroups.aSerAtendido.length,
+      atendidoNaoFechou: statusGroups.atendidoNaoFechou.length,
+      perdidoInativo: statusGroups.perdidoInativo.length,
+      mentorados: statusGroups.mentorado.length
+    }
+  });
+
+  // Verificar se há status não mapeados
+  const statusUnicos = [...new Set(leads.map(lead => lead.Status).filter(Boolean))];
+  const statusNaoMapeados = statusUnicos.filter(status => {
+    const classificacao = classifyLeadByStatus(status);
+    return classificacao === 'aSerAtendido' && !['Agendado', 'Confirmado', 'Remarcou', 'DCAUSENTE'].includes(status);
+  });
+
+  if (statusNaoMapeados.length > 0) {
+    console.warn('⚠️ [LOST LEADS] Status não mapeados encontrados:', statusNaoMapeados);
+  }
+
+  // Só mostrar se taxa de perda for realmente alta (>25%) baseada na classificação padrão
+  if (taxaPerdaGeral <= 25) {
     return null;
   }
 
-  const alertType = taxaPerdaGeral > 50 ? 'danger' : 'warning';
+  const alertType = taxaPerdaGeral > 40 ? 'danger' : 'warning';
+
+  // Detalhes dos status que compõem os perdidos
+  const statusPerdidos = statusGroups.perdidoInativo.reduce((acc, lead) => {
+    const status = lead.Status || 'Sem Status';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const descricaoDetalhada = Object.entries(statusPerdidos)
+    .map(([status, count]) => `${count} ${status}`)
+    .join(', ');
 
   return (
     <Alert className={`${getAlertStyles(alertType)} border-l-4 mb-4`}>
@@ -40,9 +74,14 @@ export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
               Alto índice de leads perdidos
             </p>
             <p className="text-xs text-gray-300">
-              {perdidoInativo} leads perdidos ({taxaPerdaGeral.toFixed(1)}% do total). 
+              {leadsPeridos} leads perdidos ({taxaPerdaGeral.toFixed(1)}% do total válido). 
               Revisar processo de acompanhamento.
             </p>
+            {descricaoDetalhada && (
+              <p className="text-xs text-gray-400 mt-1">
+                Detalhes: {descricaoDetalhada}
+              </p>
+            )}
           </div>
           <div className="ml-3 text-right">
             <p className={`font-bold text-sm ${getIconColor(alertType)}`}>

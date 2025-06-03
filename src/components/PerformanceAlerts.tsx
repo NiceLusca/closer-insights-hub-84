@@ -7,6 +7,7 @@ import { Target, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { generateConversionAlerts, generateNoShowAlerts, getAlertStyles, getIconColor } from "./PerformanceAlerts/AlertTypes";
 import { LostLeadsAlert } from "./PerformanceAlerts/LostLeadsAlert";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
+import { validateStatusClassification } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 import type { AlertItem } from "./PerformanceAlerts/AlertTypes";
 
@@ -28,12 +29,26 @@ export const PerformanceAlerts = React.memo(({
   const { alerts, criticalCount } = useMemo(() => {
     console.log('🚨 [ALERTAS] Calculando alertas com métricas padronizadas');
     
+    // Validar classificação de status primeiro
+    const validation = validateStatusClassification(leads);
+    if (validation.unmappedStatus.length > 0) {
+      console.warn('⚠️ [ALERTAS] Status não mapeados detectados:', validation.unmappedStatus);
+    }
+    
     const metrics = calculateStandardizedMetrics(leads);
     const alertsList: AlertItem[] = [];
 
     if (metrics.totalLeads === 0) {
       return { alerts: alertsList, criticalCount: 0 };
     }
+
+    console.log('🚨 [ALERTAS] Base de cálculo:', {
+      totalLeads: metrics.totalLeads,
+      fechados: metrics.fechados,
+      perdidoInativo: metrics.perdidoInativo,
+      taxaFechamento: metrics.taxaFechamento,
+      taxaDesmarque: metrics.taxaDesmarque
+    });
 
     // Gerar alertas usando métricas padronizadas
     alertsList.push(...generateConversionAlerts(leads));
@@ -52,16 +67,16 @@ export const PerformanceAlerts = React.memo(({
       });
     }
 
-    // Alerta de Taxa de Desmarque Alta
-    if (metrics.taxaDesmarque > 40) {
+    // Alerta de Taxa de Desmarque Alta (usando definição padronizada)
+    if (metrics.taxaDesmarque > 30) {
       alertsList.push({
         id: 'high-no-show',
-        type: 'danger',
+        type: metrics.taxaDesmarque > 40 ? 'danger' : 'warning',
         icon: AlertTriangle,
-        title: 'Taxa de desmarque muito alta',
-        description: `${formatPercentage(metrics.taxaDesmarque)} dos leads estão desmarcando ou sumindo.`,
+        title: 'Taxa de perda alta',
+        description: `${formatPercentage(metrics.taxaDesmarque)} dos leads estão sendo perdidos (não comparecem, desmarcam, etc.).`,
         metric: `${formatPercentage(metrics.taxaDesmarque)}`,
-        priority: 8
+        priority: metrics.taxaDesmarque > 40 ? 8 : 6
       });
     }
 
@@ -98,59 +113,59 @@ export const PerformanceAlerts = React.memo(({
   const displayAlerts = isExpanded ? alerts : alerts.filter(alert => alert.type === 'danger');
 
   return (
-    <div className={position === 'bottom' ? 'mt-8' : 'mb-8'}>
+    <div className={position === 'bottom' ? 'mt-6' : 'mb-6'}>
       <LostLeadsAlert leads={leads} />
       
-      <Card className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/30">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-gray-400" />
-              <CardTitle className="text-base font-medium text-gray-200">
-                Alertas de Performance
-              </CardTitle>
-              {criticalCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                  <span className="text-xs text-red-400 font-medium">
-                    {criticalCount} crítico{criticalCount !== 1 ? 's' : ''}
-                  </span>
-                </div>
+      {displayAlerts.length > 0 && (
+        <Card className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-gray-400" />
+                <CardTitle className="text-sm font-medium text-gray-200">
+                  Alertas de Performance
+                </CardTitle>
+                {criticalCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
+                    <span className="text-xs text-red-400 font-medium">
+                      {criticalCount} crítico{criticalCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {alerts.length > displayAlerts.length && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-gray-400 hover:text-gray-200 text-xs h-6 px-2"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="w-3 h-3 mr-1" />
+                      Menos
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3 mr-1" />
+                      +{alerts.length - displayAlerts.length}
+                    </>
+                  )}
+                </Button>
               )}
             </div>
-            
-            {alerts.length > displayAlerts.length && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-gray-400 hover:text-gray-200 text-xs"
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronUp className="w-3 h-3 mr-1" />
-                    Menos
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3 h-3 mr-1" />
-                    Ver todos ({alerts.length})
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        
-        {displayAlerts.length > 0 && (
+          </CardHeader>
+          
           <CardContent className="pt-0">
-            <div className="space-y-3">
+            <div className="space-y-2">
               {displayAlerts.map((alert) => {
                 const Icon = alert.icon;
                 return (
                   <Alert 
                     key={alert.id} 
-                    className={`${getAlertStyles(alert.type)} border-l-4`}
+                    className={`${getAlertStyles(alert.type)} border-l-4 py-2`}
                   >
                     <Icon className={`h-4 w-4 ${getIconColor(alert.type)}`} />
                     <AlertDescription>
@@ -173,8 +188,8 @@ export const PerformanceAlerts = React.memo(({
               })}
             </div>
           </CardContent>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 });

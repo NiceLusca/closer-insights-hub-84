@@ -78,6 +78,7 @@ export function classifyLeadByStatus(status: string | undefined): StatusGroup {
     
     case 'Desmarcou':
     case 'Não Apareceu':
+    case 'Não Atendeu': // Adicionando status que pode existir
     case 'Número errado':
     case 'Numero Errado': // Versão sem acento
       return 'perdidoInativo';
@@ -86,7 +87,9 @@ export function classifyLeadByStatus(status: string | undefined): StatusGroup {
       return 'mentorado';
     
     default:
-      console.warn(`Status não reconhecido: "${normalizedStatus}". Classificando como 'A Ser Atendido'.`);
+      console.warn(`⚠️ [STATUS] Status não reconhecido: "${normalizedStatus}". Classificando como 'A Ser Atendido'.`);
+      // Log para análise posterior
+      console.log(`🔍 [STATUS DEBUG] Status não mapeado encontrado: "${normalizedStatus}"`);
       return 'aSerAtendido';
   }
 }
@@ -100,12 +103,30 @@ export function getLeadsByStatusGroup(leads: Lead[], excludeMentorados: boolean 
     mentorado: []
   };
 
+  // Analisar todos os status únicos primeiro
+  const statusUnicos = [...new Set(leads.map(lead => lead.Status).filter(Boolean))];
+  console.log('📊 [STATUS] Status únicos encontrados:', statusUnicos.sort());
+
   leads.forEach(lead => {
     const group = classifyLeadByStatus(lead.Status);
     groups[group].push(lead);
   });
 
-  // Se excludeMentorados for true, limpar o grupo de mentorados
+  // Log detalhado da distribuição
+  console.log('📊 [STATUS] Distribuição por grupos:', {
+    fechado: groups.fechado.length,
+    aSerAtendido: groups.aSerAtendido.length,
+    atendidoNaoFechou: groups.atendidoNaoFechou.length,
+    perdidoInativo: groups.perdidoInativo.length,
+    mentorado: groups.mentorado.length,
+    total: leads.length
+  });
+
+  // Log dos status em cada grupo perdido/inativo para debug
+  const statusPerdidos = groups.perdidoInativo.map(lead => lead.Status).filter(Boolean);
+  const statusPerdidosUnicos = [...new Set(statusPerdidos)];
+  console.log('❌ [STATUS] Status classificados como perdido/inativo:', statusPerdidosUnicos);
+
   if (excludeMentorados) {
     console.log(`🎓 [STATUS] Excluindo ${groups.mentorado.length} leads mentorados dos cálculos`);
   } else {
@@ -138,6 +159,7 @@ export function validateStatusClassification(leads: Lead[]): {
   total: number;
   classified: Record<StatusGroup, number>;
   unclassified: number;
+  unmappedStatus: string[];
 } {
   const classified: Record<StatusGroup, number> = {
     fechado: 0,
@@ -148,14 +170,24 @@ export function validateStatusClassification(leads: Lead[]): {
   };
 
   let unclassified = 0;
+  const unmappedStatus: string[] = [];
 
   leads.forEach(lead => {
     try {
-      const group = classifyLeadByStatus(lead.Status);
+      const originalStatus = lead.Status;
+      const group = classifyLeadByStatus(originalStatus);
       classified[group]++;
+      
+      // Detectar status potencialmente não mapeados
+      if (group === 'aSerAtendido' && originalStatus && 
+          !['Agendado', 'Confirmado', 'Remarcou', 'DCAUSENTE', ''].includes(originalStatus.trim())) {
+        if (!unmappedStatus.includes(originalStatus)) {
+          unmappedStatus.push(originalStatus);
+        }
+      }
     } catch (error) {
       unclassified++;
-      console.error('Erro ao classificar lead:', lead, error);
+      console.error('❌ [VALIDATION] Erro ao classificar lead:', lead, error);
     }
   });
 
@@ -166,10 +198,15 @@ export function validateStatusClassification(leads: Lead[]): {
   console.log(`  Classificados: ${totalClassified}`);
   console.log(`  Não classificados: ${unclassified}`);
   console.log('  Distribuição:', classified);
+  
+  if (unmappedStatus.length > 0) {
+    console.warn('⚠️ [VALIDATION] Status potencialmente não mapeados:', unmappedStatus);
+  }
 
   return {
     total: leads.length,
     classified,
-    unclassified
+    unclassified,
+    unmappedStatus
   };
 }
