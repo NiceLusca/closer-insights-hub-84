@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { CustomTooltip } from "./CustomTooltip";
 import { getVolumeIndicator } from "@/utils/volumeAnalysis";
 import type { HourData } from "@/hooks/useTemporalData";
@@ -13,24 +13,63 @@ interface HourlyChartProps {
   totalValidLeads: number;
 }
 
+const EnhancedTooltip = React.memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const hourData = payload[0]?.payload;
+    return (
+      <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl z-[9999] relative" style={{ zIndex: 9999 }}>
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="w-4 h-4 text-blue-400" />
+          <p className="text-gray-200 font-medium">{label}</p>
+        </div>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {entry.value}{entry.name.includes('Taxa') || entry.name.includes('Conversão') ? '%' : ''}
+          </p>
+        ))}
+        {hourData && (
+          <div className="mt-2 pt-2 border-t border-gray-600">
+            <p className="text-xs text-gray-400">
+              Conversão: {hourData.conversoes}/{hourData.leads} leads
+            </p>
+            <p className="text-xs text-gray-400">
+              Volume: {((hourData.leads / payload[0]?.payload?.totalValidLeads || 1) * 100).toFixed(1)}% do total
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
+});
+
+EnhancedTooltip.displayName = 'EnhancedTooltip';
+
 export const HourlyChart = React.memo(({ data, peakHours, totalValidLeads }: HourlyChartProps) => {
+  // Enriquecer dados com informações adicionais para o tooltip
+  const enrichedData = data.map(hour => ({
+    ...hour,
+    totalValidLeads
+  }));
+
   return (
     <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+          <Clock className="w-5 h-5" />
           Performance por Horário do Dia
         </CardTitle>
         <p className="text-sm text-gray-400">
-          Taxas de conversão com 1 casa decimal | Insights baseados em volume ≥5%
+          Horários quebrados (ex: 8h45) são agrupados na hora cheia (8h00) • Volume ≥5% para ranking
         </p>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
+          <LineChart data={enrichedData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="hourLabel" stroke="#9ca3af" fontSize={11} />
             <YAxis stroke="#9ca3af" fontSize={11} />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<EnhancedTooltip />} />
             <Legend />
             <Line 
               type="monotone" 

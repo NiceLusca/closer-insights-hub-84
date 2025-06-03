@@ -46,6 +46,39 @@ export interface TemporalDataResult {
   insights: TemporalInsights;
 }
 
+function parseHourFromString(hourString: string): number {
+  if (!hourString) return 12; // Default fallback
+  
+  // Remover espaços e converter para lowercase
+  const cleanHour = hourString.trim().toLowerCase();
+  
+  // Padrões para diferentes formatos de hora
+  const patterns = [
+    /^(\d{1,2}):(\d{2})/, // 8:45, 14:30
+    /^(\d{1,2})h(\d{2})/, // 8h45, 14h30
+    /^(\d{1,2})h$/, // 8h, 14h
+    /^(\d{1,2})$/ // 8, 14
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanHour.match(pattern);
+    if (match) {
+      const hour = parseInt(match[1]);
+      const minutes = match[2] ? parseInt(match[2]) : 0;
+      
+      // Validar hora
+      if (hour >= 0 && hour <= 23) {
+        // Se tiver minutos >= 30, arredondar para próxima hora (opcional)
+        // Por enquanto, vamos manter a hora cheia para compatibilidade
+        return hour;
+      }
+    }
+  }
+  
+  console.warn(`⚠️ Não foi possível parsear hora: "${hourString}", usando 12h como fallback`);
+  return 12;
+}
+
 export function useTemporalData(leads: Lead[]): TemporalDataResult {
   return useMemo(() => {
     const validLeads = getLeadsExcludingMentorados(leads).filter(lead => 
@@ -55,7 +88,7 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     const totalLeads = validLeads.length;
     console.log(`📊 Analisando ${totalLeads} leads válidos`);
 
-    // Análise por dia da semana - CORRIGIDO
+    // Análise por dia da semana
     const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const dayOfWeekData: DayData[] = dayNames.map((name, index) => ({
       day: name,
@@ -76,7 +109,7 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
       }
     });
 
-    console.log('🗓️ Distribuição CORRETA por dia da semana:');
+    console.log('🗓️ Distribuição por dia da semana:');
     dayNames.forEach((name, index) => {
       const count = dayDebugCount[index] || 0;
       console.log(`  ${name} (${index}): ${count} leads`);
@@ -86,7 +119,7 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
       day.taxa = day.leads > 0 ? Number(((day.conversoes / day.leads) * 100).toFixed(1)) : 0;
     });
 
-    // Análise por hora do dia - VERIFICADO
+    // Análise por hora do dia - MELHORADO
     const hourData: HourData[] = Array.from({ length: 24 }, (_, i) => ({
       hour: i,
       hourLabel: `${i.toString().padStart(2, '0')}:00`,
@@ -96,25 +129,18 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     }));
 
     const hourDebugCount: Record<number, number> = {};
+    const hourParseErrors: string[] = [];
 
     validLeads.forEach(lead => {
       let hour = 12; // Default fallback
       
       if (lead.Hora && typeof lead.Hora === 'string') {
-        const timeMatch = lead.Hora.match(/(\d{1,2}):?(\d{0,2})/);
-        if (timeMatch) {
-          const extractedHour = parseInt(timeMatch[1]);
-          if (extractedHour >= 0 && extractedHour <= 23) {
-            hour = extractedHour;
-          }
+        hour = parseHourFromString(lead.Hora);
+        if (hour === 12 && lead.Hora !== '12' && lead.Hora !== '12h' && lead.Hora !== '12:00') {
+          hourParseErrors.push(lead.Hora);
         }
       } else if (lead.parsedDate) {
         hour = getHours(lead.parsedDate);
-      }
-
-      if (hour < 0 || hour > 23) {
-        console.warn(`⚠️ Hora inválida detectada: ${hour}, usando 12 como fallback`);
-        hour = 12;
       }
 
       hourDebugCount[hour] = (hourDebugCount[hour] || 0) + 1;
@@ -128,6 +154,11 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     Object.entries(hourDebugCount).forEach(([hour, count]) => {
       console.log(`  ${hour}h: ${count} leads`);
     });
+
+    if (hourParseErrors.length > 0) {
+      console.warn('⚠️ Horários que não puderam ser parseados (usando 12h):', 
+        [...new Set(hourParseErrors)].slice(0, 10));
+    }
 
     hourData.forEach(h => {
       h.taxa = h.leads > 0 ? Number(((h.conversoes / h.leads) * 100).toFixed(1)) : 0;

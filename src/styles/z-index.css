@@ -7,8 +7,8 @@
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
   --z-popover: 1060;
-  --z-tooltip: 1070;
-  --z-toast: 1080;
+  --z-tooltip: 9999;
+  --z-toast: 10000;
 }
 
 /* Garantir que tooltips sempre fiquem no topo */
@@ -17,6 +17,12 @@
 [role="tooltip"] {
   z-index: var(--z-tooltip) !important;
   position: relative;
+}
+
+/* Tooltips customizados dos charts também precisam de z-index alto */
+.recharts-tooltip-wrapper,
+.recharts-tooltip-content {
+  z-index: var(--z-tooltip) !important;
 }
 
 /* Popover e dropdown também precisam de z-index alto */
