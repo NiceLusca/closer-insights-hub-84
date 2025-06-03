@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,7 @@ export const PerformanceAlerts = React.memo(({
 }: PerformanceAlertsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { alerts, criticalCount } = useMemo(() => {
+  const { alerts, criticalCount, metrics } = useMemo(() => {
     console.log('🚨 [ALERTAS] Calculando alertas com métricas padronizadas');
     
     // Validar classificação de status primeiro
@@ -39,7 +38,7 @@ export const PerformanceAlerts = React.memo(({
     const alertsList: AlertItem[] = [];
 
     if (metrics.totalLeads === 0) {
-      return { alerts: alertsList, criticalCount: 0 };
+      return { alerts: alertsList, criticalCount: 0, metrics };
     }
 
     console.log('🚨 [ALERTAS] Base de cálculo:', {
@@ -97,7 +96,7 @@ export const PerformanceAlerts = React.memo(({
     const criticalCount = sortedAlerts.filter(alert => alert.type === 'danger').length;
 
     console.log(`🚨 [ALERTAS] ${alertsList.length} alertas gerados (${criticalCount} críticos)`);
-    return { alerts: sortedAlerts, criticalCount };
+    return { alerts: sortedAlerts, criticalCount, metrics };
   }, [leads]);
 
   // Não renderizar se não há alertas significativos
@@ -195,3 +194,5 @@ export const PerformanceAlerts = React.memo(({
 });
 
 PerformanceAlerts.displayName = 'PerformanceAlerts';
+
+LostLeadsAlert.displayName = 'LostLeadsAlert';
