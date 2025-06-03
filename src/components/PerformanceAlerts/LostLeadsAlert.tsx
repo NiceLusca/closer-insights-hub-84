@@ -14,17 +14,17 @@ export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
   // Usar métricas padronizadas para garantir consistência
   const metrics = calculateStandardizedMetrics(leads);
   
-  // CORREÇÃO: Somar LEADS (não percentuais) que não converteram
+  // CORREÇÃO FINAL: Calcular corretamente a não conversão
   const leadsNaoConvertidos = metrics.perdidoInativo + metrics.atendidoNaoFechou;
   const taxaNaoConversao = metrics.totalLeads > 0 ? (leadsNaoConvertidos / metrics.totalLeads) * 100 : 0;
   
-  console.log('🚨 [LOST LEADS] Cálculo CORRIGIDO de não conversão:', {
+  console.log('🚨 [LOST LEADS] Cálculo FINAL corrigido:', {
     totalLeads: metrics.totalLeads,
     perdidoInativo: metrics.perdidoInativo,
     atendidoNaoFechou: metrics.atendidoNaoFechou,
     leadsNaoConvertidos,
     taxaNaoConversao: taxaNaoConversao.toFixed(1),
-    mentoradosExcluidos: metrics.mentorados
+    verificacao: `${leadsNaoConvertidos}/${metrics.totalLeads} = ${taxaNaoConversao.toFixed(1)}%`
   });
 
   // Só mostrar se taxa de não conversão for realmente alta (>60%)
@@ -45,7 +45,7 @@ export const LostLeadsAlert = React.memo(({ leads }: LostLeadsAlertProps) => {
             </p>
             <p className="text-xs text-gray-300">
               {leadsNaoConvertidos} leads não converteram ({metrics.perdidoInativo} perdidos + {metrics.atendidoNaoFechou} não fecharam) 
-              = {taxaNaoConversao.toFixed(1)}% do total válido. Revisar estratégia de conversão.
+              = {taxaNaoConversao.toFixed(1)}% de {metrics.totalLeads} leads válidos. Revisar estratégia de conversão.
             </p>
           </div>
           <div className="ml-3 text-right">

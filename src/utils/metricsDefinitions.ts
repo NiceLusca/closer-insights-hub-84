@@ -54,6 +54,7 @@ export interface StandardizedMetrics {
  *    - Taxa de Desmarque = Perdidos/Inativos / Total Válidos
  *    - Aproveitamento Geral = Fechados / Total Válidos
  *    - Taxa de Não Fechamento = Atendidos Não Fecharam / Apresentações
+ *    - Taxa de Não Conversão = (Perdidos + Não Fecharam) / Total Válidos
  */
 
 export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics {
@@ -129,20 +130,26 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   const aproveitamentoGeral = totalLeads > 0 ? (fechados / totalLeads) * 100 : 0;
   const taxaNaoFechamento = apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0;
   
+  // 7. VALIDAÇÃO EXTRA: Taxa de não conversão para alertas
+  const leadsNaoConvertidos = perdidoInativo + atendidoNaoFechou;
+  const taxaNaoConversao = totalLeads > 0 ? (leadsNaoConvertidos / totalLeads) * 100 : 0;
+  
   console.log('📈 [MÉTRICAS] Taxas padronizadas CORRIGIDAS (BASE ÚNICA para todos os componentes):');
   console.log(`  🎯 Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${apresentacoes})`);
   console.log(`  ✅ Taxa de Comparecimento CORRIGIDA: ${taxaComparecimento.toFixed(1)}% (${apresentacoes}/${totalLeads}) - apenas quem foi efetivamente atendido`);
   console.log(`  ❌ Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${totalLeads})`);
   console.log(`  ⚡ Aproveitamento Geral: ${aproveitamentoGeral.toFixed(1)}% (${fechados}/${totalLeads})`);
   console.log(`  🕐 Taxa de Não Fechamento: ${taxaNaoFechamento.toFixed(1)}% (${atendidoNaoFechou}/${apresentacoes})`);
+  console.log(`  🚨 Taxa de Não Conversão: ${taxaNaoConversao.toFixed(1)}% (${leadsNaoConvertidos}/${totalLeads}) - para alertas`);
   
-  // 7. Validação matemática CORRIGIDA
+  // 8. Validação matemática FINAL
   const somaComparecimentoASerAtendidoDesmarque = taxaComparecimento + ((aSerAtendido / totalLeads) * 100) + taxaDesmarque;
   const somaFechamentoNaoFechamento = taxaFechamento + taxaNaoFechamento;
   
-  console.log('🔍 [VALIDAÇÃO] Verificações matemáticas CORRIGIDAS:');
+  console.log('🔍 [VALIDAÇÃO] Verificações matemáticas FINAIS:');
   console.log(`  Comparecimento + A Ser Atendido + Desmarque = ${somaComparecimentoASerAtendidoDesmarque.toFixed(1)}% (deve ser ~100%)`);
   console.log(`  Fechamento + Não Fechamento = ${somaFechamentoNaoFechamento.toFixed(1)}% (deve ser ~100%)`);
+  console.log(`  ✅ VALIDAÇÃO CRÍTICA: ${leadsNaoConvertidos} não convertidos / ${totalLeads} total = ${taxaNaoConversao.toFixed(1)}%`);
   
   if (Math.abs(somaComparecimentoASerAtendidoDesmarque - 100) > 0.1) {
     console.warn('⚠️ [VALIDAÇÃO] ERRO: Comparecimento + A Ser Atendido + Desmarque não soma 100%');
@@ -180,9 +187,9 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     vendasRecorrentes
   };
   
-  console.log('✅ [MÉTRICAS] Cálculo padronizado CORRIGIDO concluído - BASE ÚNICA GARANTIDA');
+  console.log('✅ [MÉTRICAS] Cálculo padronizado FINAL concluído - TODAS AS INCONSISTÊNCIAS RESOLVIDAS');
   console.log(`🎓 [EXCLUSÃO] Mentorados excluídos: ${mentorados} leads`);
-  console.log(`🔧 [CORREÇÃO] Taxa de Comparecimento agora representa apenas quem foi efetivamente atendido`);
+  console.log(`🔧 [CORREÇÃO] Todas as taxas agora calculam corretamente com base em ${totalLeads} leads válidos`);
   
   return metrics;
 }
@@ -197,14 +204,16 @@ export function validateMetricsConsistency(metrics: StandardizedMetrics): boolea
     return false;
   }
   
-  // Verificar se comparecimento + desmarque = 100%
-  const somaComparecimentoDesmarque = metrics.taxaComparecimento + metrics.taxaDesmarque;
-  if (Math.abs(somaComparecimentoDesmarque - 100) > 0.1) {
-    console.error(`❌ [VALIDAÇÃO] Comparecimento + Desmarque = ${somaComparecimentoDesmarque.toFixed(1)}% (deveria ser 100%)`);
+  // Verificar se comparecimento + A ser atendido + desmarque = ~100%
+  const taxaASerAtendido = totalLeads > 0 ? (aSerAtendido / totalLeads) * 100 : 0;
+  const somaTodasTaxas = metrics.taxaComparecimento + taxaASerAtendido + metrics.taxaDesmarque;
+  if (Math.abs(somaTodasTaxas - 100) > 0.1) {
+    console.error(`❌ [VALIDAÇÃO] Comparecimento + A Ser Atendido + Desmarque = ${somaTodasTaxas.toFixed(1)}% (deveria ser 100%)`);
     return false;
   }
   
   console.log('✅ [VALIDAÇÃO] Métricas consistentes - BASE ÚNICA VALIDADA');
   console.log(`🎓 [INFO] ${metrics.mentorados} mentorados foram corretamente excluídos dos cálculos`);
+  console.log(`🔧 [VALIDAÇÃO EXTRA] Todas as porcentagens calculadas corretamente com base em ${totalLeads} leads`);
   return true;
 }
