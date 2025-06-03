@@ -58,6 +58,7 @@ export interface StandardizedMetrics {
  */
 
 export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics {
+  console.log('🔄 [MÉTRICAS PADRONIZADAS] === DEBUGGING ANTI-96,2% ===');
   console.log('🔄 [MÉTRICAS PADRONIZADAS] Calculando para', leads.length, 'leads BRUTOS');
   
   // 0. Validar classificação de status
@@ -102,6 +103,37 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   console.log(`  👥 Compareceram: ${compareceram} (MESMO que apresentações - quem efetivamente foi atendido)`);
   console.log(`  ⏳ A Ser Atendido: ${aSerAtendido} (ainda no processo, NÃO contam como comparecimento)`);
   
+  // === CÁLCULO ANTI-96,2% - DEBUGGING DETALHADO ===
+  console.log('🚨 [ANTI-96,2%] === VERIFICAÇÃO ESPECÍFICA DO PROBLEMA ===');
+  
+  // Verificar de onde pode estar vindo o 96,2%
+  const naoCompareceram = perdidoInativo;
+  const atendidosSemConversao = atendidoNaoFechou;
+  const totalNaoConvertidos = naoCompareceram + atendidosSemConversao;
+  
+  console.log(`🚨 [ANTI-96,2%] Não compareceram: ${naoCompareceram}`);
+  console.log(`🚨 [ANTI-96,2%] Atendidos sem conversão: ${atendidosSemConversao}`);
+  console.log(`🚨 [ANTI-96,2%] Total não convertidos: ${totalNaoConvertidos}`);
+  console.log(`🚨 [ANTI-96,2%] Base de cálculo: ${totalLeads}`);
+  
+  // Testar todas as divisões possíveis que poderiam gerar 96,2%
+  const possiveisCalculos = [
+    { nome: 'Correto: naoConvertidos/total', resultado: (totalNaoConvertidos / totalLeads) * 100 },
+    { nome: 'Invertido: total/naoConvertidos', resultado: totalLeads > 0 ? (totalLeads / totalNaoConvertidos) * 100 : 0 },
+    { nome: 'Fechados/naoConvertidos', resultado: totalNaoConvertidos > 0 ? (fechados / totalNaoConvertidos) * 100 : 0 },
+    { nome: 'naoConvertidos/fechados', resultado: fechados > 0 ? (totalNaoConvertidos / fechados) * 100 : 0 },
+    { nome: 'apresentacoes/totalLeads', resultado: totalLeads > 0 ? (apresentacoes / totalLeads) * 100 : 0 },
+    { nome: 'totalLeads/apresentacoes', resultado: apresentacoes > 0 ? (totalLeads / apresentacoes) * 100 : 0 }
+  ];
+  
+  console.log('🚨 [ANTI-96,2%] Testando possíveis origens do 96,2%:');
+  possiveisCalculos.forEach(calc => {
+    console.log(`  ${calc.nome}: ${calc.resultado.toFixed(1)}%`);
+    if (Math.abs(calc.resultado - 96.2) < 0.1) {
+      console.error(`  ⚠️ POSSÍVEL ORIGEM DO 96,2%: ${calc.nome}!`);
+    }
+  });
+  
   // 5. Cálculo de receitas
   const receitaCompleta = validLeads.reduce((sum, lead) => {
     const venda = lead['Venda Completa'];
@@ -131,8 +163,7 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   const taxaNaoFechamento = apresentacoes > 0 ? (atendidoNaoFechou / apresentacoes) * 100 : 0;
   
   // 7. VALIDAÇÃO EXTRA: Taxa de não conversão para alertas
-  const leadsNaoConvertidos = perdidoInativo + atendidoNaoFechou;
-  const taxaNaoConversao = totalLeads > 0 ? (leadsNaoConvertidos / totalLeads) * 100 : 0;
+  const taxaNaoConversao = totalLeads > 0 ? (totalNaoConvertidos / totalLeads) * 100 : 0;
   
   console.log('📈 [MÉTRICAS] Taxas padronizadas CORRIGIDAS (BASE ÚNICA para todos os componentes):');
   console.log(`  🎯 Taxa de Fechamento: ${taxaFechamento.toFixed(1)}% (${fechados}/${apresentacoes})`);
@@ -140,16 +171,28 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
   console.log(`  ❌ Taxa de Desmarque: ${taxaDesmarque.toFixed(1)}% (${perdidoInativo}/${totalLeads})`);
   console.log(`  ⚡ Aproveitamento Geral: ${aproveitamentoGeral.toFixed(1)}% (${fechados}/${totalLeads})`);
   console.log(`  🕐 Taxa de Não Fechamento: ${taxaNaoFechamento.toFixed(1)}% (${atendidoNaoFechou}/${apresentacoes})`);
-  console.log(`  🚨 Taxa de Não Conversão: ${taxaNaoConversao.toFixed(1)}% (${leadsNaoConvertidos}/${totalLeads}) - para alertas`);
+  console.log(`  🚨 Taxa de Não Conversão: ${taxaNaoConversao.toFixed(1)}% (${totalNaoConvertidos}/${totalLeads}) - para alertas`);
   
-  // 8. Validação matemática FINAL
+  // 8. VERIFICAÇÃO FINAL ANTI-96,2%
+  console.log('🚨 [ANTI-96,2%] === VERIFICAÇÃO FINAL ===');
+  console.log(`🚨 [ANTI-96,2%] Taxa de não conversão calculada: ${taxaNaoConversao.toFixed(1)}%`);
+  console.log(`🚨 [ANTI-96,2%] Valor que DEVE aparecer no alerta: ${taxaNaoConversao.toFixed(1)}%`);
+  console.log(`🚨 [ANTI-96,2%] Se aparecer 96,2%, há um bug na interface!`);
+  
+  if (Math.abs(taxaNaoConversao - 96.2) < 0.1) {
+    console.error('🚨 [ANTI-96,2%] ❌ ERRO: Ainda calculando 96,2%! Verificar lógica!');
+  } else {
+    console.log('🚨 [ANTI-96,2%] ✅ Taxa calculada corretamente, diferente de 96,2%');
+  }
+  
+  // 9. Validação matemática FINAL
   const somaComparecimentoASerAtendidoDesmarque = taxaComparecimento + ((aSerAtendido / totalLeads) * 100) + taxaDesmarque;
   const somaFechamentoNaoFechamento = taxaFechamento + taxaNaoFechamento;
   
   console.log('🔍 [VALIDAÇÃO] Verificações matemáticas FINAIS:');
   console.log(`  Comparecimento + A Ser Atendido + Desmarque = ${somaComparecimentoASerAtendidoDesmarque.toFixed(1)}% (deve ser ~100%)`);
   console.log(`  Fechamento + Não Fechamento = ${somaFechamentoNaoFechamento.toFixed(1)}% (deve ser ~100%)`);
-  console.log(`  ✅ VALIDAÇÃO CRÍTICA: ${leadsNaoConvertidos} não convertidos / ${totalLeads} total = ${taxaNaoConversao.toFixed(1)}%`);
+  console.log(`  ✅ VALIDAÇÃO CRÍTICA: ${totalNaoConvertidos} não convertidos / ${totalLeads} total = ${taxaNaoConversao.toFixed(1)}%`);
   
   if (Math.abs(somaComparecimentoASerAtendidoDesmarque - 100) > 0.1) {
     console.warn('⚠️ [VALIDAÇÃO] ERRO: Comparecimento + A Ser Atendido + Desmarque não soma 100%');
@@ -187,9 +230,10 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     vendasRecorrentes
   };
   
-  console.log('✅ [MÉTRICAS] Cálculo padronizado FINAL concluído - TODAS AS INCONSISTÊNCIAS RESOLVIDAS');
+  console.log('✅ [MÉTRICAS] Cálculo padronizado FINAL concluído - DEBUGGING ANTI-96,2% COMPLETO');
   console.log(`🎓 [EXCLUSÃO] Mentorados excluídos: ${mentorados} leads`);
   console.log(`🔧 [CORREÇÃO] Todas as taxas agora calculam corretamente com base em ${totalLeads} leads válidos`);
+  console.log(`🚨 [ANTI-96,2%] Valor final para alerta: ${taxaNaoConversao.toFixed(1)}% (${totalNaoConvertidos}/${totalLeads})`);
   
   return metrics;
 }

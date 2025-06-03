@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, AlertTriangle, Users, UserX, Target } from "lucide-react";
@@ -11,6 +12,7 @@ interface ConversionFunnelProps {
 
 export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) => {
   const funnelData = useMemo(() => {
+    console.log('🎪 [FUNIL] === INÍCIO DA VALIDAÇÃO MATEMÁTICA CORRIGIDA ===');
     console.log('🎪 [FUNIL] Calculando dados do funil com métricas padronizadas');
     
     // Usar as métricas padronizadas
@@ -22,6 +24,33 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       console.error('❌ [FUNIL] Métricas inconsistentes detectadas!');
     }
     
+    // VALIDAÇÃO MATEMÁTICA CORRIGIDA
+    console.log('🎪 [FUNIL] === VALIDAÇÃO MATEMÁTICA STEP-BY-STEP ===');
+    
+    // 1. Verificar se a soma dos grupos = total
+    const somaGrupos = metrics.fechados + metrics.aSerAtendido + metrics.atendidoNaoFechou + metrics.perdidoInativo;
+    console.log(`🎪 [FUNIL] 1. Soma dos grupos: ${metrics.fechados} + ${metrics.aSerAtendido} + ${metrics.atendidoNaoFechou} + ${metrics.perdidoInativo} = ${somaGrupos}`);
+    console.log(`🎪 [FUNIL] 1. Total válidos: ${metrics.totalLeads}`);
+    console.log(`🎪 [FUNIL] 1. ✅ Grupos somam = Total? ${somaGrupos === metrics.totalLeads ? 'SIM' : 'NÃO'}`);
+    
+    // 2. Verificar se comparecimento + a ser atendido + desmarque = 100%
+    const taxaASerAtendido = metrics.totalLeads > 0 ? (metrics.aSerAtendido / metrics.totalLeads) * 100 : 0;
+    const somaDistribuicao = metrics.taxaComparecimento + taxaASerAtendido + metrics.taxaDesmarque;
+    console.log(`🎪 [FUNIL] 2. Taxa Comparecimento: ${metrics.taxaComparecimento.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 2. Taxa A Ser Atendido: ${taxaASerAtendido.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 2. Taxa Desmarque: ${metrics.taxaDesmarque.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 2. SOMA: ${metrics.taxaComparecimento.toFixed(1)} + ${taxaASerAtendido.toFixed(1)} + ${metrics.taxaDesmarque.toFixed(1)} = ${somaDistribuicao.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 2. ✅ Soma = 100%? ${Math.abs(somaDistribuicao - 100) < 0.1 ? 'SIM' : 'NÃO'}`);
+    
+    // 3. Verificar se fechamento + não fechamento = 100% (das apresentações)
+    const somaApresentacoes = metrics.taxaFechamento + metrics.taxaNaoFechamento;
+    console.log(`🎪 [FUNIL] 3. Taxa Fechamento: ${metrics.taxaFechamento.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 3. Taxa Não Fechamento: ${metrics.taxaNaoFechamento.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 3. SOMA: ${metrics.taxaFechamento.toFixed(1)} + ${metrics.taxaNaoFechamento.toFixed(1)} = ${somaApresentacoes.toFixed(1)}%`);
+    console.log(`🎪 [FUNIL] 3. ✅ Soma = 100%? ${Math.abs(somaApresentacoes - 100) < 0.1 ? 'SIM' : 'NÃO'}`);
+    
+    console.log('🎪 [FUNIL] === FIM DA VALIDAÇÃO MATEMÁTICA ===');
+
     const stages = [
       { 
         name: 'Total de Leads', 
@@ -34,7 +63,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       { 
         name: STATUS_GROUPS.aSerAtendido.emoji + ' ' + STATUS_GROUPS.aSerAtendido.label, 
         count: metrics.aSerAtendido, 
-        percentage: metrics.totalLeads > 0 ? (metrics.aSerAtendido / metrics.totalLeads) * 100 : 0,
+        percentage: taxaASerAtendido,
         description: 'Leads ainda no processo de vendas',
         color: 'bg-blue-500',
         type: 'process' as const
@@ -42,7 +71,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       { 
         name: 'Apresentações Realizadas', 
         count: metrics.apresentacoes, 
-        percentage: metrics.totalLeads > 0 ? (metrics.apresentacoes / metrics.totalLeads) * 100 : 0,
+        percentage: metrics.taxaComparecimento,
         description: 'Leads que passaram por atendimento (Fechados + Atendidos Não Fecharam)',
         color: 'bg-yellow-500',
         type: 'neutral' as const
@@ -50,7 +79,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       { 
         name: STATUS_GROUPS.fechado.emoji + ' ' + STATUS_GROUPS.fechado.label, 
         count: metrics.fechados, 
-        percentage: metrics.totalLeads > 0 ? (metrics.fechados / metrics.totalLeads) * 100 : 0,
+        percentage: metrics.aproveitamentoGeral,
         description: 'Leads que efetivamente compraram',
         color: 'bg-green-500',
         type: 'success' as const
@@ -62,7 +91,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       { 
         from: 'Leads', 
         to: 'Em Processo', 
-        rate: metrics.totalLeads > 0 ? (metrics.aSerAtendido / metrics.totalLeads) * 100 : 0 
+        rate: taxaASerAtendido
       },
       { 
         from: 'Em Processo + Apresentações', 
@@ -101,7 +130,12 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
         perdidoInativo: metrics.perdidoInativo
       }, 
       lossStats,
-      metrics // Incluir métricas padronizadas para referência
+      metrics, // Incluir métricas padronizadas para referência
+      validationStatus: {
+        gruposSomam: somaGrupos === metrics.totalLeads,
+        distribuicaoSoma100: Math.abs(somaDistribuicao - 100) < 0.1,
+        apresentacoesSomam100: Math.abs(somaApresentacoes - 100) < 0.1
+      }
     };
   }, [leads]);
 
@@ -122,22 +156,26 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {/* Destaque de Validação Matemática */}
+          {/* Destaque de Validação Matemática CORRIGIDA */}
           <div className="bg-gray-700/50 border border-gray-600/50 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Target className="w-5 h-5 text-blue-400" />
-              <span className="text-blue-400 font-medium">🔍 VALIDAÇÃO MATEMÁTICA (Definições Padronizadas)</span>
+              <span className="text-blue-400 font-medium">🔍 VALIDAÇÃO MATEMÁTICA CORRIGIDA</span>
+              {Object.values(funnelData.validationStatus).every(v => v) ? (
+                <span className="text-green-400 text-xs">✅ TODAS PASSARAM</span>
+              ) : (
+                <span className="text-red-400 text-xs">❌ FALHAS DETECTADAS</span>
+              )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-300">
-                  <strong>Taxa Comparecimento + Taxa Desmarque:</strong><br />
-                  {formatPercentage(funnelData.metrics.taxaComparecimento)} + {formatPercentage(funnelData.metrics.taxaDesmarque)} = 
+                  <strong>Taxa Comparecimento + A Ser Atendido + Desmarque:</strong><br />
+                  {formatPercentage(funnelData.metrics.taxaComparecimento)} + {formatPercentage((funnelData.metrics.aSerAtendido / funnelData.metrics.totalLeads) * 100)} + {formatPercentage(funnelData.metrics.taxaDesmarque)} = 
                   <span className={`ml-1 font-bold ${
-                    Math.abs((funnelData.metrics.taxaComparecimento + funnelData.metrics.taxaDesmarque) - 100) < 0.1 
-                      ? 'text-green-400' : 'text-red-400'
+                    funnelData.validationStatus.distribuicaoSoma100 ? 'text-green-400' : 'text-red-400'
                   }`}>
-                    {formatPercentage(funnelData.metrics.taxaComparecimento + funnelData.metrics.taxaDesmarque)}%
+                    {formatPercentage(funnelData.metrics.taxaComparecimento + ((funnelData.metrics.aSerAtendido / funnelData.metrics.totalLeads) * 100) + funnelData.metrics.taxaDesmarque)}%
                   </span>
                 </p>
               </div>
@@ -146,8 +184,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                   <strong>Taxa Fechamento + Taxa Não Fechamento:</strong><br />
                   {formatPercentage(funnelData.metrics.taxaFechamento)} + {formatPercentage(funnelData.metrics.taxaNaoFechamento)} = 
                   <span className={`ml-1 font-bold ${
-                    Math.abs((funnelData.metrics.taxaFechamento + funnelData.metrics.taxaNaoFechamento) - 100) < 0.1 
-                      ? 'text-green-400' : 'text-red-400'
+                    funnelData.validationStatus.apresentacoesSomam100 ? 'text-green-400' : 'text-red-400'
                   }`}>
                     {formatPercentage(funnelData.metrics.taxaFechamento + funnelData.metrics.taxaNaoFechamento)}%
                   </span>
@@ -167,7 +204,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-red-400">{funnelData.lossStats.totalPerdidos}</p>
                   <p className="text-sm text-gray-300">Leads Perdidos</p>
-                  <p className="text-xs text-red-300">{formatPercentage(funnelData.lossStats.taxaPerdaGeral)}% do total</p>
+                  <p className="text-xs text-red-300">{formatPercentage((funnelData.lossStats.totalPerdidos / funnelData.metrics.totalLeads) * 100)}% do total</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-yellow-400">{funnelData.lossStats.perdidoInativo}</p>
@@ -257,7 +294,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                 </div>
                 <p className="text-lg font-bold text-white">{funnelData.lossStats.perdidoInativo}</p>
                 <p className="text-xs text-red-300">
-                  {formatPercentage((funnelData.lossStats.perdidoInativo / leads.length) * 100)}% do total
+                  {formatPercentage((funnelData.lossStats.perdidoInativo / funnelData.metrics.totalLeads) * 100)}% do total
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Não apareceram, desmarcaram ou não atenderam</p>
                 <div className="mt-2 text-xs">
@@ -272,7 +309,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                 </div>
                 <p className="text-lg font-bold text-white">{funnelData.lossStats.atendidoNaoFechou}</p>
                 <p className="text-xs text-yellow-300">
-                  {formatPercentage((funnelData.lossStats.atendidoNaoFechou / leads.length) * 100)}% do total
+                  {formatPercentage((funnelData.lossStats.atendidoNaoFechou / funnelData.metrics.totalLeads) * 100)}% do total
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Atendidos mas sem conversão</p>
                 <div className="mt-2 text-xs">
@@ -287,7 +324,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                 </div>
                 <p className="text-lg font-bold text-white">{funnelData.statusGroups.fechado}</p>
                 <p className="text-xs text-green-300">
-                  {formatPercentage((funnelData.statusGroups.fechado / leads.length) * 100)}% do total
+                  {formatPercentage((funnelData.statusGroups.fechado / funnelData.metrics.totalLeads) * 100)}% do total
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Vendas efetivadas com sucesso</p>
                 <div className="mt-2 text-xs">
@@ -340,7 +377,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                     </div>
                     <p className="text-lg font-bold text-white">{groupLeads}</p>
                     <p className="text-xs text-gray-300">
-                      {formatPercentage((groupLeads / leads.length) * 100)}%
+                      {formatPercentage((groupLeads / funnelData.metrics.totalLeads) * 100)}%
                     </p>
                   </div>
                 );
