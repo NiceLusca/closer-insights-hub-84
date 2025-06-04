@@ -26,7 +26,7 @@ export function DashboardHeader({
         <div className="flex justify-between items-center py-8">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              Closer Insights
+              Clarity
             </h1>
             <p className="text-gray-300 mt-2 text-lg">
               Dashboard Analytics para Gestão de Leads

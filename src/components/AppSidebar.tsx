@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TrendingUp, BarChart3, Users, FileText } from 'lucide-react';
+import { BarChart3, Users, FileText, PieChart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -19,7 +19,7 @@ const menuItems = [
   {
     title: "Dashboard",
     url: "/",
-    icon: TrendingUp,
+    icon: PieChart,
   },
   {
     title: "Análises",
@@ -45,11 +45,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
             <img 
-              src="/lovable-uploads/3af8527b-14da-4159-8e82-90dfa8063c10.png" 
+              src="/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png" 
               alt="Clarity Logo" 
-              className="w-8 h-8 object-contain"
+              className="w-full h-full object-contain"
             />
           </div>
           <div>
