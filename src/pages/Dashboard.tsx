@@ -14,6 +14,7 @@ import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { PerformanceAlerts } from "@/components/PerformanceAlerts";
 import { DebugInfo } from "@/components/Dashboard/DebugInfo";
 import { StatusDistributionCards } from "@/components/StatusDistributionCards";
+import { MathValidation } from "@/components/Dashboard/MathValidation";
 
 const Dashboard = () => {
   // Estado dos dados
@@ -49,6 +50,11 @@ const Dashboard = () => {
   // Dados processados com validação
   const { filteredLeads, validation } = useFilteredLeads(allLeads, dateRange, filters, 'dashboard');
   const filterOptions = useFilterOptions(allLeads, dataReady, isLoading);
+
+  // Atualizar título da página
+  React.useEffect(() => {
+    document.title = 'Clarity - Analytics Dashboard';
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
@@ -105,7 +111,12 @@ const Dashboard = () => {
             {/* 6. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
 
-            {/* 7. Debug Info/Validação - NO FINAL ABSOLUTO */}
+            {/* 7. Validação Matemática - Para confirmar que as contas estão certas */}
+            <div className="mb-6">
+              <MathValidation leads={filteredLeads} />
+            </div>
+
+            {/* 8. Debug Info/Validação - NO FINAL ABSOLUTO */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
