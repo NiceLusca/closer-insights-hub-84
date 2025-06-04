@@ -138,7 +138,9 @@ export const LossAnalysis = React.memo(({ leads }: LossAnalysisProps) => {
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl">
           <p className="text-gray-200 font-medium mb-1">{data.tipo || data.etapa || data.closer}</p>
           <p className="text-blue-400 text-sm">Quantidade: {data.quantidade || data.perdas}</p>
-          <p className="text-yellow-400 text-sm">Percentual: {(data.percentual || data.taxaPerda)?.toFixed(1)}%</p>
+          <p className="text-yellow-400 text-sm">
+            Percentual: {(data.percentual || data.taxaPerda || data.percentualDoTotal || 0).toFixed(1)}%
+          </p>
           {data.impactoFinanceiro && (
             <p className="text-red-400 text-sm">
               Impacto: R$ {data.impactoFinanceiro.toLocaleString()}
@@ -238,9 +240,9 @@ export const LossAnalysis = React.memo(({ leads }: LossAnalysisProps) => {
                 <Tooltip content={<CustomTooltip />} />
                 <Legend 
                   wrapperStyle={{ fontSize: '12px', color: '#d1d5db' }}
-                  formatter={(value, entry) => (
+                  formatter={(value, entry: any) => (
                     <span style={{ color: entry.color }}>
-                      {value} ({entry.payload.percentual?.toFixed(1)}%)
+                      {value} ({entry.payload?.percentual?.toFixed(1) || '0'}%)
                     </span>
                   )}
                 />
