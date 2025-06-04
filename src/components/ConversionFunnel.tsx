@@ -1,8 +1,8 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, AlertTriangle, Users, UserX, Target } from "lucide-react";
-import { STATUS_GROUPS, formatPercentage } from "@/utils/statusClassification";
+import { TrendingUp, TrendingDown, AlertTriangle, UserX, Target } from "lucide-react";
+import { formatPercentage } from "@/utils/statusClassification";
 import { calculateStandardizedMetrics, validateMetricsConsistency } from "@/utils/metricsDefinitions";
 import type { Lead } from "@/types/lead";
 
@@ -61,7 +61,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
         type: 'neutral' as const
       },
       { 
-        name: STATUS_GROUPS.aSerAtendido.emoji + ' ' + STATUS_GROUPS.aSerAtendido.label, 
+        name: '🔄 Em Processo', 
         count: metrics.aSerAtendido, 
         percentage: taxaASerAtendido,
         description: 'Leads ainda no processo de vendas',
@@ -77,7 +77,7 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
         type: 'neutral' as const
       },
       { 
-        name: STATUS_GROUPS.fechado.emoji + ' ' + STATUS_GROUPS.fechado.label, 
+        name: '✅ Vendas Fechadas', 
         count: metrics.fechados, 
         percentage: metrics.aproveitamentoGeral,
         description: 'Leads que efetivamente compraram',
@@ -123,12 +123,6 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
     return { 
       stages, 
       conversionRates, 
-      statusGroups: {
-        fechado: metrics.fechados,
-        aSerAtendido: metrics.aSerAtendido,
-        atendidoNaoFechou: metrics.atendidoNaoFechou,
-        perdidoInativo: metrics.perdidoInativo
-      }, 
       lossStats,
       metrics, // Incluir métricas padronizadas para referência
       validationStatus: {
@@ -322,9 +316,9 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                   <span className="text-sm">✅</span>
                   <span className="text-xs font-medium text-green-400">CONVERSÕES</span>
                 </div>
-                <p className="text-lg font-bold text-white">{funnelData.statusGroups.fechado}</p>
+                <p className="text-lg font-bold text-white">{funnelData.metrics.fechados}</p>
                 <p className="text-xs text-green-300">
-                  {formatPercentage((funnelData.statusGroups.fechado / funnelData.metrics.totalLeads) * 100)}% do total
+                  {formatPercentage((funnelData.metrics.fechados / funnelData.metrics.totalLeads) * 100)}% do total
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Vendas efetivadas com sucesso</p>
                 <div className="mt-2 text-xs">
@@ -355,33 +349,6 @@ export const ConversionFunnel = React.memo(({ leads }: ConversionFunnelProps) =>
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Resumo por Status */}
-          <div className="p-4 bg-gray-700/50 rounded-lg border border-gray-600/50">
-            <h4 className="text-sm font-medium text-gray-200 mb-3">Distribuição Atual por Status</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              {Object.entries(funnelData.statusGroups).map(([groupKey, groupLeads]) => {
-                const groupInfo = STATUS_GROUPS[groupKey as keyof typeof STATUS_GROUPS];
-                
-                if (!groupInfo) return null;
-                
-                return (
-                  <div key={groupKey} className={`p-3 rounded-lg ${groupInfo.bgColor} border border-gray-600/50`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm">{groupInfo.emoji}</span>
-                      <span className={`text-xs font-medium ${groupInfo.color}`}>
-                        {groupInfo.label.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-lg font-bold text-white">{groupLeads}</p>
-                    <p className="text-xs text-gray-300">
-                      {formatPercentage((groupLeads / funnelData.metrics.totalLeads) * 100)}%
-                    </p>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>

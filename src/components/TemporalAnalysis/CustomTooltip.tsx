@@ -13,9 +13,10 @@ export const CustomTooltip = React.memo(({ active, payload, label }: TooltipProp
       <div 
         className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl"
         style={{ 
-          zIndex: 99999,
-          position: 'relative',
-          pointerEvents: 'none'
+          zIndex: 999999,
+          position: 'fixed',
+          pointerEvents: 'none',
+          transform: 'translateZ(999px)'
         }}
       >
         <p className="text-gray-200 font-medium mb-2">{label}</p>

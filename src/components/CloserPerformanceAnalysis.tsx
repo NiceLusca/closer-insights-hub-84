@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -110,9 +109,10 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
           <div 
             className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl"
             style={{ 
-              zIndex: 99999,
-              position: 'relative',
-              pointerEvents: 'none'
+              zIndex: 999999,
+              position: 'fixed',
+              pointerEvents: 'none',
+              transform: 'translateZ(999px)'
             }}
           >
             <p className="text-gray-200 font-medium mb-2">{closerFullData.closer}</p>

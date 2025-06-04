@@ -12,7 +12,8 @@ interface CloserPerformanceProps {
 }
 
 export function CloserPerformance({ leads }: CloserPerformanceProps) {
-  const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('percentage');
+  // MUDANÇA: Definir 'absolute' (números) como padrão em vez de 'percentage'
+  const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('absolute');
   
   console.log('🎯 [CLOSER PERFORMANCE] Processando', leads.length, 'leads BRUTOS (com mentorados)');
 
@@ -81,15 +82,6 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
           </div>
           <div className="flex items-center space-x-2">
             <Button
-              variant={viewMode === 'percentage' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('percentage')}
-              className="flex items-center space-x-1"
-            >
-              <Percent className="w-4 h-4" />
-              <span>%</span>
-            </Button>
-            <Button
               variant={viewMode === 'absolute' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('absolute')}
@@ -97,6 +89,15 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
             >
               <Hash className="w-4 h-4" />
               <span>Nº</span>
+            </Button>
+            <Button
+              variant={viewMode === 'percentage' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('percentage')}
+              className="flex items-center space-x-1"
+            >
+              <Percent className="w-4 h-4" />
+              <span>%</span>
             </Button>
           </div>
         </div>
@@ -118,10 +119,12 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
                 color: '#f3f4f6',
-                zIndex: 99999
+                zIndex: 999999
               }}
               wrapperStyle={{
-                zIndex: 99999
+                zIndex: 999999,
+                position: 'fixed',
+                pointerEvents: 'none'
               }}
               formatter={(value, name) => {
                 if (name === 'Total de Leads') return [value, 'Total de Leads'];

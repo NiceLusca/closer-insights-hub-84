@@ -7,34 +7,47 @@
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
   --z-popover: 1060;
-  --z-tooltip: 99999;
-  --z-toast: 100000;
+  --z-tooltip: 999999;
+  --z-toast: 1000000;
 }
 
-/* CORREÇÃO DEFINITIVA: Garantir que tooltips sempre fiquem no topo */
+/* CORREÇÃO DEFINITIVA: Forçar tooltips SEMPRE no topo com força máxima */
 [data-radix-tooltip-content],
 .tooltip-content,
 [role="tooltip"],
 .recharts-tooltip-wrapper,
-.recharts-tooltip-content {
-  z-index: 99999 !important;
+.recharts-tooltip-content,
+.recharts-default-tooltip {
+  z-index: 999999 !important;
   position: fixed !important;
   pointer-events: none !important;
+  transform: translateZ(999px) !important;
+  isolation: isolate !important;
 }
 
-/* Garantir que tooltips customizados dos charts também fiquem no topo */
+/* Forçar nova camada de empilhamento para tooltips */
 .recharts-tooltip-wrapper {
-  z-index: 99999 !important;
+  z-index: 999999 !important;
   position: fixed !important;
+  transform: translateZ(999px) !important;
+  will-change: transform !important;
 }
 
 .recharts-tooltip-content {
-  z-index: 99999 !important;
+  z-index: 999999 !important;
   position: relative !important;
   background-color: #1f2937 !important;
   border: 1px solid #374151 !important;
   border-radius: 8px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8) !important;
+  transform: translateZ(999px) !important;
+}
+
+/* Garantir que qualquer tooltip customizado também funcione */
+div[role="tooltip"] {
+  z-index: 999999 !important;
+  position: fixed !important;
+  transform: translateZ(999px) !important;
 }
 
 /* Popover e dropdown também precisam de z-index alto */
@@ -47,12 +60,22 @@
 .recharts-wrapper,
 .recharts-surface {
   z-index: 1 !important;
+  transform: translateZ(0) !important;
 }
 
-/* Cards e containers não devem criar novo contexto de empilhamento */
+/* Cards e containers não devem criar novo contexto de empilhamento desnecessário */
 .bg-gray-800,
 .bg-gray-700,
 [class*="bg-gray"] {
   position: relative;
   z-index: auto;
+  /* Remover qualquer overflow que possa cortar tooltips */
+  overflow: visible !important;
+}
+
+/* Garantir que containers principais não interfiram */
+.max-w-7xl,
+.container,
+main {
+  overflow: visible !important;
 }

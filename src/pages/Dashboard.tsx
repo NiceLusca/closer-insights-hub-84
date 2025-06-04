@@ -9,11 +9,11 @@ import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { MetricsCards } from "@/components/MetricsCards";
 import { ChartsGrid } from "@/components/Dashboard/ChartsGrid";
-import { StatusDistribution } from "@/components/StatusDistribution";
 import { ConversionFunnel } from "@/components/ConversionFunnel";
 import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { PerformanceAlerts } from "@/components/PerformanceAlerts";
 import { DebugInfo } from "@/components/Dashboard/DebugInfo";
+import { StatusDistributionCards } from "@/components/StatusDistributionCards";
 
 const Dashboard = () => {
   // Estado dos dados
@@ -87,27 +87,25 @@ const Dashboard = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && !isApplyingFilters && (
           <>
-            {/* Metrics Cards - mantém no topo */}
+            {/* 1. Metrics Cards - KPIs principais */}
             <MetricsCards leads={filteredLeads} />
 
-            {/* Status Distribution - movido para cima, é mais importante */}
-            <div className="mb-8">
-              <StatusDistribution leads={filteredLeads} />
-            </div>
+            {/* 2. Cards de Distribuição por Status - movido para o topo */}
+            <StatusDistributionCards leads={filteredLeads} />
 
-            {/* Funil de Conversão - simplificado, sem redundâncias com StatusDistribution */}
+            {/* 3. Funil de Conversão - simplificado, sem redundâncias */}
             <ConversionFunnel leads={filteredLeads} />
 
-            {/* Charts Grid - mantém posição */}
+            {/* 4. Charts Grid - gráficos de leads/receita/closer */}
             <ChartsGrid leads={filteredLeads} />
 
-            {/* Origin Analysis - mantém posição */}
+            {/* 5. Origin Analysis */}
             <OriginAnalysis leads={filteredLeads} />
 
-            {/* Alertas de Performance - mantém no final */}
+            {/* 6. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
 
-            {/* Debug Info - movido para o final, substituindo StatusDistribution */}
+            {/* 7. Debug Info/Validação - movido para o final */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
