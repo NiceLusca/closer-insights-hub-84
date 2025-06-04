@@ -36,34 +36,24 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
       // Usar métricas padronizadas (que já filtra mentorados internamente)
       const metrics = calculateStandardizedMetrics(closerLeads);
       
-      console.log(`👤 [${closer}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados`);
-      console.log(`👤 [${closer}] Aproveitamento: ${metrics.aproveitamentoGeral.toFixed(1)}%`);
+      // CORREÇÃO: Aproveitamento agora é fechados/apresentações
+      const aproveitamento = metrics.apresentacoes > 0 ? (metrics.fechados / metrics.apresentacoes) * 100 : 0;
+      
+      console.log(`👤 [${closer}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados de ${metrics.apresentacoes} apresentações`);
+      console.log(`👤 [${closer}] Aproveitamento CORRIGIDO: ${aproveitamento.toFixed(1)}% (${metrics.fechados}/${metrics.apresentacoes})`);
       
       return {
         closer: closer.split(' ')[0], // Mostrar apenas primeiro nome
         leads: metrics.totalLeads,
+        apresentacoes: metrics.apresentacoes,
         vendas: metrics.fechados,
-        conversao: metrics.aproveitamentoGeral,
+        conversao: aproveitamento, // Agora é fechados/apresentações
         receita: metrics.receitaTotal
       };
     }).filter(item => item.leads > 0) // Filtrar closers sem leads válidos
       .sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
 
-    // Validação cruzada: verificar se a soma dos leads válidos por closer = total de leads válidos geral
-    const totalLeadsValidosPorCloser = result.reduce((sum, item) => sum + item.leads, 0);
-    const metricsGerais = calculateStandardizedMetrics(leads);
-    
-    console.log('🔍 [VALIDAÇÃO CRUZADA] Verificando consistência:');
-    console.log(`  📊 Total leads válidos (soma closers): ${totalLeadsValidosPorCloser}`);
-    console.log(`  📊 Total leads válidos (geral): ${metricsGerais.totalLeads}`);
-    console.log(`  📊 Fechados (soma closers): ${result.reduce((sum, item) => sum + item.vendas, 0)}`);
-    console.log(`  📊 Fechados (geral): ${metricsGerais.fechados}`);
-    
-    if (totalLeadsValidosPorCloser !== metricsGerais.totalLeads) {
-      console.warn('⚠️ [INCONSISTÊNCIA] Soma dos leads por closer ≠ total geral!');
-    }
-
-    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com base consistente:', result.length, 'closers');
+    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com aproveitamento CORRIGIDO:', result.length, 'closers');
     return result;
   }, [leads, viewMode]);
 
@@ -86,7 +76,7 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               Performance por Closer
             </CardTitle>
             <p className="text-sm text-gray-400">
-              {totalLeads} leads válidos analisados (base consistente com métricas gerais)
+              {totalLeads} leads válidos • Aproveitamento = Vendas/Apresentações
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -128,13 +118,20 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
                 borderRadius: '8px',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
                 color: '#f3f4f6',
-                zIndex: 10000
+                zIndex: 99999
+              }}
+              wrapperStyle={{
+                zIndex: 99999
               }}
               formatter={(value, name) => {
                 if (name === 'Total de Leads') return [value, 'Total de Leads'];
-                if (name === 'Aproveitamento Geral (%)') return [`${(value as number).toFixed(1)}%`, 'Aproveitamento Geral'];
+                if (name === 'Aproveitamento (%)') return [`${(value as number).toFixed(1)}%`, 'Aproveitamento das Apresentações'];
                 if (name === 'Número de Vendas') return [value, 'Número de Vendas'];
                 return [value, name];
+              }}
+              labelFormatter={(label) => {
+                const closer = closerData.find(c => c.closer === label);
+                return closer ? `${closer.closer} • ${closer.apresentacoes} apresentações` : label;
               }}
             />
             <Legend />
@@ -142,7 +139,7 @@ export function CloserPerformance({ leads }: CloserPerformanceProps) {
               <Bar 
                 dataKey="conversao" 
                 fill="#10b981" 
-                name="Aproveitamento Geral (%)"
+                name="Aproveitamento (%)"
                 radius={[2, 2, 0, 0]}
               />
             ) : (

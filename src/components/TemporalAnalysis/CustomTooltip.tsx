@@ -10,7 +10,14 @@ interface TooltipProps {
 export const CustomTooltip = React.memo(({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl z-[9999] relative" style={{ zIndex: 9999 }}>
+      <div 
+        className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl"
+        style={{ 
+          zIndex: 99999,
+          position: 'relative',
+          pointerEvents: 'none'
+        }}
+      >
         <p className="text-gray-200 font-medium mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>

@@ -7,12 +7,13 @@ import { useGlobalFilters } from "@/contexts/FilterContext";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
-import { DebugInfo } from "@/components/Dashboard/DebugInfo";
 import { MetricsCards } from "@/components/MetricsCards";
 import { ChartsGrid } from "@/components/Dashboard/ChartsGrid";
-import { OriginAnalysis } from "@/components/OriginAnalysis";
+import { StatusDistribution } from "@/components/StatusDistribution";
 import { ConversionFunnel } from "@/components/ConversionFunnel";
+import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { PerformanceAlerts } from "@/components/PerformanceAlerts";
+import { DebugInfo } from "@/components/Dashboard/DebugInfo";
 
 const Dashboard = () => {
   // Estado dos dados
@@ -86,7 +87,27 @@ const Dashboard = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && !isApplyingFilters && (
           <>
-            {/* Debug Info com validação */}
+            {/* Metrics Cards - mantém no topo */}
+            <MetricsCards leads={filteredLeads} />
+
+            {/* Status Distribution - movido para cima, é mais importante */}
+            <div className="mb-8">
+              <StatusDistribution leads={filteredLeads} />
+            </div>
+
+            {/* Funil de Conversão - simplificado, sem redundâncias com StatusDistribution */}
+            <ConversionFunnel leads={filteredLeads} />
+
+            {/* Charts Grid - mantém posição */}
+            <ChartsGrid leads={filteredLeads} />
+
+            {/* Origin Analysis - mantém posição */}
+            <OriginAnalysis leads={filteredLeads} />
+
+            {/* Alertas de Performance - mantém no final */}
+            <PerformanceAlerts leads={filteredLeads} position="bottom" />
+
+            {/* Debug Info - movido para o final, substituindo StatusDistribution */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
@@ -94,21 +115,6 @@ const Dashboard = () => {
               cacheStatus={isCacheValid ? 'válido' : 'expirado'}
               validation={validation}
             />
-
-            {/* Metrics Cards */}
-            <MetricsCards leads={filteredLeads} />
-
-            {/* Funil de Conversão */}
-            <ConversionFunnel leads={filteredLeads} />
-
-            {/* Charts Grid */}
-            <ChartsGrid leads={filteredLeads} />
-
-            {/* Origin Analysis */}
-            <OriginAnalysis leads={filteredLeads} />
-
-            {/* Alertas de Performance - Movido para o final */}
-            <PerformanceAlerts leads={filteredLeads} position="bottom" />
           </>
         )}
       </div>

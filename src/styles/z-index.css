@@ -7,22 +7,34 @@
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
   --z-popover: 1060;
-  --z-tooltip: 9999;
-  --z-toast: 10000;
+  --z-tooltip: 99999;
+  --z-toast: 100000;
 }
 
-/* Garantir que tooltips sempre fiquem no topo */
+/* CORREÇÃO DEFINITIVA: Garantir que tooltips sempre fiquem no topo */
 [data-radix-tooltip-content],
 .tooltip-content,
-[role="tooltip"] {
-  z-index: var(--z-tooltip) !important;
-  position: relative;
-}
-
-/* Tooltips customizados dos charts também precisam de z-index alto */
+[role="tooltip"],
 .recharts-tooltip-wrapper,
 .recharts-tooltip-content {
-  z-index: var(--z-tooltip) !important;
+  z-index: 99999 !important;
+  position: fixed !important;
+  pointer-events: none !important;
+}
+
+/* Garantir que tooltips customizados dos charts também fiquem no topo */
+.recharts-tooltip-wrapper {
+  z-index: 99999 !important;
+  position: fixed !important;
+}
+
+.recharts-tooltip-content {
+  z-index: 99999 !important;
+  position: relative !important;
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* Popover e dropdown também precisam de z-index alto */
@@ -31,8 +43,16 @@
   z-index: var(--z-popover) !important;
 }
 
-/* Charts e gráficos devem ter z-index baixo */
+/* Charts e gráficos devem ter z-index baixo para não interferir */
 .recharts-wrapper,
 .recharts-surface {
   z-index: 1 !important;
+}
+
+/* Cards e containers não devem criar novo contexto de empilhamento */
+.bg-gray-800,
+.bg-gray-700,
+[class*="bg-gray"] {
+  position: relative;
+  z-index: auto;
 }

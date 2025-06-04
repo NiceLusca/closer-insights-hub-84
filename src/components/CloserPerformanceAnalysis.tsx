@@ -1,3 +1,4 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -49,8 +50,11 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       // Usar métricas padronizadas (que já filtra mentorados internamente)
       const metrics = calculateStandardizedMetrics(closerLeads);
       
-      console.log(`👤 [${closerName}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados`);
-      console.log(`👤 [${closerName}] Aproveitamento: ${metrics.aproveitamentoGeral.toFixed(1)}%`);
+      // CORREÇÃO: Aproveitamento agora é fechados/apresentações
+      const aproveitamento = metrics.apresentacoes > 0 ? (metrics.fechados / metrics.apresentacoes) * 100 : 0;
+      
+      console.log(`👤 [${closerName}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados de ${metrics.apresentacoes} apresentações`);
+      console.log(`👤 [${closerName}] Aproveitamento CORRIGIDO: ${aproveitamento.toFixed(1)}% (${metrics.fechados}/${metrics.apresentacoes})`);
       
       return {
         closer: closerName,
@@ -60,34 +64,20 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
         fechamentos: metrics.fechados,
         receita: metrics.receitaTotal,
         taxaAgendamento: metrics.totalLeads > 0 ? (metrics.aSerAtendido / metrics.totalLeads) * 100 : 0,
-        taxaFechamento: metrics.taxaFechamento, // Usar taxa padronizada
-        aproveitamento: metrics.aproveitamentoGeral, // Usar aproveitamento padronizado
+        taxaFechamento: metrics.taxaFechamento, // Usar taxa padronizada (fechados/apresentações)
+        aproveitamento: aproveitamento, // CORRIGIDO: fechados/apresentações
         receitaMedia: metrics.fechados > 0 ? metrics.receitaTotal / metrics.fechados : 0,
         rank: 0
       };
     }).filter(closer => closer.totalLeads > 0); // Filtrar closers sem leads válidos
 
-    // Ordenar por aproveitamento geral (fechados / total)
+    // Ordenar por aproveitamento (fechados/apresentações)
     closerMetrics.sort((a, b) => b.aproveitamento - a.aproveitamento);
     closerMetrics.forEach((closer, index) => {
       closer.rank = index + 1;
     });
 
-    // Validação cruzada: verificar se a soma dos leads válidos por closer = total de leads válidos geral
-    const totalLeadsValidosPorCloser = closerMetrics.reduce((sum, closer) => sum + closer.totalLeads, 0);
-    const metricsGerais = calculateStandardizedMetrics(leads);
-    
-    console.log('🔍 [VALIDAÇÃO CRUZADA] Verificando consistência na análise:');
-    console.log(`  📊 Total leads válidos (soma closers): ${totalLeadsValidosPorCloser}`);
-    console.log(`  📊 Total leads válidos (geral): ${metricsGerais.totalLeads}`);
-    console.log(`  📊 Fechados (soma closers): ${closerMetrics.reduce((sum, c) => sum + c.fechamentos, 0)}`);
-    console.log(`  📊 Fechados (geral): ${metricsGerais.fechados}`);
-    
-    if (totalLeadsValidosPorCloser !== metricsGerais.totalLeads) {
-      console.warn('⚠️ [INCONSISTÊNCIA] Soma dos leads por closer ≠ total geral na análise!');
-    }
-
-    console.log('🎯 [CLOSER ANALYSIS] Processados', closerMetrics.length, 'closers com base consistente');
+    console.log('🎯 [CLOSER ANALYSIS] Processados', closerMetrics.length, 'closers com aproveitamento CORRIGIDO');
     return closerMetrics;
   }, [leads]);
 
@@ -95,6 +85,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
     return closerData.slice(0, 10).map(closer => ({
       closer: closer.closer.length > 12 ? closer.closer.substring(0, 12) + '...' : closer.closer,
       totalLeads: closer.totalLeads,
+      apresentacoes: closer.apresentacoes,
       fechamentos: closer.fechamentos,
       aproveitamento: Number(closer.aproveitamento.toFixed(1))
     }));
@@ -116,14 +107,21 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       
       if (closerFullData) {
         return (
-          <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl z-[10000]">
+          <div 
+            className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl"
+            style={{ 
+              zIndex: 99999,
+              position: 'relative',
+              pointerEvents: 'none'
+            }}
+          >
             <p className="text-gray-200 font-medium mb-2">{closerFullData.closer}</p>
             <div className="space-y-1 text-xs">
               <p className="text-blue-400">Total de Leads: {closerFullData.totalLeads}</p>
+              <p className="text-cyan-400">Apresentações: {closerFullData.apresentacoes}</p>
               <p className="text-green-400">Fechamentos: {closerFullData.fechamentos}</p>
-              <p className="text-purple-400">Aproveitamento: {closerFullData.aproveitamento.toFixed(1)}%</p>
-              <p className="text-yellow-400">Taxa Fechamento: {closerFullData.taxaFechamento.toFixed(1)}%</p>
-              <p className="text-cyan-400">Receita: {formatCurrency(closerFullData.receita)}</p>
+              <p className="text-purple-400 font-bold">Aproveitamento: {closerFullData.aproveitamento.toFixed(1)}% (vendas/apresentações)</p>
+              <p className="text-yellow-400">Receita: {formatCurrency(closerFullData.receita)}</p>
               <p className="text-gray-300">Receita Média: {formatCurrency(closerFullData.receitaMedia)}</p>
             </div>
           </div>
@@ -147,7 +145,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
           <Users className="w-5 h-5" />
           Performance dos Closers
           <span className="text-sm font-normal text-gray-400">
-            (base de cálculo consistente com métricas gerais)
+            (aproveitamento = vendas/apresentações)
           </span>
         </CardTitle>
       </CardHeader>
@@ -162,7 +160,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
 
         {/* Gráfico de Performance */}
         <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-200 mb-4">Top 10 Closers por Aproveitamento Geral</h4>
+          <h4 className="text-sm font-medium text-gray-200 mb-4">Top 10 Closers por Aproveitamento (Vendas/Apresentações)</h4>
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={chartData} margin={{ bottom: 80 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -178,9 +176,9 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Bar 
-                dataKey="totalLeads" 
+                dataKey="apresentacoes" 
                 fill="#60a5fa" 
-                name="Total de Leads"
+                name="Apresentações"
                 radius={[1, 1, 0, 0]}
               />
               <Bar 
