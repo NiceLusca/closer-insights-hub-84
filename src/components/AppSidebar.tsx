@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -23,7 +22,6 @@ const DashboardIcon3D = ({
       </div>
     </div>
   </div>;
-
 const AnalyticsIcon3D = ({
   className
 }: {
@@ -43,7 +41,6 @@ const AnalyticsIcon3D = ({
       </div>
     </div>
   </div>;
-
 const LeadsIcon3D = ({
   className
 }: {
@@ -65,7 +62,6 @@ const LeadsIcon3D = ({
       </div>
     </div>
   </div>;
-
 const ReportsIcon3D = ({
   className
 }: {
@@ -87,7 +83,6 @@ const ReportsIcon3D = ({
       </div>
     </div>
   </div>;
-
 const menuItems = [{
   title: "Dashboard",
   url: "/",
@@ -105,22 +100,16 @@ const menuItems = [{
   url: "/reports",
   icon: ReportsIcon3D
 }];
-
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center p-2">
-            <img 
-              alt="Clarity Logo" 
-              onError={e => {
-                console.log('Erro ao carregar logo principal, tentando fallback...');
-                (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
-              }} 
-              src="/lovable-uploads/0529cf72-744d-4dfb-9371-c10c6d280c1a.png" 
-              className="w-full h-full object-contain" 
-            />
+            <img alt="Clarity Logo" onError={e => {
+            console.log('Erro ao carregar logo principal, tentando fallback...');
+            (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
+          }} src="/lovable-uploads/9467700f-44f6-4ae5-9c94-9bde38dd4d9f.png" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">
