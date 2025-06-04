@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -113,11 +114,11 @@ export function AppSidebar() {
           <img 
             alt="Clarity Logo" 
             src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png"
-            className="w-20 h-20 object-contain"
+            className="w-24 h-24 object-contain"
             style={{ 
-              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
-              background: 'transparent',
-              mixBlendMode: 'normal'
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
+              background: 'none',
+              backgroundColor: 'transparent'
             }}
             onError={(e) => {
               console.log('Erro ao carregar logo principal, usando fallback...');
@@ -125,10 +126,10 @@ export function AppSidebar() {
             }}
           />
           <div className="flex-1 min-w-0">
-            <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight">
+            <h2 className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight">
               Clarity
             </h2>
-            <p className="text-base text-gray-400 font-medium mt-2 leading-tight">
+            <p className="text-lg text-gray-400 font-medium mt-2 leading-tight">
               Analytics Dashboard
             </p>
           </div>
