@@ -1,22 +1,16 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 
 // Componentes de ícones 3D customizados
-const DashboardIcon3D = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+const DashboardIcon3D = ({
+  className
+}: {
+  className?: string;
+}) => <div className={`relative ${className}`} style={{
+  width: '24px',
+  height: '24px'
+}}>
     <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-cyan-400 rounded-lg shadow-lg transform rotate-12">
       <div className="absolute inset-1 bg-gray-900 rounded-md">
         <div className="grid grid-cols-2 gap-0.5 p-1">
@@ -27,11 +21,15 @@ const DashboardIcon3D = ({ className }: { className?: string }) => (
         </div>
       </div>
     </div>
-  </div>
-);
-
-const AnalyticsIcon3D = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+  </div>;
+const AnalyticsIcon3D = ({
+  className
+}: {
+  className?: string;
+}) => <div className={`relative ${className}`} style={{
+  width: '24px',
+  height: '24px'
+}}>
     <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-400 rounded-lg shadow-lg transform -rotate-6">
       <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
         <div className="flex items-end justify-between h-full gap-0.5">
@@ -42,11 +40,15 @@ const AnalyticsIcon3D = ({ className }: { className?: string }) => (
         </div>
       </div>
     </div>
-  </div>
-);
-
-const LeadsIcon3D = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+  </div>;
+const LeadsIcon3D = ({
+  className
+}: {
+  className?: string;
+}) => <div className={`relative ${className}`} style={{
+  width: '24px',
+  height: '24px'
+}}>
     <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-red-500 to-pink-400 rounded-lg shadow-lg transform rotate-6">
       <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
         <div className="flex flex-col items-center justify-center h-full">
@@ -59,11 +61,15 @@ const LeadsIcon3D = ({ className }: { className?: string }) => (
         </div>
       </div>
     </div>
-  </div>
-);
-
-const ReportsIcon3D = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+  </div>;
+const ReportsIcon3D = ({
+  className
+}: {
+  className?: string;
+}) => <div className={`relative ${className}`} style={{
+  width: '24px',
+  height: '24px'
+}}>
     <div className="absolute inset-0 bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-400 rounded-lg shadow-lg transform -rotate-3">
       <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
         <div className="space-y-0.5">
@@ -76,49 +82,34 @@ const ReportsIcon3D = ({ className }: { className?: string }) => (
         </div>
       </div>
     </div>
-  </div>
-);
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: DashboardIcon3D,
-  },
-  {
-    title: "Análises",
-    url: "/analytics",
-    icon: AnalyticsIcon3D,
-  },
-  {
-    title: "Leads",
-    url: "/leads",
-    icon: LeadsIcon3D,
-  },
-  {
-    title: "Relatórios",
-    url: "/reports",
-    icon: ReportsIcon3D,
-  },
-];
-
+  </div>;
+const menuItems = [{
+  title: "Dashboard",
+  url: "/",
+  icon: DashboardIcon3D
+}, {
+  title: "Análises",
+  url: "/analytics",
+  icon: AnalyticsIcon3D
+}, {
+  title: "Leads",
+  url: "/leads",
+  icon: LeadsIcon3D
+}, {
+  title: "Relatórios",
+  url: "/reports",
+  icon: ReportsIcon3D
+}];
 export function AppSidebar() {
   const location = useLocation();
-
-  return (
-    <Sidebar>
+  return <Sidebar>
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg">
-            <img 
-              src="/lovable-uploads/fad641c3-50f9-4ce6-8f2c-4b31312dcc4b.png" 
-              alt="Clarity Logo" 
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                console.log('Erro ao carregar logo principal, tentando fallback...');
-                (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
-              }}
-            />
+            <img alt="Clarity Logo" onError={e => {
+            console.log('Erro ao carregar logo principal, tentando fallback...');
+            (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
+          }} src="/lovable-uploads/f48734c9-7cf8-4a2d-9b71-c63d8dac1d2d.png" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">
@@ -136,13 +127,8 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={location.pathname === item.url}
-                    className="text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group"
-                  >
+              {menuItems.map(item => <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className="text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group">
                     <Link to={item.url} className="flex items-center gap-4">
                       <div className="transition-transform duration-300 group-hover:scale-110">
                         <item.icon className="drop-shadow-lg" />
@@ -150,8 +136,7 @@ export function AppSidebar() {
                       <span className="ml-1 group-hover:text-white transition-colors">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -164,6 +149,5 @@ export function AppSidebar() {
           <p className="text-xs text-gray-500 mt-1">Analytics & Insights Platform</p>
         </div>
       </SidebarFooter>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
