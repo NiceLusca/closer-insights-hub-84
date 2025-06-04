@@ -105,14 +105,14 @@ export function AppSidebar() {
   return <Sidebar>
       <SidebarHeader className="p-4 border-b border-gray-700/30">
         <div className="flex items-center gap-4">
-          <img alt="Clarity Logo" src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" className="w-16 h-16 object-contain flex-shrink-0" style={{
+          <img alt="Clarity Logo" src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" style={{
           filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
           background: 'none',
           backgroundColor: 'transparent'
         }} onError={e => {
           console.log('Erro ao carregar logo principal, usando fallback...');
           (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
-        }} />
+        }} className="w-16 h-16 flex-shrink-0 object-cover" />
           <div className="flex-1 min-w-0 overflow-hidden">
             <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-4xl my-0 mx-0 px-0 py-0 font-bold">
               Clarity
