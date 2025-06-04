@@ -1,4 +1,3 @@
-
 import type { Lead } from "@/types/lead";
 import { getLeadsByStatusGroup, getLeadsExcludingMentorados, validateStatusClassification } from "@/utils/statusClassification";
 
@@ -28,6 +27,7 @@ export interface StandardizedMetrics {
   receitaRecorrente: number;
   vendasCompletas: number;
   vendasRecorrentes: number;
+  ticketMedio: number; // Receita total / número de vendas
 }
 
 /**
@@ -155,6 +155,10 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     lead.recorrente && lead.recorrente > 0
   ).length;
   
+  // Calcular ticket médio
+  const totalVendas = vendasCompletas + vendasRecorrentes;
+  const ticketMedio = totalVendas > 0 ? receitaTotal / totalVendas : 0;
+  
   // 6. TAXAS PADRONIZADAS CORRIGIDAS (fórmulas definitivas - sempre excluindo mentorados)
   const taxaFechamento = apresentacoes > 0 ? (fechados / apresentacoes) * 100 : 0;
   const taxaComparecimento = totalLeads > 0 ? (apresentacoes / totalLeads) * 100 : 0; // CORREÇÃO: apresentações/total
@@ -227,7 +231,8 @@ export function calculateStandardizedMetrics(leads: Lead[]): StandardizedMetrics
     receitaCompleta,
     receitaRecorrente,
     vendasCompletas,
-    vendasRecorrentes
+    vendasRecorrentes,
+    ticketMedio
   };
   
   console.log('✅ [MÉTRICAS] Cálculo padronizado FINAL concluído - DEBUGGING ANTI-96,2% COMPLETO');
