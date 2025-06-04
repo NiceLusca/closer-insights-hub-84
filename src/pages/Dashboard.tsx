@@ -90,10 +90,10 @@ const Dashboard = () => {
             {/* 1. Metrics Cards - KPIs principais */}
             <MetricsCards leads={filteredLeads} />
 
-            {/* 2. Cards de Distribuição por Status - movido para o topo */}
+            {/* 2. Cards de Distribuição por Status - no topo */}
             <StatusDistributionCards leads={filteredLeads} />
 
-            {/* 3. Funil de Conversão - simplificado, sem redundâncias */}
+            {/* 3. Funil de Conversão - simplificado */}
             <ConversionFunnel leads={filteredLeads} />
 
             {/* 4. Charts Grid - gráficos de leads/receita/closer */}
@@ -105,7 +105,7 @@ const Dashboard = () => {
             {/* 6. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
 
-            {/* 7. Debug Info/Validação - movido para o final */}
+            {/* 7. Debug Info/Validação - NO FINAL ABSOLUTO */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 

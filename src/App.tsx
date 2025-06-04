@@ -38,6 +38,8 @@ const App = () => (
                 </Routes>
               </main>
             </div>
+            {/* Portal root para tooltips */}
+            <div id="portal-root" />
           </SidebarProvider>
         </BrowserRouter>
       </FilterProvider>

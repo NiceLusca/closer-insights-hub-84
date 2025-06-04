@@ -1,22 +1,29 @@
 
 import React from "react";
+import { TooltipPortal } from "@/components/ui/TooltipPortal";
 
 interface TooltipProps {
   active?: boolean;
   payload?: any[];
   label?: string;
+  coordinate?: { x: number; y: number };
 }
 
-export const CustomTooltip = React.memo(({ active, payload, label }: TooltipProps) => {
-  if (active && payload && payload.length) {
-    return (
+export const CustomTooltip = React.memo(({ active, payload, label, coordinate }: TooltipProps) => {
+  if (!active || !payload || !payload.length || !coordinate) {
+    return null;
+  }
+
+  return (
+    <TooltipPortal>
       <div 
-        className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl"
+        className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-xl pointer-events-none"
         style={{ 
-          zIndex: 999999,
-          position: 'fixed',
-          pointerEvents: 'none',
-          transform: 'translateZ(999px)'
+          position: 'absolute',
+          left: coordinate.x + 10,
+          top: coordinate.y - 10,
+          transform: 'none',
+          zIndex: 999999
         }}
       >
         <p className="text-gray-200 font-medium mb-2">{label}</p>
@@ -26,9 +33,8 @@ export const CustomTooltip = React.memo(({ active, payload, label }: TooltipProp
           </p>
         ))}
       </div>
-    );
-  }
-  return null;
+    </TooltipPortal>
+  );
 });
 
 CustomTooltip.displayName = 'CustomTooltip';

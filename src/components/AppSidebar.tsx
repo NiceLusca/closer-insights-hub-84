@@ -44,7 +44,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <h2 className="text-lg font-semibold text-sidebar-foreground">
-          Closer Insights
+          Clarity
         </h2>
       </SidebarHeader>
       <SidebarContent>
