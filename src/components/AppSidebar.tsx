@@ -114,9 +114,13 @@ export function AppSidebar() {
           <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-gray-600/30">
             <img 
               alt="Clarity Logo" 
-              src="/lovable-uploads/f9562284-d3ed-4575-99e8-48c81a75a559.png"
+              src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png"
               className="w-12 h-12 object-contain"
-              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+              style={{ 
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                background: 'transparent',
+                mixBlendMode: 'normal'
+              }}
               onError={(e) => {
                 console.log('Erro ao carregar logo principal, usando fallback...');
                 (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
