@@ -110,18 +110,26 @@ export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
       <SidebarHeader className="p-6 border-b border-gray-700/30">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center p-2">
-            <img alt="Clarity Logo" onError={e => {
-            console.log('Erro ao carregar logo principal, tentando fallback...');
-            (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
-          }} src="/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png" className="w-full h-full object-cover" />
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-gray-600/30">
+            <img 
+              alt="Clarity Logo" 
+              src="/lovable-uploads/72614221-7e5e-4228-a526-5afa139c9dc7.png"
+              className="w-12 h-12 object-contain"
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+              onError={(e) => {
+                console.log('Erro ao carregar logo principal, usando fallback...');
+                (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
+              }}
+            />
           </div>
-          <div>
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight">
               Clarity
             </h2>
-            <p className="text-sm text-gray-400 font-medium">Analytics Dashboard</p>
+            <p className="text-sm text-gray-400 font-medium mt-1 leading-tight">
+              Analytics Dashboard
+            </p>
           </div>
         </div>
       </SidebarHeader>
@@ -131,7 +139,15 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className="text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group">
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url} 
+                    className={`text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${
+                      location.pathname === item.url 
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' 
+                        : 'text-gray-300'
+                    }`}
+                  >
                     <Link to={item.url} className="flex items-center gap-4">
                       <div className="transition-transform duration-300 group-hover:scale-110">
                         <item.icon className="drop-shadow-lg" />

@@ -10,6 +10,7 @@ import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { MetricsCards } from "@/components/MetricsCards";
 import { ChartsGrid } from "@/components/Dashboard/ChartsGrid";
 import { ConversionFunnel } from "@/components/ConversionFunnel";
+import { LossAnalysis } from "@/components/LossAnalysis";
 import { OriginAnalysis } from "@/components/OriginAnalysis";
 import { PerformanceAlerts } from "@/components/PerformanceAlerts";
 import { DebugInfo } from "@/components/Dashboard/DebugInfo";
@@ -102,21 +103,24 @@ const Dashboard = () => {
             {/* 3. Funil de Conversão - simplificado */}
             <ConversionFunnel leads={filteredLeads} />
 
-            {/* 4. Charts Grid - gráficos de leads/receita/closer */}
+            {/* 4. Nova Análise Detalhada de Perdas */}
+            <LossAnalysis leads={filteredLeads} />
+
+            {/* 5. Charts Grid - gráficos de leads/receita/closer */}
             <ChartsGrid leads={filteredLeads} />
 
-            {/* 5. Origin Analysis */}
+            {/* 6. Origin Analysis */}
             <OriginAnalysis leads={filteredLeads} />
 
-            {/* 6. Alertas de Performance */}
+            {/* 7. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
 
-            {/* 7. Validação Matemática - Para confirmar que as contas estão certas */}
+            {/* 8. Validação Matemática - Para confirmar que as contas estão certas */}
             <div className="mb-6">
               <MathValidation leads={filteredLeads} />
             </div>
 
-            {/* 8. Debug Info/Validação - NO FINAL ABSOLUTO */}
+            {/* 9. Debug Info/Validação - NO FINAL ABSOLUTO */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
