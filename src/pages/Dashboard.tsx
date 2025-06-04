@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
@@ -103,17 +102,17 @@ const Dashboard = () => {
             {/* 3. Funil de Conversão - simplificado */}
             <ConversionFunnel leads={filteredLeads} />
 
-            {/* 4. Nova Análise Detalhada de Perdas */}
-            <LossAnalysis leads={filteredLeads} />
-
-            {/* 5. Charts Grid - gráficos de leads/receita/closer */}
+            {/* 4. Charts Grid - gráficos de leads/receita/closer */}
             <ChartsGrid leads={filteredLeads} />
 
-            {/* 6. Origin Analysis */}
+            {/* 5. Origin Analysis */}
             <OriginAnalysis leads={filteredLeads} />
 
-            {/* 7. Alertas de Performance */}
+            {/* 6. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
+
+            {/* 7. Análise Detalhada de Perdas - MOVIDA PARA O FINAL */}
+            <LossAnalysis leads={filteredLeads} />
 
             {/* 8. Validação Matemática - Para confirmar que as contas estão certas */}
             <div className="mb-6">

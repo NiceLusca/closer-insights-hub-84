@@ -1,9 +1,12 @@
 
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
 import { getLeadsExcludingMentorados } from "@/utils/statusClassification";
+import { LossOverviewCards } from "./LossAnalysis/LossOverviewCards";
+import { LossBehaviorChart } from "./LossAnalysis/LossBehaviorChart";
+import { CloserLossChart } from "./LossAnalysis/CloserLossChart";
+import { LossInsights } from "./LossAnalysis/LossInsights";
 import type { Lead } from "@/types/lead";
 
 interface LossAnalysisProps {
@@ -23,19 +26,19 @@ export const LossAnalysis = React.memo(({ leads }: LossAnalysisProps) => {
         etapa: "Não Compareceram",
         quantidade: validLeads.filter(l => ['Não Apareceu', 'Desmarcou'].includes(l.Status || '')).length,
         percentualDoTotal: 0,
-        cor: "#f59e0b" // amber
+        cor: "#f59e0b"
       },
       {
         etapa: "Compareceram mas Não Fecharam",
         quantidade: metrics.atendidoNaoFechou,
         percentualDoTotal: 0,
-        cor: "#ef4444" // red
+        cor: "#ef4444"
       },
       {
         etapa: "Perdidos/Inativos",
         quantidade: metrics.perdidoInativo,
         percentualDoTotal: 0,
-        cor: "#6b7280" // gray
+        cor: "#6b7280"
       }
     ];
 
@@ -76,8 +79,8 @@ export const LossAnalysis = React.memo(({ leads }: LossAnalysisProps) => {
       }
     ];
 
-    // Calcular percentuais e impacto financeiro estimado
-    const ticketMedioEstimado = metrics.ticketMedio || 2500; // fallback
+    // Calcular percentuais e impacto financeiro
+    const ticketMedioEstimado = metrics.ticketMedio || 2500;
     behaviorAnalysis.forEach(item => {
       item.percentual = metrics.totalLeads > 0 ? (item.quantidade / metrics.totalLeads) * 100 : 0;
       item.impactoFinanceiro = item.quantidade * ticketMedioEstimado;
@@ -165,177 +168,26 @@ export const LossAnalysis = React.memo(({ leads }: LossAnalysisProps) => {
       </CardHeader>
       <CardContent>
         {/* 1. Resumo Executivo */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 p-4 rounded-lg border border-red-500/30">
-            <div className="text-center">
-              <p className="text-red-300 text-xs font-semibold uppercase tracking-wide">Total de Perdas</p>
-              <p className="text-2xl font-bold text-red-200">
-                {detailedAnalysis.funnelLosses.reduce((acc, item) => acc + item.quantidade, 0)}
-              </p>
-              <p className="text-red-400 text-sm">
-                {detailedAnalysis.metrics.totalLeads > 0 
-                  ? ((detailedAnalysis.funnelLosses.reduce((acc, item) => acc + item.quantidade, 0) / detailedAnalysis.metrics.totalLeads) * 100).toFixed(1)
-                  : 0}% do total
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 p-4 rounded-lg border border-amber-500/30">
-            <div className="text-center">
-              <p className="text-amber-300 text-xs font-semibold uppercase tracking-wide">Não Compareceram</p>
-              <p className="text-2xl font-bold text-amber-200">
-                {detailedAnalysis.funnelLosses.find(item => item.etapa === "Não Compareceram")?.quantidade || 0}
-              </p>
-              <p className="text-amber-400 text-sm">
-                {(detailedAnalysis.funnelLosses.find(item => item.etapa === "Não Compareceram")?.percentualDoTotal || 0).toFixed(1)}%
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 p-4 rounded-lg border border-orange-500/30">
-            <div className="text-center">
-              <p className="text-orange-300 text-xs font-semibold uppercase tracking-wide">Perdas Pós-Atendimento</p>
-              <p className="text-2xl font-bold text-orange-200">
-                {detailedAnalysis.funnelLosses.find(item => item.etapa === "Compareceram mas Não Fecharam")?.quantidade || 0}
-              </p>
-              <p className="text-orange-400 text-sm">
-                {(detailedAnalysis.funnelLosses.find(item => item.etapa === "Compareceram mas Não Fecharam")?.percentualDoTotal || 0).toFixed(1)}%
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 p-4 rounded-lg border border-purple-500/30">
-            <div className="text-center">
-              <p className="text-purple-300 text-xs font-semibold uppercase tracking-wide">Impacto Financeiro</p>
-              <p className="text-2xl font-bold text-purple-200">
-                R$ {(detailedAnalysis.totalPerdaFinanceira / 1000).toFixed(0)}k
-              </p>
-              <p className="text-purple-400 text-sm">Potencial perdido</p>
-            </div>
-          </div>
-        </div>
+        <LossOverviewCards
+          funnelLosses={detailedAnalysis.funnelLosses}
+          totalPerdaFinanceira={detailedAnalysis.totalPerdaFinanceira}
+          totalLeads={detailedAnalysis.metrics.totalLeads}
+        />
 
         {/* 2. Análise por Tipo de Comportamento */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div>
-            <h4 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-              <span className="text-xl">🎯</span>
-              Distribuição por Tipo de Perda
-            </h4>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={detailedAnalysis.behaviorAnalysis}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="quantidade"
-                >
-                  {detailedAnalysis.behaviorAnalysis.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.cor} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '12px', color: '#d1d5db' }}
-                  formatter={(value, entry: any) => (
-                    <span style={{ color: entry.color }}>
-                      {value} ({entry.payload?.percentual?.toFixed(1) || '0'}%)
-                    </span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        <LossBehaviorChart
+          behaviorAnalysis={detailedAnalysis.behaviorAnalysis}
+          customTooltip={CustomTooltip}
+        />
 
-          <div>
-            <h4 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-              <span className="text-xl">💰</span>
-              Impacto Financeiro por Tipo
-            </h4>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={detailedAnalysis.behaviorAnalysis}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis 
-                  dataKey="tipo" 
-                  stroke="#9ca3af" 
-                  fontSize={10}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis stroke="#9ca3af" fontSize={10} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="impactoFinanceiro" 
-                  fill="#ef4444"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 3. Análise de Performance dos Closers - Foco em Perdas */}
-        {detailedAnalysis.closerLossAnalysis.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-              <span className="text-xl">👥</span>
-              Taxa de Perda por Closer
-            </h4>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={detailedAnalysis.closerLossAnalysis}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                <XAxis 
-                  dataKey="closer" 
-                  stroke="#9ca3af" 
-                  fontSize={10}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis stroke="#9ca3af" fontSize={10} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="taxaPerda" 
-                  fill="#f59e0b"
-                  radius={[2, 2, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        {/* 3. Análise de Performance dos Closers */}
+        <CloserLossChart
+          closerLossAnalysis={detailedAnalysis.closerLossAnalysis}
+          customTooltip={CustomTooltip}
+        />
 
         {/* 4. Insights e Recomendações */}
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 p-6 rounded-lg border border-blue-500/20">
-          <h4 className="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
-            <span className="text-xl">💡</span>
-            Insights e Oportunidades
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-300 mb-2">
-                <span className="font-semibold text-amber-400">Oportunidade de Recuperação:</span>
-              </p>
-              <p className="text-gray-400">
-                {detailedAnalysis.behaviorAnalysis.find(item => item.tipo === "Aguardando Resposta")?.quantidade || 0} leads 
-                ainda podem ser recuperados com follow-up ativo.
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-300 mb-2">
-                <span className="font-semibold text-red-400">Maior Fonte de Perda:</span>
-              </p>
-              <p className="text-gray-400">
-                {detailedAnalysis.behaviorAnalysis.length > 0 
-                  ? detailedAnalysis.behaviorAnalysis.sort((a, b) => b.quantidade - a.quantidade)[0].tipo
-                  : 'N/A'} representa a maior fonte de perdas.
-              </p>
-            </div>
-          </div>
-        </div>
+        <LossInsights behaviorAnalysis={detailedAnalysis.behaviorAnalysis} />
       </CardContent>
     </Card>
   );
