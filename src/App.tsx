@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -36,16 +35,6 @@ const App = () => {
                   <div className="p-4 border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <SidebarTrigger />
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white rounded-md p-1 flex items-center justify-center">
-                          <img 
-                            src="/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png" 
-                            alt="Clarity Logo" 
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        <span className="text-white font-semibold text-lg">Clarity Analytics</span>
-                      </div>
                     </div>
                   </div>
                   <Routes>

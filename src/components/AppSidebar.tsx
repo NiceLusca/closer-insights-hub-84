@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { BarChart3, Users, FileText, PieChart } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -15,26 +14,91 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
+// Componentes de ícones 3D customizados
+const DashboardIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-cyan-400 rounded-lg shadow-lg transform rotate-12">
+      <div className="absolute inset-1 bg-gray-900 rounded-md">
+        <div className="grid grid-cols-2 gap-0.5 p-1">
+          <div className="bg-gradient-to-r from-blue-400 to-purple-400 rounded-sm h-2"></div>
+          <div className="bg-gradient-to-r from-purple-400 to-cyan-400 rounded-sm h-2"></div>
+          <div className="bg-gradient-to-r from-cyan-400 to-blue-400 rounded-sm h-1"></div>
+          <div className="bg-gradient-to-r from-purple-300 to-pink-400 rounded-sm h-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const AnalyticsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-400 rounded-lg shadow-lg transform -rotate-6">
+      <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
+        <div className="flex items-end justify-between h-full gap-0.5">
+          <div className="bg-gradient-to-t from-green-400 to-emerald-300 rounded-sm w-1 h-2/3"></div>
+          <div className="bg-gradient-to-t from-emerald-400 to-teal-300 rounded-sm w-1 h-full"></div>
+          <div className="bg-gradient-to-t from-teal-400 to-cyan-300 rounded-sm w-1 h-3/4"></div>
+          <div className="bg-gradient-to-t from-cyan-400 to-blue-300 rounded-sm w-1 h-1/2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const LeadsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-red-500 to-pink-400 rounded-lg shadow-lg transform rotate-6">
+      <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex gap-0.5 mb-0.5">
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-orange-300 to-red-300 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-red-300 to-pink-300 rounded-full"></div>
+          </div>
+          <div className="w-3 h-0.5 bg-gradient-to-r from-orange-400 to-pink-400 rounded-full"></div>
+          <div className="w-2 h-0.5 bg-gradient-to-r from-red-400 to-orange-400 rounded-full mt-0.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ReportsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-400 rounded-lg shadow-lg transform -rotate-3">
+      <div className="absolute inset-1 bg-gray-900 rounded-md p-1">
+        <div className="space-y-0.5">
+          <div className="w-full h-0.5 bg-gradient-to-r from-violet-300 to-purple-300 rounded-full"></div>
+          <div className="w-3/4 h-0.5 bg-gradient-to-r from-purple-300 to-indigo-300 rounded-full"></div>
+          <div className="flex gap-0.5">
+            <div className="flex-1 h-1 bg-gradient-to-t from-violet-400 to-purple-300 rounded-sm"></div>
+            <div className="flex-1 h-1.5 bg-gradient-to-t from-purple-400 to-indigo-300 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const menuItems = [
   {
     title: "Dashboard",
     url: "/",
-    icon: PieChart,
+    icon: DashboardIcon3D,
   },
   {
     title: "Análises",
     url: "/analytics",
-    icon: BarChart3,
+    icon: AnalyticsIcon3D,
   },
   {
     title: "Leads",
     url: "/leads",
-    icon: Users,
+    icon: LeadsIcon3D,
   },
   {
     title: "Relatórios",
     url: "/reports",
-    icon: FileText,
+    icon: ReportsIcon3D,
   },
 ];
 
@@ -45,25 +109,29 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
+          <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center p-2 shadow-lg">
             <img 
-              src="/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png" 
+              src="/lovable-uploads/fad641c3-50f9-4ce6-8f2c-4b31312dcc4b.png" 
               alt="Clarity Logo" 
               className="w-full h-full object-contain"
+              onError={(e) => {
+                console.log('Erro ao carregar logo principal, tentando fallback...');
+                (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
+              }}
             />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">
               Clarity
             </h2>
-            <p className="text-xs text-gray-400 font-medium">Analytics Dashboard</p>
+            <p className="text-sm text-gray-400 font-medium">Analytics Dashboard</p>
           </div>
         </div>
       </SidebarHeader>
       
-      <SidebarContent className="px-3 py-6">
+      <SidebarContent className="px-4 py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-gray-300 mb-3">
+          <SidebarGroupLabel className="text-sm font-semibold text-gray-300 mb-4 px-2">
             Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -73,11 +141,13 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     isActive={location.pathname === item.url}
-                    className="text-base font-medium py-3 px-4 mb-1 rounded-lg transition-all duration-200 hover:bg-gray-700/50"
+                    className="text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group"
                   >
-                    <Link to={item.url}>
-                      <item.icon className="w-5 h-5" />
-                      <span className="ml-3">{item.title}</span>
+                    <Link to={item.url} className="flex items-center gap-4">
+                      <div className="transition-transform duration-300 group-hover:scale-110">
+                        <item.icon className="drop-shadow-lg" />
+                      </div>
+                      <span className="ml-1 group-hover:text-white transition-colors">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

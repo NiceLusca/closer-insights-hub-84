@@ -25,11 +25,11 @@ export function DashboardHeader({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-8">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              Clarity
+            <h1 className="text-3xl font-semibold text-gray-200 mb-2">
+              Dashboard Analytics
             </h1>
-            <p className="text-gray-300 mt-2 text-lg">
-              Dashboard Analytics para Gestão de Leads
+            <p className="text-gray-300 text-base">
+              Gestão completa de leads e métricas de performance
               {lastUpdated && (
                 <span className="ml-2 text-sm text-gray-400">
                   • Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
