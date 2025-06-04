@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -109,12 +110,12 @@ const menuItems = [{
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
-      <SidebarHeader className="p-6 border-b border-gray-700/30">
-        <div className="flex items-center gap-6">
+      <SidebarHeader className="p-4 border-b border-gray-700/30">
+        <div className="flex items-center gap-4">
           <img 
             alt="Clarity Logo" 
             src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png"
-            className="w-24 h-24 object-contain"
+            className="w-16 h-16 object-contain flex-shrink-0"
             style={{ 
               filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
               background: 'none',
@@ -125,11 +126,11 @@ export function AppSidebar() {
               (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
             }}
           />
-          <div className="flex-1 min-w-0">
-            <h2 className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight">
               Clarity
             </h2>
-            <p className="text-lg text-gray-400 font-medium mt-2 leading-tight">
+            <p className="text-sm text-gray-400 font-medium mt-1 leading-tight">
               Analytics Dashboard
             </p>
           </div>
@@ -172,3 +173,4 @@ export function AppSidebar() {
       </SidebarFooter>
     </Sidebar>;
 }
+
