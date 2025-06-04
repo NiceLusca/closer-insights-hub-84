@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 
 // Componentes de ícones 3D customizados mais sutis
 const DashboardIcon3D = ({
@@ -22,6 +23,7 @@ const DashboardIcon3D = ({
       </div>
     </div>
   </div>;
+
 const AnalyticsIcon3D = ({
   className
 }: {
@@ -41,6 +43,7 @@ const AnalyticsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const LeadsIcon3D = ({
   className
 }: {
@@ -62,6 +65,7 @@ const LeadsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const ReportsIcon3D = ({
   className
 }: {
@@ -83,6 +87,7 @@ const ReportsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const menuItems = [{
   title: "Dashboard",
   url: "/",
@@ -100,6 +105,7 @@ const menuItems = [{
   url: "/reports",
   icon: ReportsIcon3D
 }];
+
 export function AppSidebar() {
   const location = useLocation();
   return <Sidebar>
@@ -109,7 +115,7 @@ export function AppSidebar() {
             <img alt="Clarity Logo" onError={e => {
             console.log('Erro ao carregar logo principal, tentando fallback...');
             (e.target as HTMLImageElement).src = "/lovable-uploads/82cceff9-b8f2-4ee8-a80a-e08dd6b31933.png";
-          }} src="/lovable-uploads/9467700f-44f6-4ae5-9c94-9bde38dd4d9f.png" className="w-full h-full object-cover" />
+          }} src="/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide">
@@ -122,9 +128,6 @@ export function AppSidebar() {
       
       <SidebarContent className="px-4 py-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold text-gray-300 mb-4 px-2">
-            Navegação
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map(item => <SidebarMenuItem key={item.title}>

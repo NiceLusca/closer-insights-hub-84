@@ -1,10 +1,9 @@
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Percent, Hash } from "lucide-react";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
+import { getLeadsExcludingMentorados } from "@/utils/statusClassification";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceProps {
@@ -12,155 +11,119 @@ interface CloserPerformanceProps {
 }
 
 export function CloserPerformance({ leads }: CloserPerformanceProps) {
-  // MUDANÇA: Definir 'absolute' (números) como padrão em vez de 'percentage'
-  const [viewMode, setViewMode] = useState<'percentage' | 'absolute'>('absolute');
-  
-  console.log('🎯 [CLOSER PERFORMANCE] Processando', leads.length, 'leads BRUTOS (com mentorados)');
-
-  const closerData = useMemo(() => {
-    // Agrupar leads por closer ANTES de qualquer filtragem
-    const closerStats: Record<string, Lead[]> = {};
+  const chartData = useMemo(() => {
+    console.log('📊 [CLOSER PERFORMANCE] Processando performance dos closers');
     
-    leads.forEach(lead => {
+    const validLeads = getLeadsExcludingMentorados(leads);
+    const closerStats: Record<string, { apresentacoes: number; fechamentos: number; receita: number }> = {};
+    
+    validLeads.forEach(lead => {
       const closer = lead.Closer || 'Sem Closer';
+      
       if (!closerStats[closer]) {
-        closerStats[closer] = [];
+        closerStats[closer] = { apresentacoes: 0, fechamentos: 0, receita: 0 };
       }
-      closerStats[closer].push(lead);
+      
+      // Contar apresentações (leads que foram efetivamente atendidos)
+      if (['Fechou', 'Não Fechou', 'Aguardando resposta'].includes(lead.Status || '')) {
+        closerStats[closer].apresentacoes++;
+        
+        // Contar fechamentos
+        if (lead.Status === 'Fechou') {
+          closerStats[closer].fechamentos++;
+          closerStats[closer].receita += (lead['Venda Completa'] || 0) + (lead.recorrente || 0);
+        }
+      }
     });
 
-    console.log('🎯 [CLOSER PERFORMANCE] Closers encontrados:', Object.keys(closerStats).length);
+    return Object.entries(closerStats)
+      .map(([closer, stats]) => ({
+        closer: closer.length > 15 ? closer.substring(0, 15) + '...' : closer,
+        apresentacoes: stats.apresentacoes,
+        fechamentos: stats.fechamentos,
+        conversao: stats.apresentacoes > 0 ? Number(((stats.fechamentos / stats.apresentacoes) * 100).toFixed(1)) : 0,
+        receita: stats.receita,
+        ticketMedio: stats.fechamentos > 0 ? Math.round(stats.receita / stats.fechamentos) : 0
+      }))
+      .sort((a, b) => b.conversao - a.conversao)
+      .slice(0, 8);
+  }, [leads]);
 
-    const result = Object.entries(closerStats).map(([closer, closerLeads]) => {
-      console.log(`👤 [${closer}] Processando ${closerLeads.length} leads brutos`);
-      
-      // Usar métricas padronizadas (que já filtra mentorados internamente)
-      const metrics = calculateStandardizedMetrics(closerLeads);
-      
-      // CORREÇÃO: Aproveitamento agora é fechados/apresentações
-      const aproveitamento = metrics.apresentacoes > 0 ? (metrics.fechados / metrics.apresentacoes) * 100 : 0;
-      
-      console.log(`👤 [${closer}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados de ${metrics.apresentacoes} apresentações`);
-      console.log(`👤 [${closer}] Aproveitamento CORRIGIDO: ${aproveitamento.toFixed(1)}% (${metrics.fechados}/${metrics.apresentacoes})`);
-      
-      return {
-        closer: closer.split(' ')[0], // Mostrar apenas primeiro nome
-        leads: metrics.totalLeads,
-        apresentacoes: metrics.apresentacoes,
-        vendas: metrics.fechados,
-        conversao: aproveitamento, // Agora é fechados/apresentações
-        receita: metrics.receitaTotal
-      };
-    }).filter(item => item.leads > 0) // Filtrar closers sem leads válidos
-      .sort((a, b) => viewMode === 'percentage' ? b.conversao - a.conversao : b.vendas - a.vendas);
-
-    console.log('🎯 [CLOSER PERFORMANCE] Dados processados com aproveitamento CORRIGIDO:', result.length, 'closers');
-    return result;
-  }, [leads, viewMode]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0
-    }).format(value);
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 shadow-xl">
+          <p className="text-gray-200 font-medium mb-2">{`Closer: ${label}`}</p>
+          <p className="text-blue-400 text-sm">
+            {`Apresentações: ${data.apresentacoes}`}
+          </p>
+          <p className="text-green-400 text-sm">
+            {`Fechamentos: ${data.fechamentos}`}
+          </p>
+          <p className="text-yellow-400 text-sm">
+            {`Taxa de Conversão: ${data.conversao}%`}
+          </p>
+          <p className="text-purple-400 text-sm">
+            {`Receita: R$ ${data.receita.toLocaleString()}`}
+          </p>
+          <p className="text-cyan-400 text-sm">
+            {`Ticket Médio: R$ ${data.ticketMedio.toLocaleString()}`}
+          </p>
+        </div>
+      );
+    }
+    return null;
   };
 
-  const totalLeads = closerData.reduce((sum, item) => sum + item.leads, 0);
+  const totalMetrics = useMemo(() => {
+    const validLeads = getLeadsExcludingMentorados(leads);
+    return calculateStandardizedMetrics(validLeads);
+  }, [leads]);
 
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover:shadow-xl transition-all duration-300">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-lg font-semibold text-gray-100">
-              Performance por Closer
-            </CardTitle>
-            <p className="text-sm text-gray-400">
-              {totalLeads} leads válidos • Aproveitamento = Vendas/Apresentações
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={viewMode === 'absolute' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('absolute')}
-              className="flex items-center space-x-1"
-            >
-              <Hash className="w-4 h-4" />
-              <span>Nº</span>
-            </Button>
-            <Button
-              variant={viewMode === 'percentage' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('percentage')}
-              className="flex items-center space-x-1"
-            >
-              <Percent className="w-4 h-4" />
-              <span>%</span>
-            </Button>
-          </div>
-        </div>
+        <CardTitle className="text-xl font-semibold text-gray-100">
+          Performance dos Closers
+        </CardTitle>
+        <p className="text-sm text-gray-400">
+          Ranking por taxa de conversão • {totalMetrics.apresentacoes} apresentações • {totalMetrics.fechados} fechamentos
+        </p>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={closerData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
             <XAxis 
               dataKey="closer" 
-              stroke="#9ca3af"
+              stroke="#9ca3af" 
               fontSize={12}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              tick={{ fill: '#9ca3af' }}
             />
-            <YAxis stroke="#9ca3af" fontSize={12} />
-            <Tooltip 
-              contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
-                color: '#f3f4f6',
-                zIndex: 999999
-              }}
-              wrapperStyle={{
-                zIndex: 999999,
-                position: 'fixed',
-                pointerEvents: 'none'
-              }}
-              formatter={(value, name) => {
-                if (name === 'Total de Leads') return [value, 'Total de Leads'];
-                if (name === 'Aproveitamento (%)') return [`${(value as number).toFixed(1)}%`, 'Aproveitamento das Apresentações'];
-                if (name === 'Número de Vendas') return [value, 'Número de Vendas'];
-                return [value, name];
-              }}
-              labelFormatter={(label) => {
-                const closer = closerData.find(c => c.closer === label);
-                return closer ? `${closer.closer} • ${closer.apresentacoes} apresentações` : label;
+            <YAxis stroke="#9ca3af" fontSize={12} tick={{ fill: '#9ca3af' }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend 
+              wrapperStyle={{ 
+                paddingTop: '20px',
+                color: '#d1d5db'
               }}
             />
-            <Legend />
-            {viewMode === 'percentage' ? (
-              <Bar 
-                dataKey="conversao" 
-                fill="#10b981" 
-                name="Aproveitamento (%)"
-                radius={[2, 2, 0, 0]}
-              />
-            ) : (
-              <>
-                <Bar 
-                  dataKey="leads" 
-                  fill="#3b82f6" 
-                  name="Total de Leads"
-                  radius={[2, 2, 0, 0]}
-                />
-                <Bar 
-                  dataKey="vendas" 
-                  fill="#10b981" 
-                  name="Número de Vendas"
-                  radius={[2, 2, 0, 0]}
-                />
-              </>
-            )}
+            <Bar 
+              dataKey="apresentacoes" 
+              fill="#60a5fa" 
+              name="Apresentações"
+              radius={[2, 2, 0, 0]}
+            />
+            <Bar 
+              dataKey="fechamentos" 
+              fill="#34d399" 
+              name="Fechamentos"
+              radius={[2, 2, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
