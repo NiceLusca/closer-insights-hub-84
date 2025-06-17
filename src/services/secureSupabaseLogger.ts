@@ -90,6 +90,16 @@ class SecureSupabaseLogger {
     details: any;
   }) {
     try {
+      // For now, just log to console until audit_logs table is available
+      console.log('AUDIT LOG:', {
+        userId: auditData.userId,
+        action: auditData.action,
+        details: auditData.details,
+        timestamp: new Date().toISOString()
+      });
+      
+      // TODO: Uncomment when audit_logs table is available in database types
+      /*
       await supabase
         .from('audit_logs')
         .insert({
@@ -98,6 +108,7 @@ class SecureSupabaseLogger {
           new_values: auditData.details,
           created_at: new Date().toISOString()
         });
+      */
     } catch (error) {
       console.error('Erro ao criar log de auditoria:', error);
     }
