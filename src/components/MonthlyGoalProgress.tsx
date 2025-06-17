@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Target, TrendingUp, DollarSign } from "lucide-react";
 import type { Lead } from "@/types/lead";
 
@@ -17,36 +18,70 @@ export const MonthlyGoalProgress = React.memo(({ allLeads }: MonthlyGoalProgress
     
     console.log('📊 [MONTHLY GOAL] Calculando meta para:', currentMonth + 1, '/', currentYear);
     
-    // Filtrar apenas leads do mês atual, independente de outros filtros
-    const currentMonthLeads = allLeads.filter(lead => {
-      if (!lead.parsedDate) return false;
+    // Filtrar apenas leads FECHADOS do mês atual
+    const currentMonthClosedLeads = allLeads.filter(lead => {
+      if (!lead.parsedDate || lead.Status !== 'Fechou') return false;
       
       const leadDate = lead.parsedDate;
       return leadDate.getMonth() === currentMonth && 
              leadDate.getFullYear() === currentYear;
     });
     
-    // Calcular receita total do mês (Venda Completa + recorrente)
-    const monthlyRevenue = currentMonthLeads.reduce((total, lead) => {
+    // Calcular receita total apenas dos leads fechados
+    const monthlyRevenue = currentMonthClosedLeads.reduce((total, lead) => {
       const vendaCompleta = lead['Venda Completa'] || 0;
       const recorrente = lead.recorrente || 0;
       return total + vendaCompleta + recorrente;
     }, 0);
     
+    // Calcular contribuições por closer
+    const closerContributions = currentMonthClosedLeads.reduce((acc, lead) => {
+      const closer = lead.Closer?.trim() || 'Sem Closer';
+      const vendaCompleta = lead['Venda Completa'] || 0;
+      const recorrente = lead.recorrente || 0;
+      const leadRevenue = vendaCompleta + recorrente;
+      
+      if (!acc[closer]) {
+        acc[closer] = {
+          revenue: 0,
+          salesCount: 0,
+          percentage: 0
+        };
+      }
+      
+      acc[closer].revenue += leadRevenue;
+      acc[closer].salesCount += 1;
+      
+      return acc;
+    }, {} as Record<string, { revenue: number; salesCount: number; percentage: number }>);
+    
+    // Calcular percentuais de contribuição
+    Object.keys(closerContributions).forEach(closer => {
+      closerContributions[closer].percentage = monthlyRevenue > 0 
+        ? (closerContributions[closer].revenue / monthlyRevenue) * 100 
+        : 0;
+    });
+    
+    // Ordenar closers por contribuição (maior para menor)
+    const sortedClosers = Object.entries(closerContributions)
+      .sort(([, a], [, b]) => b.revenue - a.revenue);
+    
     const goal = 50000; // Meta de R$ 50.000
     const progress = (monthlyRevenue / goal) * 100;
     const remaining = Math.max(0, goal - monthlyRevenue);
     
-    console.log('📊 [MONTHLY GOAL] Leads do mês:', currentMonthLeads.length);
+    console.log('📊 [MONTHLY GOAL] Leads fechados do mês:', currentMonthClosedLeads.length);
     console.log('📊 [MONTHLY GOAL] Receita do mês:', monthlyRevenue);
     console.log('📊 [MONTHLY GOAL] Progresso:', progress.toFixed(1) + '%');
+    console.log('📊 [MONTHLY GOAL] Contribuições por closer:', closerContributions);
     
     return {
       monthlyRevenue,
       goal,
       progress: Math.min(progress, 100), // Limitar a 100%
       remaining,
-      leadsCount: currentMonthLeads.length
+      leadsCount: currentMonthClosedLeads.length, // Agora conta apenas fechados
+      closerContributions: sortedClosers
     };
   }, [allLeads]);
   
@@ -75,6 +110,20 @@ export const MonthlyGoalProgress = React.memo(({ allLeads }: MonthlyGoalProgress
   const currentDate = new Date();
   const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   
+  // Cores para diferentes closers
+  const getCloserColor = (index: number) => {
+    const colors = [
+      'text-blue-400',
+      'text-green-400', 
+      'text-purple-400',
+      'text-yellow-400',
+      'text-pink-400',
+      'text-cyan-400',
+      'text-orange-400'
+    ];
+    return colors[index % colors.length];
+  };
+  
   return (
     <Card className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 hover-lift transition-all duration-300 card-entrance">
       <CardHeader className="pb-4">
@@ -88,7 +137,7 @@ export const MonthlyGoalProgress = React.memo(({ allLeads }: MonthlyGoalProgress
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Barra de progresso principal com animação */}
+        {/* Barra de progresso principal com tooltip */}
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-400 font-medium">Progresso da Meta</span>
@@ -97,21 +146,67 @@ export const MonthlyGoalProgress = React.memo(({ allLeads }: MonthlyGoalProgress
             </span>
           </div>
           
-          <div className="relative overflow-hidden">
-            <Progress 
-              value={monthlyData.progress} 
-              className="h-4 bg-gray-700/50 rounded-full shadow-inner" 
-            />
-            <div 
-              className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-1000 ease-out ${getProgressBg(monthlyData.progress)} shadow-lg`}
-              style={{ 
-                width: `${Math.min(monthlyData.progress, 100)}%`,
-                boxShadow: `0 0 10px ${monthlyData.progress >= 70 ? 'rgba(34, 197, 94, 0.5)' : monthlyData.progress >= 30 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`
-              }}
-            >
-              <div className="h-full w-full rounded-full bg-gradient-to-r from-white/20 to-transparent animate-shimmer"></div>
-            </div>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative overflow-hidden cursor-help">
+                  <Progress 
+                    value={monthlyData.progress} 
+                    className="h-4 bg-gray-700/50 rounded-full shadow-inner" 
+                  />
+                  <div 
+                    className={`absolute top-0 left-0 h-4 rounded-full transition-all duration-1000 ease-out ${getProgressBg(monthlyData.progress)} shadow-lg`}
+                    style={{ 
+                      width: `${Math.min(monthlyData.progress, 100)}%`,
+                      boxShadow: `0 0 10px ${monthlyData.progress >= 70 ? 'rgba(34, 197, 94, 0.5)' : monthlyData.progress >= 30 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`
+                    }}
+                  >
+                    <div className="h-full w-full rounded-full bg-gradient-to-r from-white/20 to-transparent animate-shimmer"></div>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-sm p-4">
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm text-gray-200 border-b border-gray-600 pb-2">
+                    🎯 Contribuições para a Meta
+                  </h4>
+                  
+                  {monthlyData.closerContributions.length > 0 ? (
+                    <div className="space-y-2">
+                      {monthlyData.closerContributions.map(([closer, data], index) => (
+                        <div key={closer} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full bg-current ${getCloserColor(index)}`}></div>
+                            <span className="text-gray-300 font-medium">{closer}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className={`font-semibold ${getCloserColor(index)}`}>
+                              {formatCurrency(data.revenue)}
+                            </div>
+                            <div className="text-gray-400">
+                              {data.salesCount} vendas • {data.percentage.toFixed(1)}%
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="border-t border-gray-600 pt-2 mt-3">
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-gray-200">Total Geral:</span>
+                          <div className="text-right">
+                            <div className="text-green-400">{formatCurrency(monthlyData.monthlyRevenue)}</div>
+                            <div className="text-gray-400">{monthlyData.leadsCount} vendas</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Nenhuma venda registrada neste mês</p>
+                  )}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         {/* Cards de informações com hover effects */}
@@ -132,7 +227,7 @@ export const MonthlyGoalProgress = React.memo(({ allLeads }: MonthlyGoalProgress
               <span className="text-sm font-medium text-gray-300">Faturado</span>
             </div>
             <p className="text-xl font-bold text-green-400">{formatCurrency(monthlyData.monthlyRevenue)}</p>
-            <p className="text-xs text-gray-400 mt-1">{monthlyData.leadsCount} vendas</p>
+            <p className="text-xs text-gray-400 mt-1">{monthlyData.leadsCount} vendas fechadas</p>
           </div>
           
           {/* Restante */}
