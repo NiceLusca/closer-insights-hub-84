@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -113,7 +114,7 @@ export function AppSidebar() {
           <img 
             alt="Clarity Logo" 
             src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" 
-            className="w-16 h-16 flex-shrink-0 object-contain"
+            className="w-20 h-20 flex-shrink-0 object-contain"
             style={{
               filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
             }} 
