@@ -159,7 +159,9 @@ export function AppSidebar() {
           <p className="text-base font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
             Oceano Azul
           </p>
-          <p className="text-sm text-gray-400 mt-1 font-medium">Analytics & Insights Platform</p>
+          <p className="text-xs text-gray-400 mt-1 font-normal">
+            Analytics & Insights Platform
+          </p>
         </div>
       </SidebarFooter>
     </Sidebar>;
