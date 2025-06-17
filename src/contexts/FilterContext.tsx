@@ -33,9 +33,14 @@ interface FilterProviderProps {
 export function FilterProvider({ children }: FilterProviderProps) {
   const { toast } = useToast();
   
+  // Definir range padrão como mês atual
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
   const defaultDateRange = {
-    from: new Date(new Date().setDate(new Date().getDate() - 30)),
-    to: new Date()
+    from: firstDayOfMonth,
+    to: lastDayOfMonth
   };
 
   const defaultFilters = {

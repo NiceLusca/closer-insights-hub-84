@@ -117,7 +117,7 @@ export function AppSidebar() {
             <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-4xl my-0 mx-0 px-0 py-0 font-bold">
               Clarity
             </h2>
-            <p className="text-gray-400 mt-1 leading-tight my-[6px] text-sm font-semibold text-left px-0 py-[3px]">
+            <p className="text-gray-400 mt-1 leading-tight my-[6px] text-sm font-semibold text-left px-0 py-[3px] whitespace-nowrap">
               Analytics Dashboard
             </p>
           </div>
