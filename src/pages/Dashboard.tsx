@@ -59,7 +59,7 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 smooth-scroll">
       <DashboardHeader
         isLoading={isLoading || isApplyingFilters}
         lastUpdated={lastUpdated}
@@ -69,7 +69,7 @@ const Dashboard = () => {
         onRefreshData={forceRefresh}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mobile-spacing">
         <FiltersPanel
           showFilters={showFilters}
           tempDateRange={tempDateRange}
@@ -94,45 +94,63 @@ const Dashboard = () => {
 
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && !isApplyingFilters && (
-          <>
+          <div className="space-y-8">
             {/* 1. Metrics Cards - KPIs principais */}
-            <MetricsCards leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <MetricsCards leads={filteredLeads} />
+            </div>
 
             {/* 2. Meta Mensal - NOVA SEÇÃO */}
-            <MonthlyGoalProgress allLeads={allLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <MonthlyGoalProgress allLeads={allLeads} />
+            </div>
 
             {/* 3. Cards de Distribuição por Status */}
-            <StatusDistributionCards leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <StatusDistributionCards leads={filteredLeads} />
+            </div>
 
             {/* 4. Funil de Conversão - simplificado */}
-            <ConversionFunnel leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <ConversionFunnel leads={filteredLeads} />
+            </div>
 
             {/* 5. Charts Grid - gráficos de leads/receita/closer */}
-            <ChartsGrid leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+              <ChartsGrid leads={filteredLeads} />
+            </div>
 
             {/* 6. Origin Analysis */}
-            <OriginAnalysis leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+              <OriginAnalysis leads={filteredLeads} />
+            </div>
 
             {/* 7. Alertas de Performance */}
-            <PerformanceAlerts leads={filteredLeads} position="bottom" />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
+              <PerformanceAlerts leads={filteredLeads} position="bottom" />
+            </div>
 
             {/* 8. Análise Detalhada de Perdas - MOVIDA PARA O FINAL */}
-            <LossAnalysis leads={filteredLeads} />
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+              <LossAnalysis leads={filteredLeads} />
+            </div>
 
             {/* 9. Validação Matemática - Para confirmar que as contas estão certas */}
-            <div className="mb-6">
+            <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
               <MathValidation leads={filteredLeads} />
             </div>
 
             {/* 10. Debug Info/Validação - NO FINAL ABSOLUTO */}
-            <DebugInfo 
-              allLeads={allLeads} 
-              filteredLeads={filteredLeads} 
-              dateRange={dateRange}
-              cacheStatus={isCacheValid ? 'válido' : 'expirado'}
-              validation={validation}
-            />
-          </>
+            <div className="animate-fade-in-up" style={{ animationDelay: '1.0s' }}>
+              <DebugInfo 
+                allLeads={allLeads} 
+                filteredLeads={filteredLeads} 
+                dateRange={dateRange}
+                cacheStatus={isCacheValid ? 'válido' : 'expirado'}
+                validation={validation}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>

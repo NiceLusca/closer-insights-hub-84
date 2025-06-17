@@ -13,10 +13,18 @@ interface ChartsGridProps {
 export const ChartsGrid = React.memo(({ leads }: ChartsGridProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      <LazyLeadsChart leads={leads} />
-      <LazyRevenueChart leads={leads} />
-      <LazyStatusDistribution leads={leads} />
-      <LazyCloserPerformance leads={leads} />
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+        <LazyLeadsChart leads={leads} />
+      </div>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <LazyRevenueChart leads={leads} />
+      </div>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        <LazyStatusDistribution leads={leads} />
+      </div>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+        <LazyCloserPerformance leads={leads} />
+      </div>
     </div>
   );
 });
