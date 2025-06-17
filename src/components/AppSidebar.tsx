@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -156,7 +155,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-6 border-t border-gray-700/30 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
         <div className="text-center">
           <p className="text-xs text-gray-500 mb-1">Powered by</p>
-          <p className="text-base font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          <p className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
             Oceano Azul
           </p>
           <p className="text-xs text-gray-400 mt-1 font-normal">
