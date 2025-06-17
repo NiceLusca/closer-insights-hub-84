@@ -25,11 +25,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <FilterProvider>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-              <AppSidebar />
-              <SidebarInset>
-                <BrowserRouter>
+          <BrowserRouter>
+            <SidebarProvider>
+              <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+                <AppSidebar />
+                <SidebarInset>
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
@@ -38,10 +38,10 @@ function App() {
                     <Route path="/reports" element={<Reports />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </BrowserRouter>
-              </SidebarInset>
-            </div>
-          </SidebarProvider>
+                </SidebarInset>
+              </div>
+            </SidebarProvider>
+          </BrowserRouter>
         </FilterProvider>
       </TooltipProvider>
     </QueryClientProvider>
