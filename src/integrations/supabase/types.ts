@@ -224,6 +224,202 @@ export type Database = {
         }
         Relationships: []
       }
+      recorrencias_logs: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          log_level: string
+          message: string
+          session_id: string | null
+          source: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          log_level: string
+          message: string
+          session_id?: string | null
+          source: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          log_level?: string
+          message?: string
+          session_id?: string | null
+          source?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
+      recorrencias_processed: {
+        Row: {
+          cliente: string | null
+          closer: string | null
+          contrato: string
+          created_at: string
+          data_ultima_atualizacao: string | null
+          forma_pagamento: string | null
+          id: string
+          inicio_contrato: string | null
+          nome_produto: string | null
+          origem_lead: string | null
+          produto_original: string | null
+          proximo_vencimento: string | null
+          raw_data_id: string | null
+          razao_social: string | null
+          status: string
+          tipo_produto: string | null
+          total_em_aberto: number | null
+          total_futuro: number | null
+          total_pago: number | null
+          total_reembolsado: number | null
+          ultimo_pagamento: string | null
+        }
+        Insert: {
+          cliente?: string | null
+          closer?: string | null
+          contrato: string
+          created_at?: string
+          data_ultima_atualizacao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          inicio_contrato?: string | null
+          nome_produto?: string | null
+          origem_lead?: string | null
+          produto_original?: string | null
+          proximo_vencimento?: string | null
+          raw_data_id?: string | null
+          razao_social?: string | null
+          status: string
+          tipo_produto?: string | null
+          total_em_aberto?: number | null
+          total_futuro?: number | null
+          total_pago?: number | null
+          total_reembolsado?: number | null
+          ultimo_pagamento?: string | null
+        }
+        Update: {
+          cliente?: string | null
+          closer?: string | null
+          contrato?: string
+          created_at?: string
+          data_ultima_atualizacao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          inicio_contrato?: string | null
+          nome_produto?: string | null
+          origem_lead?: string | null
+          produto_original?: string | null
+          proximo_vencimento?: string | null
+          raw_data_id?: string | null
+          razao_social?: string | null
+          status?: string
+          tipo_produto?: string | null
+          total_em_aberto?: number | null
+          total_futuro?: number | null
+          total_pago?: number | null
+          total_reembolsado?: number | null
+          ultimo_pagamento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrencias_processed_raw_data_id_fkey"
+            columns: ["raw_data_id"]
+            isOneToOne: false
+            referencedRelation: "recorrencias_raw_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrencias_processing_logs: {
+        Row: {
+          date_parsing_attempts: Json | null
+          error_message: string | null
+          error_type: string
+          field_analysis: Json | null
+          id: string
+          raw_data_id: string | null
+          raw_row_data: Json
+          row_index: number
+          timestamp: string
+        }
+        Insert: {
+          date_parsing_attempts?: Json | null
+          error_message?: string | null
+          error_type: string
+          field_analysis?: Json | null
+          id?: string
+          raw_data_id?: string | null
+          raw_row_data: Json
+          row_index: number
+          timestamp?: string
+        }
+        Update: {
+          date_parsing_attempts?: Json | null
+          error_message?: string | null
+          error_type?: string
+          field_analysis?: Json | null
+          id?: string
+          raw_data_id?: string | null
+          raw_row_data?: Json
+          row_index?: number
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorrencias_processing_logs_raw_data_id_fkey"
+            columns: ["raw_data_id"]
+            isOneToOne: false
+            referencedRelation: "recorrencias_raw_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorrencias_raw_data: {
+        Row: {
+          created_at: string
+          error_details: Json | null
+          failed_records: number
+          id: string
+          processed_records: number
+          processing_status: string
+          raw_data: Json
+          session_id: string | null
+          timestamp: string
+          total_records: number
+        }
+        Insert: {
+          created_at?: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          processed_records?: number
+          processing_status?: string
+          raw_data: Json
+          session_id?: string | null
+          timestamp?: string
+          total_records?: number
+        }
+        Update: {
+          created_at?: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          processed_records?: number
+          processing_status?: string
+          raw_data?: Json
+          session_id?: string | null
+          timestamp?: string
+          total_records?: number
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           created_at: string

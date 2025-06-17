@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
@@ -7,6 +8,7 @@ import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { MetricsCards } from "@/components/MetricsCards";
+import { MonthlyGoalProgress } from "@/components/MonthlyGoalProgress";
 import { ChartsGrid } from "@/components/Dashboard/ChartsGrid";
 import { ConversionFunnel } from "@/components/ConversionFunnel";
 import { LossAnalysis } from "@/components/LossAnalysis";
@@ -96,30 +98,33 @@ const Dashboard = () => {
             {/* 1. Metrics Cards - KPIs principais */}
             <MetricsCards leads={filteredLeads} />
 
-            {/* 2. Cards de Distribuição por Status - no topo */}
+            {/* 2. Meta Mensal - NOVA SEÇÃO */}
+            <MonthlyGoalProgress allLeads={allLeads} />
+
+            {/* 3. Cards de Distribuição por Status */}
             <StatusDistributionCards leads={filteredLeads} />
 
-            {/* 3. Funil de Conversão - simplificado */}
+            {/* 4. Funil de Conversão - simplificado */}
             <ConversionFunnel leads={filteredLeads} />
 
-            {/* 4. Charts Grid - gráficos de leads/receita/closer */}
+            {/* 5. Charts Grid - gráficos de leads/receita/closer */}
             <ChartsGrid leads={filteredLeads} />
 
-            {/* 5. Origin Analysis */}
+            {/* 6. Origin Analysis */}
             <OriginAnalysis leads={filteredLeads} />
 
-            {/* 6. Alertas de Performance */}
+            {/* 7. Alertas de Performance */}
             <PerformanceAlerts leads={filteredLeads} position="bottom" />
 
-            {/* 7. Análise Detalhada de Perdas - MOVIDA PARA O FINAL */}
+            {/* 8. Análise Detalhada de Perdas - MOVIDA PARA O FINAL */}
             <LossAnalysis leads={filteredLeads} />
 
-            {/* 8. Validação Matemática - Para confirmar que as contas estão certas */}
+            {/* 9. Validação Matemática - Para confirmar que as contas estão certas */}
             <div className="mb-6">
               <MathValidation leads={filteredLeads} />
             </div>
 
-            {/* 9. Debug Info/Validação - NO FINAL ABSOLUTO */}
+            {/* 10. Debug Info/Validação - NO FINAL ABSOLUTO */}
             <DebugInfo 
               allLeads={allLeads} 
               filteredLeads={filteredLeads} 
