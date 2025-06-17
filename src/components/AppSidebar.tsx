@@ -1,17 +1,11 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
-import UserMenu from '@/components/UserMenu';
 
 // Componentes de ícones 3D customizados mais sutis
-const DashboardIcon3D = ({
-  className
-}: {
-  className?: string;
-}) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
-}}>
+const DashboardIcon3D = ({ className }: { className?: string; }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
     <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-md transform rotate-3">
       <div className="absolute inset-1 bg-gray-800 rounded-md">
         <div className="grid grid-cols-2 gap-0.5 p-1">
@@ -22,15 +16,11 @@ const DashboardIcon3D = ({
         </div>
       </div>
     </div>
-  </div>;
-const AnalyticsIcon3D = ({
-  className
-}: {
-  className?: string;
-}) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
-}}>
+  </div>
+);
+
+const AnalyticsIcon3D = ({ className }: { className?: string; }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
     <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-md transform -rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="flex items-end justify-between h-full gap-0.5">
@@ -41,15 +31,11 @@ const AnalyticsIcon3D = ({
         </div>
       </div>
     </div>
-  </div>;
-const LeadsIcon3D = ({
-  className
-}: {
-  className?: string;
-}) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
-}}>
+  </div>
+);
+
+const LeadsIcon3D = ({ className }: { className?: string; }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
     <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-md transform rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="flex flex-col items-center justify-center h-full">
@@ -62,15 +48,11 @@ const LeadsIcon3D = ({
         </div>
       </div>
     </div>
-  </div>;
-const ReportsIcon3D = ({
-  className
-}: {
-  className?: string;
-}) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
-}}>
+  </div>
+);
+
+const ReportsIcon3D = ({ className }: { className?: string; }) => (
+  <div className={`relative ${className}`} style={{ width: '24px', height: '24px' }}>
     <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-md transform -rotate-1">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="space-y-0.5">
@@ -83,38 +65,53 @@ const ReportsIcon3D = ({
         </div>
       </div>
     </div>
-  </div>;
-const menuItems = [{
-  title: "Dashboard",
-  url: "/",
-  icon: DashboardIcon3D
-}, {
-  title: "Análises",
-  url: "/analytics",
-  icon: AnalyticsIcon3D
-}, {
-  title: "Leads",
-  url: "/leads",
-  icon: LeadsIcon3D
-}, {
-  title: "Relatórios",
-  url: "/reports",
-  icon: ReportsIcon3D
-}];
+  </div>
+);
+
+const menuItems = [
+  {
+    title: "Dashboard",
+    url: "/",
+    icon: DashboardIcon3D
+  },
+  {
+    title: "Análises",
+    url: "/analytics",
+    icon: AnalyticsIcon3D
+  },
+  {
+    title: "Leads",
+    url: "/leads",
+    icon: LeadsIcon3D
+  },
+  {
+    title: "Relatórios",
+    url: "/reports",
+    icon: ReportsIcon3D
+  }
+];
+
 export function AppSidebar() {
   const location = useLocation();
+  
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-gray-700/30">
         <div className="flex items-center gap-4">
-          <img alt="Clarity Logo" src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" style={{
-          filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
-          background: 'none',
-          backgroundColor: 'transparent'
-        }} onError={e => {
-          console.log('Erro ao carregar logo principal, usando fallback...');
-          (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
-        }} className="w-16 h-16 flex-shrink-0 object-cover" />
+          <img 
+            alt="Clarity Logo" 
+            src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" 
+            style={{
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
+              background: 'none',
+              backgroundColor: 'transparent'
+            }} 
+            onError={(e) => {
+              console.log('Erro ao carregar logo principal, usando fallback...');
+              (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
+            }} 
+            className="w-16 h-16 flex-shrink-0 object-cover" 
+          />
           <div className="flex-1 min-w-0 overflow-hidden">
             <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-4xl my-0 mx-0 px-0 py-0 font-bold">
               Clarity
@@ -130,8 +127,17 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className={`text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${location.pathname === item.url ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' : 'text-gray-300'}`}>
+              {menuItems.map(item => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url} 
+                    className={`text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${
+                      location.pathname === item.url 
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' 
+                        : 'text-gray-300'
+                    }`}
+                  >
                     <Link to={item.url} className="flex items-center gap-4">
                       <div className="transition-transform duration-300 group-hover:scale-110">
                         <item.icon className="drop-shadow-lg" />
@@ -139,21 +145,17 @@ export function AppSidebar() {
                       <span className="ml-1 group-hover:text-white transition-colors">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center justify-between w-full px-2 py-1">
-              <span className="text-sm text-gray-400">Usuário</span>
-              <UserMenu />
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="p-4 border-t border-gray-700/30">
+        <div className="text-center">
+          <p className="text-xs text-gray-500">Sistema Clarity v1.0</p>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
