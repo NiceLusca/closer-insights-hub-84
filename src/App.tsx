@@ -1,59 +1,63 @@
 import React from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { FilterProvider } from "@/contexts/FilterContext";
-import { AppSidebar } from "@/components/AppSidebar";
-import Dashboard from "./pages/Dashboard";
-import Analytics from "./pages/Analytics";
-import Leads from "./pages/Leads";
-import Reports from "./pages/Reports";
-import NotFound from "./pages/NotFound";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { TooltipProvider } from "@/components/ui/tooltip"
+
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Leads from "@/pages/Leads";
+import Analytics from "@/pages/Analytics";
+import Reports from "@/pages/Reports";
+import NotFound from "@/pages/NotFound";
+import Auth from '@/pages/Auth';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  // Definir título da aplicação
-  React.useEffect(() => {
-    document.title = 'Clarity - Analytics Dashboard';
-  }, []);
-
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <FilterProvider>
-          <Toaster />
-          <Sonner />
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
           <BrowserRouter>
-            <SidebarProvider>
-              <div className="min-h-screen flex w-full bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
-                <AppSidebar />
-                <main className="flex-1">
-                  <div className="p-4 border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                      <SidebarTrigger />
-                    </div>
-                  </div>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/leads" element={<Leads />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-              {/* Portal root para tooltips */}
-              <div id="portal-root" />
-            </SidebarProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/leads" element={
+                <ProtectedRoute>
+                  <Leads />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute requiredRole="operator">
+                  <Analytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/reports" element={
+                <ProtectedRoute requiredRole="admin">
+                  <Reports />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </BrowserRouter>
-        </FilterProvider>
+        </div>
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

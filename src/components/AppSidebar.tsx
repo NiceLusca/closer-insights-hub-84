@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
+import UserMenu from '@/components/UserMenu';
 
 // Componentes de ícones 3D customizados mais sutis
 const DashboardIcon3D = ({
@@ -102,7 +103,8 @@ const menuItems = [{
 }];
 export function AppSidebar() {
   const location = useLocation();
-  return <Sidebar>
+  return (
+    <Sidebar>
       <SidebarHeader className="p-4 border-b border-gray-700/30">
         <div className="flex items-center gap-4">
           <img alt="Clarity Logo" src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" style={{
@@ -143,12 +145,16 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-gray-700/30">
-        <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">Powered by</p>
-          <p className="text-sm font-semibold text-cyan-400">Oceano Azul</p>
-          <p className="text-xs text-gray-500 mt-1">Analytics & Insights Platform</p>
-        </div>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="flex items-center justify-between w-full px-2 py-1">
+              <span className="text-sm text-gray-400">Usuário</span>
+              <UserMenu />
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
-    </Sidebar>;
+    </Sidebar>
+  );
 }
