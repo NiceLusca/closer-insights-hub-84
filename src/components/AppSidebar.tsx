@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -8,8 +9,8 @@ const DashboardIcon3D = ({
 }: {
   className?: string;
 }) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
+  width: '28px',
+  height: '28px'
 }}>
     <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-md transform rotate-3">
       <div className="absolute inset-1 bg-gray-800 rounded-md">
@@ -22,13 +23,14 @@ const DashboardIcon3D = ({
       </div>
     </div>
   </div>;
+
 const AnalyticsIcon3D = ({
   className
 }: {
   className?: string;
 }) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
+  width: '28px',
+  height: '28px'
 }}>
     <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-md transform -rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
@@ -41,13 +43,14 @@ const AnalyticsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const LeadsIcon3D = ({
   className
 }: {
   className?: string;
 }) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
+  width: '28px',
+  height: '28px'
 }}>
     <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-md transform rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
@@ -62,13 +65,14 @@ const LeadsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const ReportsIcon3D = ({
   className
 }: {
   className?: string;
 }) => <div className={`relative ${className}`} style={{
-  width: '24px',
-  height: '24px'
+  width: '28px',
+  height: '28px'
 }}>
     <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-md transform -rotate-1">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
@@ -83,6 +87,7 @@ const ReportsIcon3D = ({
       </div>
     </div>
   </div>;
+
 const menuItems = [{
   title: "Dashboard",
   url: "/",
@@ -100,11 +105,12 @@ const menuItems = [{
   url: "/reports",
   icon: ReportsIcon3D
 }];
+
 export function AppSidebar() {
   const location = useLocation();
-  return <Sidebar className="border-r border-gray-700/50 bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl">
-      <SidebarHeader className="p-6 border-b border-gray-700/30">
-        <div className="flex items-center gap-4">
+  return <Sidebar className="border-r border-gray-700/50 bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl w-72">
+      <SidebarHeader className="p-8 border-b border-gray-700/30">
+        <div className="flex items-center gap-5">
           <img alt="Clarity Logo" src="/lovable-uploads/b6f94494-36d6-4699-8ee0-1523e42505b3.png" style={{
           filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.1)',
           background: 'none',
@@ -112,25 +118,25 @@ export function AppSidebar() {
         }} onError={e => {
           console.log('Erro ao carregar logo principal, usando fallback...');
           (e.target as HTMLImageElement).src = "/lovable-uploads/a9770866-2518-466e-9d50-c2e740a4a14a.png";
-        }} className="w-16 h-16 flex-shrink-0 object-cover" />
+        }} className="w-20 h-20 flex-shrink-0 object-cover" />
           <div className="flex-1 min-w-0 overflow-hidden">
-            <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-4xl my-0 mx-0 px-0 py-0 font-bold">
+            <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-5xl my-0 mx-0 px-0 py-0 font-bold">
               Clarity
             </h2>
-            <p className="text-gray-400 mt-1 leading-tight my-[6px] text-sm font-semibold text-left px-0 py-[3px] whitespace-nowrap">
+            <p className="text-gray-400 mt-2 leading-tight my-[8px] text-base font-semibold text-left px-0 py-[4px] whitespace-nowrap">
               Analytics Dashboard
             </p>
           </div>
         </div>
       </SidebarHeader>
       
-      <SidebarContent className="px-4 py-6 bg-gradient-to-b from-transparent to-gray-900/20">
+      <SidebarContent className="px-6 py-8 bg-gradient-to-b from-transparent to-gray-900/20">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map(item => <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className={`text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${location.pathname === item.url ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30'}`}>
-                    <Link to={item.url} className="flex items-center gap-4">
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url} className={`text-lg font-medium py-5 px-5 mb-3 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${location.pathname === item.url ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30'}`}>
+                    <Link to={item.url} className="flex items-center gap-5">
                       <div className="transition-transform duration-300 group-hover:scale-110">
                         <item.icon className="drop-shadow-lg" />
                       </div>
