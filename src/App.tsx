@@ -8,7 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { FilterProvider } from "@/contexts/FilterContext";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar";
 
 import Index from "@/pages/Index";
@@ -29,7 +29,10 @@ function App() {
             <SidebarProvider>
               <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
                 <AppSidebar />
-                <SidebarInset>
+                <SidebarInset className="flex-1 bg-gradient-to-br from-slate-900/50 to-purple-900/50 backdrop-blur-sm">
+                  <div className="p-4">
+                    <SidebarTrigger className="mb-4 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:text-white transition-all duration-200" />
+                  </div>
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />

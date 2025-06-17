@@ -95,8 +95,8 @@ export function AppSidebar() {
   const location = useLocation();
   
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4 border-b border-gray-700/30">
+    <Sidebar className="border-r border-gray-700/50 bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl">
+      <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-4">
           <img 
             alt="Clarity Logo" 
@@ -123,7 +123,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       
-      <SidebarContent className="px-4 py-6">
+      <SidebarContent className="px-4 py-6 bg-gradient-to-b from-transparent to-gray-900/20">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -135,7 +135,7 @@ export function AppSidebar() {
                     className={`text-base font-medium py-4 px-4 mb-2 rounded-xl transition-all duration-300 hover:bg-gray-700/50 hover:transform hover:scale-105 group ${
                       location.pathname === item.url 
                         ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' 
-                        : 'text-gray-300'
+                        : 'text-gray-300 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30'
                     }`}
                   >
                     <Link to={item.url} className="flex items-center gap-4">
@@ -152,9 +152,13 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-gray-700/30">
+      <SidebarFooter className="p-6 border-t border-gray-700/30 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
         <div className="text-center">
-          <p className="text-xs text-gray-500">Sistema Clarity v1.0</p>
+          <p className="text-xs text-gray-400 mb-1">Powered by</p>
+          <p className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Oceano Azul
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Analytics & Insights Platform</p>
         </div>
       </SidebarFooter>
     </Sidebar>
