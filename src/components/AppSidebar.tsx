@@ -117,7 +117,7 @@ export function AppSidebar() {
             <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide leading-tight text-4xl my-0 mx-0 px-0 py-0 font-bold">
               Clarity
             </h2>
-            <p className="text-gray-400 mt-1 leading-tight my-[6px] text-xs font-semibold text-left px-0 py-[3px]">
+            <p className="text-gray-400 mt-1 leading-tight my-[6px] text-sm font-semibold text-left px-0 py-[3px]">
               Analytics Dashboard
             </p>
           </div>
@@ -145,11 +145,11 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-6 border-t border-gray-700/30 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
         <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">Powered by</p>
-          <p className="text-sm font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+          <p className="text-xs text-gray-500 mb-1">Powered by</p>
+          <p className="text-base font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
             Oceano Azul
           </p>
-          <p className="text-xs text-gray-500 mt-1">Analytics & Insights Platform</p>
+          <p className="text-sm text-gray-400 mt-1 font-medium">Analytics & Insights Platform</p>
         </div>
       </SidebarFooter>
     </Sidebar>;
