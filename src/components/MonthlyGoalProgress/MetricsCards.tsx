@@ -27,7 +27,12 @@ export const MetricsCards = React.memo(({ monthlyData }: MetricsCardsProps) => {
           <span className="text-sm font-medium text-gray-300">Faturado</span>
         </div>
         <p className="text-xl font-bold text-green-400">{formatCurrency(monthlyData.monthlyRevenue)}</p>
-        <p className="text-xs text-gray-400 mt-1">{monthlyData.leadsCount} vendas fechadas</p>
+        <p className="text-xs text-gray-400 mt-1">
+          {monthlyData.leadsCount} leads fechados • 
+          {monthlyData.vendasCompletas > 0 && ` ${monthlyData.vendasCompletas} completas`}
+          {monthlyData.vendasCompletas > 0 && monthlyData.vendasRecorrentes > 0 && ' • '}
+          {monthlyData.vendasRecorrentes > 0 && ` ${monthlyData.vendasRecorrentes} recorrentes`}
+        </p>
       </div>
       
       {/* Restante */}
