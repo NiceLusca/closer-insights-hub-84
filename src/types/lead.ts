@@ -26,21 +26,41 @@ export interface Filters {
   origem: string[];
 }
 
+// Interface completa com todas as propriedades necessárias
 export interface Metrics {
+  // Contadores básicos
   totalLeads: number;
   agendamentos: number;
   noShows: number;
   remarcacoes: number;
   fechamentos: number;
+  confirmados: number;
+  mentorados: number;
+  
+  // Receita
   receitaTotal: number;
   receitaRecorrente: number;
+  receitaCompleta: number;
+  
+  // Vendas
+  vendasCompletas: number;
+  vendasRecorrentes: number;
+  
+  // Taxas principais
   taxaComparecimento: number;
   taxaFechamento: number;
   taxaDesmarque: number;
-  confirmados: number;
-  mentorados: number;
   aproveitamentoGeral: number;
-  vendasCompletas: number;
-  vendasRecorrentes: number;
-  receitaCompleta: number;
+  taxaNaoFechamento: number;
+  
+  // Grupos de classificação (novos)
+  fechados: number;
+  aSerAtendido: number;
+  atendidoNaoFechou: number;
+  perdidoInativo: number;
+  apresentacoes: number;
+  compareceram: number;
+  
+  // Métricas adicionais
+  ticketMedio: number;
 }

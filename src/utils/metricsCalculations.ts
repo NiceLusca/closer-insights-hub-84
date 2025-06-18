@@ -11,31 +11,11 @@ export function calculateMetrics(leads: Lead[]) {
   // Validar consistência
   validateMetricsConsistency(standardMetrics);
   
-  // Retornar no formato esperado pela interface (retrocompatibilidade)
+  // Retornar no formato esperado pela interface (já compatível)
   const metrics = {
-    totalLeads: standardMetrics.totalLeads,
-    aproveitamentoGeral: standardMetrics.aproveitamentoGeral,
-    receitaTotal: standardMetrics.receitaTotal,
-    receitaCompleta: standardMetrics.receitaCompleta,
-    receitaRecorrente: standardMetrics.receitaRecorrente,
-    taxaFechamento: standardMetrics.taxaFechamento,
-    taxaComparecimento: standardMetrics.taxaComparecimento,
-    taxaDesmarque: standardMetrics.taxaDesmarque,
-    taxaNaoFechamento: standardMetrics.taxaNaoFechamento,
-    vendasCompletas: standardMetrics.vendasCompletas,
-    vendasRecorrentes: standardMetrics.vendasRecorrentes,
+    ...standardMetrics,
     
-    // Dados detalhados para debug e funil
-    fechados: standardMetrics.fechados,
-    aSerAtendido: standardMetrics.aSerAtendido,
-    atendidoNaoFechou: standardMetrics.atendidoNaoFechou,
-    perdidoInativo: standardMetrics.perdidoInativo,
-    apresentacoes: standardMetrics.apresentacoes,
-    compareceram: standardMetrics.compareceram,
-    elegiveisParaComparecimento: standardMetrics.totalLeads, // Total válido é elegível
-    baseParaDesmarque: standardMetrics.totalLeads, // Total válido é a base
-    
-    // Para retrocompatibilidade
+    // Para retrocompatibilidade com códigos antigos
     fechou: standardMetrics.fechados,
     agendados: standardMetrics.aSerAtendido,
     naoFecharam: standardMetrics.atendidoNaoFechou,
@@ -43,6 +23,8 @@ export function calculateMetrics(leads: Lead[]) {
     naoApareceu: standardMetrics.perdidoInativo,
     desmarcou: standardMetrics.perdidoInativo,
     leadsAproveitaveis: standardMetrics.totalLeads,
+    elegiveisParaComparecimento: standardMetrics.totalLeads,
+    baseParaDesmarque: standardMetrics.totalLeads,
     
     // Grupos de status para debug
     statusGroups: {
@@ -50,7 +32,7 @@ export function calculateMetrics(leads: Lead[]) {
       aSerAtendido: standardMetrics.aSerAtendido,
       atendidoNaoFechou: standardMetrics.atendidoNaoFechou,
       perdidoInativo: standardMetrics.perdidoInativo,
-      mentorados: standardMetrics.mentorados // Adicionar para visibilidade
+      mentorados: standardMetrics.mentorados
     }
   };
   
