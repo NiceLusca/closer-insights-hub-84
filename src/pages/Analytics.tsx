@@ -53,14 +53,14 @@ const Analytics = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
-            {/* Histórico de Faturamento Mensal */}
-            <MonthlyRevenueHistory leads={filteredLeads} />
-
             {/* Performance dos Closers */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
 
             {/* Análise Temporal */}
             <TemporalAnalysis leads={filteredLeads} />
+
+            {/* Histórico de Faturamento Mensal - usando allLeads para não ser afetado pelos filtros */}
+            <MonthlyRevenueHistory leads={allLeads} />
           </>
         )}
       </div>
