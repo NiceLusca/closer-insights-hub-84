@@ -124,7 +124,7 @@ export function AppSidebar() {
             }} 
           />
           <div className="flex-1 min-w-0">
-            <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide text-4xl font-bold leading-tight py-1">
+            <h2 className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent tracking-wide text-4xl font-bold leading-relaxed py-2">
               Clarity
             </h2>
             <p className="text-gray-400 mt-1 text-sm font-semibold whitespace-nowrap">
