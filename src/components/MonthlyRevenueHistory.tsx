@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, Calendar, BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { parseNumber } from "@/utils/field/valueParser";
 import type { Lead } from "@/types/lead";
 
 interface MonthlyRevenueHistoryProps {
@@ -24,9 +25,7 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
     // Processar leads fechados
     const closedLeads = leads.filter(lead => 
       lead.Status === 'Fechou' && 
-      lead.parsedDate && 
-      lead['Venda Completa'] && 
-      lead['Venda Completa'] > 0
+      lead.parsedDate
     );
     
     closedLeads.forEach(lead => {
@@ -46,11 +45,21 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
       }
       
       const monthData = monthlyMap.get(monthKey)!;
-      const valor = lead['Venda Completa'] || 0;
+      
+      // CORREÇÃO: Somar Venda Completa + recorrente
+      const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
+      const recorrente = parseNumber(lead.recorrente) || 0;
+      const valorTotal = vendaCompleta + recorrente;
+      
       const origem = lead.origem || 'Não informado';
       
-      monthData.total += valor;
-      monthData.byOrigin[origem] = (monthData.byOrigin[origem] || 0) + valor;
+      // Só processar se há algum valor (venda completa OU recorrente)
+      if (valorTotal > 0) {
+        monthData.total += valorTotal;
+        monthData.byOrigin[origem] = (monthData.byOrigin[origem] || 0) + valorTotal;
+        
+        console.log(`📅 [${monthData.monthName}] Lead ${lead.Nome}: Venda: R$ ${vendaCompleta}, Recorrente: R$ ${recorrente}, Total: R$ ${valorTotal}`);
+      }
     });
     
     // Converter Map para array e ordenar por data (mais antigo primeiro)

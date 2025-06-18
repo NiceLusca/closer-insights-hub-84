@@ -1,5 +1,7 @@
+
 import { format, subDays, eachDayOfInterval, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseNumber } from "@/utils/field/valueParser";
 import type { Lead } from "@/types/lead";
 
 export function generateLeadsChartData(leads: Lead[]) {
@@ -97,7 +99,15 @@ export function generateOriginAnalysisData(leads: Lead[]) {
     
     if (lead.Status === 'Fechou') {
       originStats[origem].vendas++;
-      originStats[origem].receita += lead['Venda Completa'] || 0;
+      
+      // CORREÇÃO: Somar tanto Venda Completa quanto recorrente
+      const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
+      const recorrente = parseNumber(lead.recorrente) || 0;
+      const receitaTotal = vendaCompleta + recorrente;
+      
+      originStats[origem].receita += receitaTotal;
+      
+      console.log(`💰 [RECEITA] Lead ${lead.Nome}: Venda Completa: R$ ${vendaCompleta}, Recorrente: R$ ${recorrente}, Total: R$ ${receitaTotal}`);
     }
   });
 
@@ -105,7 +115,7 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   console.log(`📊 [ORIGIN ANALYSIS] Total de leads válidos: ${totalLeads}`);
   console.log(`📊 [ORIGIN ANALYSIS] Origens encontradas:`, Object.keys(originStats));
 
-  // REMOVER filtro de volume - mostrar TODAS as origens
+  // Mostrar TODAS as origens
   const allOrigins = Object.entries(originStats)
     .map(([origem, stats]) => {
       return {

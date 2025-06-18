@@ -51,11 +51,21 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       // Usar métricas padronizadas (que já filtra mentorados internamente)
       const metrics = calculateStandardizedMetrics(closerLeads);
       
+      // CORREÇÃO: Calcular receita total (Venda Completa + recorrente)
+      const receitaTotal = closerLeads
+        .filter(lead => lead.Status === 'Fechou' && lead.Status !== 'Mentorado')
+        .reduce((sum, lead) => {
+          const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
+          const recorrente = parseNumber(lead.recorrente) || 0;
+          return sum + vendaCompleta + recorrente;
+        }, 0);
+      
       // CORREÇÃO: Aproveitamento agora é fechados/apresentações
       const aproveitamento = metrics.apresentacoes > 0 ? (metrics.fechados / metrics.apresentacoes) * 100 : 0;
       
       console.log(`👤 [${closerName}] Após filtragem: ${metrics.totalLeads} leads válidos, ${metrics.fechados} fechados de ${metrics.apresentacoes} apresentações`);
       console.log(`👤 [${closerName}] Aproveitamento CORRIGIDO: ${aproveitamento.toFixed(1)}% (${metrics.fechados}/${metrics.apresentacoes})`);
+      console.log(`💰 [${closerName}] Receita total (Venda + Recorrente): R$ ${receitaTotal.toFixed(2)}`);
       
       return {
         closer: closerName,
@@ -63,11 +73,11 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
         agendamentos: metrics.aSerAtendido,
         apresentacoes: metrics.apresentacoes,
         fechamentos: metrics.fechados,
-        receita: metrics.receitaTotal,
+        receita: receitaTotal, // USAR receita calculada com ambos os campos
         taxaAgendamento: metrics.totalLeads > 0 ? (metrics.aSerAtendido / metrics.totalLeads) * 100 : 0,
         taxaFechamento: metrics.taxaFechamento, // Usar taxa padronizada (fechados/apresentações)
         aproveitamento: aproveitamento, // CORRIGIDO: fechados/apresentações
-        receitaMedia: metrics.fechados > 0 ? metrics.receitaTotal / metrics.fechados : 0,
+        receitaMedia: metrics.fechados > 0 ? receitaTotal / metrics.fechados : 0,
         rank: 0
       };
     }).filter(closer => closer.totalLeads > 0); // Filtrar closers sem leads válidos
