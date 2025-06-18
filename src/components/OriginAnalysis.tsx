@@ -12,7 +12,22 @@ interface OriginAnalysisProps {
 
 export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
   const originData = useMemo(() => {
-    return generateOriginAnalysisData(leads);
+    console.log('🎯 [ORIGIN COMPONENT] === PROCESSANDO DADOS NO COMPONENTE ===');
+    console.log('🎯 [ORIGIN COMPONENT] Leads recebidos:', leads.length);
+    
+    // Log de algumas origens que chegaram ao componente
+    const origensNoComponente = new Set();
+    leads.forEach(lead => {
+      if (lead.origem) origensNoComponente.add(lead.origem);
+      if (lead.Origem) origensNoComponente.add(lead.Origem);
+    });
+    console.log('🎯 [ORIGIN COMPONENT] Origens únicas no componente:', Array.from(origensNoComponente));
+    
+    const data = generateOriginAnalysisData(leads);
+    console.log('🎯 [ORIGIN COMPONENT] Dados processados retornados:', data.length);
+    console.log('🎯 [ORIGIN COMPONENT] Origens no resultado:', data.map(d => d.origem));
+    
+    return data;
   }, [leads]);
 
   const formatCurrency = (value: number) => {
@@ -58,9 +73,16 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
         {originData.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-400">Nenhuma origem encontrada nos dados.</p>
+            <p className="text-gray-500 text-sm mt-2">Debug: {leads.length} leads recebidos</p>
           </div>
         ) : (
           <>
+            {/* Debug info */}
+            <div className="mb-4 p-2 bg-gray-700/50 rounded text-xs text-gray-300">
+              <p>Debug: {originData.length} origens processadas de {leads.length} leads</p>
+              <p>Top 3 origens: {originData.slice(0, 3).map(o => `${o.origem} (${o.leads})`).join(', ')}</p>
+            </div>
+            
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={originData} margin={{ bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
