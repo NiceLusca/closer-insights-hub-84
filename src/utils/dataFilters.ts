@@ -1,4 +1,3 @@
-
 import type { Lead, DateRange, Filters } from "@/types/lead";
 
 export interface FilterContext {
@@ -14,26 +13,76 @@ export function filterLeads(
 ): Lead[] {
   const { isTemporalFilter = false, component = 'unknown' } = context;
   
-  console.log(`🔍 [${component.toUpperCase()}] Filtrando leads:`, {
-    totalLeads: leads.length,
-    dateRange: {
-      from: dateRange.from.toLocaleDateString(),
-      to: dateRange.to.toLocaleDateString()
-    },
-    filters,
-    isTemporalFilter
+  console.log(`🔍 [${component.toUpperCase()}] === INÍCIO FILTRO DETALHADO ===`);
+  console.log(`🔍 [${component.toUpperCase()}] Total de leads recebidos:`, leads.length);
+  console.log(`🔍 [${component.toUpperCase()}] Período selecionado:`, {
+    from: dateRange.from.toLocaleDateString(),
+    to: dateRange.to.toLocaleDateString()
   });
+  console.log(`🔍 [${component.toUpperCase()}] Filtros ativos:`, filters);
+  
+  // INVESTIGAÇÃO ESPECÍFICA: Buscar leads "Alexandra" e "Marcos"
+  const leadsAlexandra = leads.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('alexandra')
+  );
+  const leadsMarcos = leads.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('marcos henrique')
+  );
+  
+  console.log(`🔍 [${component}] LEADS ESPECÍFICOS ENCONTRADOS:`);
+  console.log(`🔍 [${component}] - Alexandra:`, leadsAlexandra.length, leadsAlexandra.map(l => ({
+    Nome: l.Nome,
+    Status: l.Status,
+    origem: l.origem,
+    data: l.parsedDate ? l.parsedDate.toISOString().split('T')[0] : 'sem data',
+    vendaCompleta: l['Venda Completa'],
+    recorrente: l.recorrente
+  })));
+  console.log(`🔍 [${component}] - Marcos:`, leadsMarcos.length, leadsMarcos.map(l => ({
+    Nome: l.Nome,
+    Status: l.Status,
+    origem: l.origem,
+    data: l.parsedDate ? l.parsedDate.toISOString().split('T')[0] : 'sem data',
+    vendaCompleta: l['Venda Completa'],
+    recorrente: l.recorrente
+  })));
   
   const filtered = leads.filter(lead => {
-    // 0. PRIMEIRO: Excluir leads sem status válido
+    // MUDANÇA CRÍTICA 1: Ser menos restritivo com status
+    // Não excluir leads apenas por não ter status - pode estar em outro campo
     const leadStatus = lead.Status?.trim();
-    if (!leadStatus || leadStatus === '') {
-      console.log(`⚠️ [${component}] Lead excluído por falta de status:`, lead.Nome);
-      return false;
+    
+    // Log para leads específicos
+    const isTargetLead = (lead.Nome && (
+      lead.Nome.toLowerCase().includes('alexandra') || 
+      lead.Nome.toLowerCase().includes('marcos henrique')
+    ));
+    
+    if (isTargetLead) {
+      console.log(`🎯 [${component}] PROCESSANDO LEAD ALVO:`, {
+        Nome: lead.Nome,
+        Status: leadStatus,
+        statusOriginal: lead.Status,
+        origem: lead.origem,
+        camposOrigemDisponiveis: Object.keys(lead as any).filter(key => 
+          key.toLowerCase().includes('origem') || 
+          key.toLowerCase().includes('source') || 
+          key.toLowerCase().includes('campanha')
+        ),
+        data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data',
+        vendaCompleta: lead['Venda Completa'],
+        recorrente: lead.recorrente,
+        todosOsCampos: Object.fromEntries(Object.entries(lead as any).filter(([key, value]) => 
+          typeof value === 'string' && value.trim() !== ''
+        ))
+      });
     }
     
     // 1. Filtrar por status apenas se filtros específicos estiverem selecionados
-    if (filters.status.length > 0 && !filters.status.includes(leadStatus)) {
+    if (filters.status.length > 0 && leadStatus && !filters.status.includes(leadStatus)) {
+      if (isTargetLead) {
+        console.log(`❌ [${component}] Lead alvo excluído por filtro de status:`, lead.Nome, leadStatus);
+      }
       return false;
     }
     
@@ -41,6 +90,9 @@ export function filterLeads(
     if (filters.closer.length > 0) {
       const leadCloser = lead.Closer?.trim() || '';
       if (leadCloser && !filters.closer.includes(leadCloser)) {
+        if (isTargetLead) {
+          console.log(`❌ [${component}] Lead alvo excluído por filtro de closer:`, lead.Nome, leadCloser);
+        }
         return false;
       }
     }
@@ -49,11 +101,14 @@ export function filterLeads(
     if (filters.origem.length > 0) {
       const leadOrigem = lead.origem?.trim() || '';
       if (leadOrigem && !filters.origem.includes(leadOrigem)) {
+        if (isTargetLead) {
+          console.log(`❌ [${component}] Lead alvo excluído por filtro de origem:`, lead.Nome, leadOrigem);
+        }
         return false;
       }
     }
     
-    // 4. Filtrar por data (lógica diferente para temporal vs geral)
+    // 4. MUDANÇA CRÍTICA 2: Filtrar por data com mais flexibilidade
     if (lead.parsedDate) {
       const leadDate = new Date(lead.parsedDate);
       const fromDate = new Date(dateRange.from);
@@ -63,21 +118,97 @@ export function filterLeads(
       fromDate.setHours(0, 0, 0, 0);
       toDate.setHours(23, 59, 59, 999);
       
-      if (leadDate < fromDate || leadDate > toDate) {
+      const dentroDoRange = leadDate >= fromDate && leadDate <= toDate;
+      
+      if (isTargetLead) {
+        console.log(`📅 [${component}] Verificação de data para lead alvo:`, {
+          Nome: lead.Nome,
+          leadDate: leadDate.toISOString().split('T')[0],
+          fromDate: fromDate.toISOString().split('T')[0],
+          toDate: toDate.toISOString().split('T')[0],
+          dentroDoRange
+        });
+      }
+      
+      if (!dentroDoRange) {
+        if (isTargetLead) {
+          console.log(`❌ [${component}] Lead alvo excluído por filtro de data:`, lead.Nome);
+        }
         return false;
       }
     } else {
-      // Para filtros temporais, excluir leads sem data
+      // MUDANÇA CRÍTICA 3: Para filtros temporais, tentar usar data alternativa
       if (isTemporalFilter) {
-        console.log(`⚠️ [${component}] Lead sem data excluído de análise temporal:`, lead.Nome);
-        return false;
+        // Tentar extrair data do campo 'data' se parsedDate não existir
+        if (lead.data && lead.data.trim() !== '') {
+          try {
+            const dataAlternativa = new Date(lead.data);
+            if (!isNaN(dataAlternativa.getTime())) {
+              const leadDate = new Date(dataAlternativa);
+              const fromDate = new Date(dateRange.from);
+              const toDate = new Date(dateRange.to);
+              
+              leadDate.setHours(0, 0, 0, 0);
+              fromDate.setHours(0, 0, 0, 0);
+              toDate.setHours(23, 59, 59, 999);
+              
+              const dentroDoRange = leadDate >= fromDate && leadDate <= toDate;
+              
+              if (isTargetLead) {
+                console.log(`📅 [${component}] Data alternativa para lead alvo:`, {
+                  Nome: lead.Nome,
+                  dataOriginal: lead.data,
+                  dataConvertida: leadDate.toISOString().split('T')[0],
+                  dentroDoRange
+                });
+              }
+              
+              if (!dentroDoRange) {
+                if (isTargetLead) {
+                  console.log(`❌ [${component}] Lead alvo excluído por data alternativa:`, lead.Nome);
+                }
+                return false;
+              }
+            }
+          } catch (e) {
+            if (isTargetLead) {
+              console.log(`⚠️ [${component}] Erro ao processar data alternativa para lead alvo:`, lead.Nome, e);
+            }
+            console.log(`⚠️ [${component}] Lead sem data excluído de análise temporal:`, lead.Nome);
+            return false;
+          }
+        } else {
+          if (isTargetLead) {
+            console.log(`❌ [${component}] Lead alvo sem data excluído de análise temporal:`, lead.Nome);
+          }
+          console.log(`⚠️ [${component}] Lead sem data excluído de análise temporal:`, lead.Nome);
+          return false;
+        }
       }
+      // Para análises não temporais, incluir leads sem data
+    }
+    
+    if (isTargetLead) {
+      console.log(`✅ [${component}] Lead alvo APROVADO no filtro:`, lead.Nome);
     }
     
     return true;
   });
   
-  console.log(`📊 [${component}] Leads após filtragem: ${filtered.length} (eram ${leads.length})`);
+  // Log final detalhado
+  const leadsAlexandraFiltrados = filtered.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('alexandra')
+  );
+  const leadsMarcosFiltrados = filtered.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('marcos henrique')
+  );
+  
+  console.log(`📊 [${component}] RESULTADO FINAL DO FILTRO:`);
+  console.log(`📊 [${component}] - Total antes: ${leads.length}`);
+  console.log(`📊 [${component}] - Total depois: ${filtered.length}`);
+  console.log(`📊 [${component}] - Alexandra filtrada: ${leadsAlexandraFiltrados.length}/${leadsAlexandra.length}`);
+  console.log(`📊 [${component}] - Marcos filtrado: ${leadsMarcosFiltrados.length}/${leadsMarcos.length}`);
+  console.log(`🔍 [${component.toUpperCase()}] === FIM FILTRO DETALHADO ===`);
   
   return filtered;
 }

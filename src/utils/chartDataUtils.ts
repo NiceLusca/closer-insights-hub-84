@@ -1,4 +1,3 @@
-
 import { format, subDays, eachDayOfInterval, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseNumber } from "@/utils/field/valueParser";
@@ -82,23 +81,43 @@ export function generateStatusDistributionData(leads: Lead[]) {
     .sort((a, b) => b.value - a.value);
 }
 
-// Função MELHORADA para extrair origem - buscando em TODOS os campos possíveis
+// Função SUPER MELHORADA para extrair origem - buscando em TODOS os campos possíveis
 function extractOriginFromLead(lead: Lead): string {
   const leadAny = lead as any;
   
-  console.log('🔍 [EXTRACT ORIGIN] Analisando lead:', lead.Nome);
-  console.log('🔍 [EXTRACT ORIGIN] Campos disponíveis:', Object.keys(leadAny));
+  // Log específico para leads alvos
+  const isTargetLead = lead.Nome && (
+    lead.Nome.toLowerCase().includes('alexandra') || 
+    lead.Nome.toLowerCase().includes('marcos henrique')
+  );
   
-  // Lista EXPANDIDA de campos possíveis para origem
+  if (isTargetLead) {
+    console.log('🎯 [EXTRACT ORIGIN] === ANALISANDO LEAD ALVO ===');
+    console.log('🎯 [EXTRACT ORIGIN] Nome:', lead.Nome);
+    console.log('🎯 [EXTRACT ORIGIN] Todos os campos:', Object.keys(leadAny));
+    console.log('🎯 [EXTRACT ORIGIN] Campos com texto:', Object.fromEntries(
+      Object.entries(leadAny).filter(([key, value]) => 
+        typeof value === 'string' && value.trim() !== ''
+      )
+    ));
+  }
+  
+  // Lista SUPER EXPANDIDA de campos possíveis para origem
   const possibleOriginFields = [
     'origem',
     'Origem', 
+    'ORIGEM',
     'origem_campanha',
     'ORIGEM_CAMPANHA',
+    'origem_lead',
+    'ORIGEM_LEAD',
     'source',
     'Source',
+    'SOURCE',
     'utm_source',
     'UTM_SOURCE',
+    'utm_campaign',
+    'UTM_CAMPAIGN',
     'campaign_source',
     'CAMPAIGN_SOURCE',
     'campanha',
@@ -109,105 +128,143 @@ function extractOriginFromLead(lead: Lead): string {
     'CANAL',
     'midia',
     'Midia',
-    'MIDIA'
+    'MIDIA',
+    'meio',
+    'Meio',
+    'MEIO',
+    'referrer',
+    'Referrer',
+    'REFERRER',
+    'landing_page',
+    'LANDING_PAGE',
+    'pagina_origem',
+    'PAGINA_ORIGEM'
   ];
   
   // Tentar cada campo possível
   for (const field of possibleOriginFields) {
     if (leadAny[field] && typeof leadAny[field] === 'string' && leadAny[field].trim()) {
       const value = leadAny[field].trim();
-      console.log(`🔍 [EXTRACT ORIGIN] Origem encontrada no campo "${field}": "${value}"`);
+      if (isTargetLead) {
+        console.log(`🎯 [EXTRACT ORIGIN] ✅ Origem encontrada no campo "${field}": "${value}"`);
+      }
       return value;
     }
   }
   
-  // Se não encontrou em campos específicos, buscar por qualquer campo que contenha essas palavras
-  const searchTerms = ['origem', 'source', 'campanha', 'campaign', 'canal', 'midia'];
+  // BUSCA ULTRA AGRESSIVA: Procurar por qualquer campo que contenha "1k", "plr", "dia"
   for (const [key, value] of Object.entries(leadAny)) {
-    const keyLower = key.toLowerCase();
-    if (searchTerms.some(term => keyLower.includes(term))) {
-      if (value && typeof value === 'string' && value.trim()) {
-        console.log(`🔍 [EXTRACT ORIGIN] Origem encontrada em campo dinâmico "${key}": "${value}"`);
+    if (value && typeof value === 'string') {
+      const valueLower = value.toLowerCase();
+      const keyLower = key.toLowerCase();
+      
+      // Buscar por indicadores de campanha "1k por dia"
+      if (valueLower.includes('1k') || valueLower.includes('plr') || 
+          (valueLower.includes('dia') && (valueLower.includes('por') || valueLower.includes('k')))) {
+        if (isTargetLead) {
+          console.log(`🎯 [EXTRACT ORIGIN] ✅ Origem "1K" encontrada no campo "${key}": "${value}"`);
+        }
+        return value.trim();
+      }
+      
+      // Buscar por campos que contenham palavras-chave de origem
+      const searchTerms = ['origem', 'source', 'campanha', 'campaign', 'canal', 'midia', 'utm', 'referrer'];
+      if (searchTerms.some(term => keyLower.includes(term))) {
+        if (value.trim()) {
+          if (isTargetLead) {
+            console.log(`🎯 [EXTRACT ORIGIN] ✅ Origem encontrada em campo dinâmico "${key}": "${value}"`);
+          }
+          return value.trim();
+        }
+      }
+    }
+  }
+  
+  // ÚLTIMA TENTATIVA: Buscar em qualquer campo string por padrões conhecidos
+  const knownPatterns = ['1k', 'plr', 'dia', 'naie', 'facebook', 'instagram', 'google', 'youtube', 'tiktok'];
+  for (const [key, value] of Object.entries(leadAny)) {
+    if (value && typeof value === 'string' && value.trim()) {
+      const valueLower = value.toLowerCase();
+      if (knownPatterns.some(pattern => valueLower.includes(pattern))) {
+        if (isTargetLead) {
+          console.log(`🎯 [EXTRACT ORIGIN] ✅ Padrão conhecido encontrado em "${key}": "${value}"`);
+        }
         return value.trim();
       }
     }
   }
   
-  console.log('🔍 [EXTRACT ORIGIN] Nenhuma origem encontrada, usando "Origem Desconhecida"');
+  if (isTargetLead) {
+    console.log('🎯 [EXTRACT ORIGIN] ❌ NENHUMA ORIGEM ENCONTRADA para lead alvo!');
+    console.log('🎯 [EXTRACT ORIGIN] === FIM ANÁLISE LEAD ALVO ===');
+  }
+  
   return 'Origem Desconhecida';
 }
 
 export function generateOriginAnalysisData(leads: Lead[]) {
-  console.log('🎯 [ORIGIN ANALYSIS] === ANÁLISE DETALHADA INÍCIO ===');
+  console.log('🎯 [ORIGIN ANALYSIS] === ANÁLISE SUPER DETALHADA INÍCIO ===');
   console.log('🎯 [ORIGIN ANALYSIS] Total de leads BRUTOS recebidos:', leads.length);
   
-  // MUDANÇA CRÍTICA: NÃO FILTRAR MENTORADOS - incluir TODOS os leads
-  // O usuário disse que os dados devem vir direto do webhook e não devemos excluir dados
-  const filteredLeads = leads; // Usar TODOS os leads
-  console.log('🎯 [ORIGIN ANALYSIS] Leads após "filtro" (todos incluídos):', filteredLeads.length);
+  // INVESTIGAÇÃO ULTRA ESPECÍFICA para leads "1K por Dia"
+  const leadsAlexandra = leads.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('alexandra')
+  );
+  const leadsMarcos = leads.filter(lead => 
+    lead.Nome && lead.Nome.toLowerCase().includes('marcos henrique')
+  );
   
-  // INVESTIGAÇÃO: Buscar especificamente por "1k" ou "PLR" em TODOS os campos
-  const leads1kTotal = filteredLeads.filter(lead => {
-    const leadAny = lead as any;
-    
-    // Buscar em TODOS os campos do lead
-    const allFieldsText = Object.values(leadAny)
-      .filter(value => typeof value === 'string')
-      .join(' ')
-      .toLowerCase();
-    
-    const contains1k = allFieldsText.includes('1k') || 
-                      allFieldsText.includes('plr') || 
-                      allFieldsText.includes('dia');
-    
-    if (contains1k) {
-      console.log('🎯 [ORIGIN ANALYSIS] Lead com "1k/PLR/dia" encontrado:', {
-        Nome: lead.Nome,
-        Status: lead.Status,
-        campos: Object.keys(leadAny),
-        todosValores: Object.fromEntries(
-          Object.entries(leadAny).filter(([_, value]) => 
-            typeof value === 'string' && (
-              value.toLowerCase().includes('1k') || 
-              value.toLowerCase().includes('plr') || 
-              value.toLowerCase().includes('dia')
-            )
-          )
-        )
-      });
-    }
-    
-    return contains1k;
+  console.log('🎯 [ORIGIN ANALYSIS] LEADS ESPECÍFICOS ENCONTRADOS:');
+  console.log('🎯 [ORIGIN ANALYSIS] - Alexandra:', leadsAlexandra.length);
+  leadsAlexandra.forEach((lead, index) => {
+    console.log(`  ${index + 1}. ${lead.Nome}:`, {
+      Status: lead.Status,
+      origem: lead.origem,
+      data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data',
+      vendaCompleta: lead['Venda Completa'],
+      recorrente: lead.recorrente,
+      todosOsCampos: Object.fromEntries(Object.entries(lead as any).filter(([_, value]) => 
+        typeof value === 'string' && value.trim() !== ''
+      ))
+    });
   });
   
-  console.log('🎯 [ORIGIN ANALYSIS] Total de leads com "1k/PLR/dia" encontrados:', leads1kTotal.length);
-  
-  // INVESTIGAÇÃO: Análise por mês dos leads "1k"
-  const leads1kPorMes = {};
-  leads1kTotal.forEach(lead => {
-    if (lead.parsedDate) {
-      const mes = lead.parsedDate.getMonth(); // 0-based
-      const nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      const mesNome = nomes[mes];
-      leads1kPorMes[mesNome] = (leads1kPorMes[mesNome] || 0) + 1;
-    } else {
-      leads1kPorMes['Sem Data'] = (leads1kPorMes['Sem Data'] || 0) + 1;
-    }
+  console.log('🎯 [ORIGIN ANALYSIS] - Marcos:', leadsMarcos.length);
+  leadsMarcos.forEach((lead, index) => {
+    console.log(`  ${index + 1}. ${lead.Nome}:`, {
+      Status: lead.Status,
+      origem: lead.origem,
+      data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data',
+      vendaCompleta: lead['Venda Completa'],
+      recorrente: lead.recorrente,
+      todosOsCampos: Object.fromEntries(Object.entries(lead as any).filter(([_, value]) => 
+        typeof value === 'string' && value.trim() !== ''
+      ))
+    });
   });
-  console.log('🎯 [ORIGIN ANALYSIS] Leads "1k/PLR/dia" por mês:', leads1kPorMes);
   
-  // Processar origens usando a função MELHORADA
+  // USAR TODOS OS LEADS - não filtrar nada
+  const filteredLeads = leads;
+  console.log('🎯 [ORIGIN ANALYSIS] Leads para processamento (TODOS):', filteredLeads.length);
+  
+  // Processar origens usando a função SUPER MELHORADA
   const originStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
   
   filteredLeads.forEach((lead, index) => {
     const origem = extractOriginFromLead(lead);
     
-    // Log para leads com "1k" ou primeiros 5
-    if (index < 5 || origem.toLowerCase().includes('1k') || origem.toLowerCase().includes('plr') || origem.toLowerCase().includes('dia')) {
-      console.log(`🎯 [ORIGIN ANALYSIS] Lead ${index + 1} processado:`, {
-        Nome: lead.Nome,
-        Status: lead.Status,
+    // Log detalhado para leads alvos
+    const isTargetLead = lead.Nome && (
+      lead.Nome.toLowerCase().includes('alexandra') || 
+      lead.Nome.toLowerCase().includes('marcos henrique')
+    );
+    
+    if (isTargetLead) {
+      console.log(`🎯 [ORIGIN ANALYSIS] PROCESSANDO LEAD ALVO ${lead.Nome}:`, {
         origemExtraida: origem,
+        Status: lead.Status,
+        vendaCompleta: lead['Venda Completa'],
+        recorrente: lead.recorrente,
         data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data'
       });
     }
@@ -218,21 +275,25 @@ export function generateOriginAnalysisData(leads: Lead[]) {
     
     originStats[origem].leads++;
     
-    if (lead.Status === 'Fechou') {
+    // MUDANÇA CRÍTICA: Verificar vendas de forma mais flexível
+    const statusValue = lead.Status?.trim() || '';
+    const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
+    const recorrente = parseNumber(lead.recorrente) || 0;
+    const temReceita = vendaCompleta > 0 || recorrente > 0;
+    
+    // Considerar como venda se: Status "Fechou" OU tem receita registrada
+    if (statusValue === 'Fechou' || temReceita) {
       originStats[origem].vendas++;
       
-      // Somar receita
-      const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
-      const recorrente = parseNumber(lead.recorrente) || 0;
       const receitaTotal = vendaCompleta + recorrente;
-      
       originStats[origem].receita += receitaTotal;
       
-      // Log para vendas fechadas com "1k"
-      if (receitaTotal > 0 && (origem.toLowerCase().includes('1k') || origem.toLowerCase().includes('plr') || origem.toLowerCase().includes('dia'))) {
-        console.log(`💰 [ORIGIN ANALYSIS] Venda "1k/PLR/dia" processada:`, {
+      if (isTargetLead) {
+        console.log(`💰 [ORIGIN ANALYSIS] VENDA LEAD ALVO processada:`, {
           lead: lead.Nome,
           origem: origem,
+          statusFechou: statusValue === 'Fechou',
+          temReceita: temReceita,
           vendaCompleta: vendaCompleta,
           recorrente: recorrente,
           total: receitaTotal
@@ -245,16 +306,19 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   console.log(`📊 [ORIGIN ANALYSIS] Total de leads válidos para análise: ${totalLeads}`);
   console.log(`📊 [ORIGIN ANALYSIS] Origens únicas encontradas: ${Object.keys(originStats).length}`);
   
-  // Verificar especificamente se "1k" está nas estatísticas
-  const origensComIk = Object.keys(originStats).filter(origem => 
-    origem.toLowerCase().includes('1k') || origem.toLowerCase().includes('plr') || origem.toLowerCase().includes('dia')
-  );
+  // Verificar especificamente origens com "1k", "plr", "dia"
+  const origensComIk = Object.keys(originStats).filter(origem => {
+    const origemLower = origem.toLowerCase();
+    return origemLower.includes('1k') || origemLower.includes('plr') || 
+           (origemLower.includes('dia') && (origemLower.includes('por') || origemLower.includes('k')));
+  });
+  
   console.log(`📊 [ORIGIN ANALYSIS] Origens com "1k/PLR/dia" nas estatísticas:`, origensComIk);
   origensComIk.forEach(origem => {
     console.log(`📊 [ORIGIN ANALYSIS] - ${origem}: ${originStats[origem].leads} leads, ${originStats[origem].vendas} vendas, R$ ${originStats[origem].receita.toFixed(2)}`);
   });
 
-  // IMPORTANTE: NÃO aplicar filtro de 5% - mostrar TODAS as origens
+  // MOSTRAR TODAS as origens sem filtros
   const allOrigins = Object.entries(originStats)
     .map(([origem, stats]) => {
       return {
@@ -266,15 +330,15 @@ export function generateOriginAnalysisData(leads: Lead[]) {
         percentage: totalLeads > 0 ? Number(((stats.leads / totalLeads) * 100).toFixed(1)) : 0
       };
     })
-    .sort((a, b) => b.leads - a.leads); // Ordenar por número de leads
+    .sort((a, b) => b.leads - a.leads);
 
-  console.log(`📊 [ORIGIN ANALYSIS] Resultado final - ${allOrigins.length} origens processadas (TODAS incluídas):`);
+  console.log(`📊 [ORIGIN ANALYSIS] Resultado final - ${allOrigins.length} origens processadas:`);
   allOrigins.forEach((origem, index) => {
-    if (index < 15 || origem.origem.toLowerCase().includes('1k') || origem.origem.toLowerCase().includes('plr') || origem.origem.toLowerCase().includes('dia')) {
+    if (index < 20) { // Mostrar top 20
       console.log(`📊 [ORIGIN ANALYSIS] ${index + 1}. ${origem.origem}: ${origem.leads} leads (${origem.percentage}%), ${origem.vendas} vendas, R$ ${origem.receita.toFixed(2)}`);
     }
   });
 
-  console.log('🎯 [ORIGIN ANALYSIS] === ANÁLISE DETALHADA FIM ===');
+  console.log('🎯 [ORIGIN ANALYSIS] === ANÁLISE SUPER DETALHADA FIM ===');
   return allOrigins;
 }

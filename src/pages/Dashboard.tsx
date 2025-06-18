@@ -58,6 +58,15 @@ const Dashboard = () => {
     document.title = 'Clarity - Analytics Dashboard';
   }, []);
 
+  console.log('🏠 [DASHBOARD] === ESTADO COMPLETO DO DASHBOARD ===');
+  console.log('🏠 [DASHBOARD] Total leads brutos:', allLeads.length);
+  console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
+  console.log('🏠 [DASHBOARD] Filtros ativos:', { dateRange, filters });
+  console.log('🏠 [DASHBOARD] Período selecionado:', {
+    from: dateRange.from.toLocaleDateString(),
+    to: dateRange.to.toLocaleDateString()
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 smooth-scroll">
       <DashboardHeader
@@ -120,9 +129,9 @@ const Dashboard = () => {
               <ChartsGrid leads={filteredLeads} />
             </div>
 
-            {/* 6. Origin Analysis */}
+            {/* 6. MUDANÇA CRÍTICA: Origin Analysis usando TODOS os leads */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-              <OriginAnalysis leads={filteredLeads} />
+              <OriginAnalysis leads={allLeads} />
             </div>
 
             {/* 7. Alertas de Performance */}
