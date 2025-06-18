@@ -6,7 +6,7 @@ import { useGlobalFilters } from "@/contexts/FilterContext";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { CloserPerformanceAnalysis } from "@/components/CloserPerformanceAnalysis";
 import { TemporalAnalysis } from "@/components/TemporalAnalysis";
-import { PerformanceAlerts } from "@/components/PerformanceAlerts";
+import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
 
 const Analytics = () => {
   // Estado dos dados
@@ -53,14 +53,14 @@ const Analytics = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
+            {/* Histórico de Faturamento Mensal */}
+            <MonthlyRevenueHistory leads={filteredLeads} />
+
             {/* Performance dos Closers */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
 
             {/* Análise Temporal */}
             <TemporalAnalysis leads={filteredLeads} />
-
-            {/* Alertas de Performance - Movido para o final */}
-            <PerformanceAlerts leads={filteredLeads} position="bottom" />
           </>
         )}
       </div>

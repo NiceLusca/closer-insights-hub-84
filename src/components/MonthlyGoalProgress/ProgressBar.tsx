@@ -35,7 +35,7 @@ export const ProgressBar = React.memo(({ monthlyData }: ProgressBarProps) => {
                   boxShadow: `0 0 10px ${monthlyData.progress >= 70 ? 'rgba(34, 197, 94, 0.5)' : monthlyData.progress >= 30 ? 'rgba(245, 158, 11, 0.5)' : 'rgba(239, 68, 68, 0.5)'}`
                 }}
               >
-                <div className="h-full w-full rounded-full bg-gradient-to-r from-white/20 to-transparent animate-shimmer"></div>
+                <div className="h-full w-full rounded-full bg-gradient-to-r from-transparent to-transparent animate-shimmer"></div>
               </div>
             </div>
           </TooltipTrigger>
