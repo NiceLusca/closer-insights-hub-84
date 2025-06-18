@@ -19,22 +19,7 @@ interface MonthlyData {
 
 export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => {
   const monthlyData = useMemo(() => {
-    const now = new Date();
-    const last12Months: MonthlyData[] = [];
-    
-    // Gerar os últimos 12 meses
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-      
-      last12Months.push({
-        month: monthKey,
-        monthName: monthName.charAt(0).toUpperCase() + monthName.slice(1),
-        total: 0,
-        byOrigin: {}
-      });
-    }
+    const monthlyMap = new Map<string, MonthlyData>();
     
     // Processar leads fechados
     const closedLeads = leads.filter(lead => 
@@ -49,18 +34,27 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
       
       const fechamentoDate = lead.parsedDate;
       const monthKey = `${fechamentoDate.getFullYear()}-${String(fechamentoDate.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = fechamentoDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
       
-      const monthData = last12Months.find(m => m.month === monthKey);
-      if (monthData) {
-        const valor = lead['Venda Completa'] || 0;
-        const origem = lead.origem || 'Não informado';
-        
-        monthData.total += valor;
-        monthData.byOrigin[origem] = (monthData.byOrigin[origem] || 0) + valor;
+      if (!monthlyMap.has(monthKey)) {
+        monthlyMap.set(monthKey, {
+          month: monthKey,
+          monthName: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+          total: 0,
+          byOrigin: {}
+        });
       }
+      
+      const monthData = monthlyMap.get(monthKey)!;
+      const valor = lead['Venda Completa'] || 0;
+      const origem = lead.origem || 'Não informado';
+      
+      monthData.total += valor;
+      monthData.byOrigin[origem] = (monthData.byOrigin[origem] || 0) + valor;
     });
     
-    return last12Months;
+    // Converter Map para array e ordenar por data (mais antigo primeiro)
+    return Array.from(monthlyMap.values()).sort((a, b) => a.month.localeCompare(b.month));
   }, [leads]);
   
   // Obter todas as origens únicas
@@ -91,7 +85,32 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
   };
   
   const totalRevenue = monthlyData.reduce((sum, month) => sum + month.total, 0);
-  const avgMonthly = totalRevenue / 12;
+  const avgMonthly = monthlyData.length > 0 ? totalRevenue / monthlyData.length : 0;
+  
+  // Se não há dados, não renderizar o componente
+  if (monthlyData.length === 0) {
+    return (
+      <div className="mb-8 space-y-6">
+        <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-100">
+              <div className="p-2 rounded-lg bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-400/30">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+              </div>
+              <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                Histórico de Faturamento
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-gray-400">Nenhum dado de faturamento encontrado nos leads fechados.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   return (
     <div className="mb-8 space-y-6">
@@ -102,7 +121,7 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
               <TrendingUp className="w-5 h-5 text-green-400" />
             </div>
             <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-              Histórico de Faturamento - Últimos 12 Meses
+              Histórico de Faturamento - {monthlyData.length} {monthlyData.length === 1 ? 'Mês' : 'Meses'} com Dados
             </span>
           </CardTitle>
         </CardHeader>
@@ -111,7 +130,7 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
             <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/30 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-green-400" />
-                <span className="text-green-300 font-medium">Total 12 Meses</span>
+                <span className="text-green-300 font-medium">Total Período</span>
               </div>
               <p className="text-2xl font-bold text-green-400 mt-2">
                 {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
