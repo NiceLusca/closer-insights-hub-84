@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -7,6 +6,7 @@ import { CloserMetricsCards } from "./CloserPerformance/CloserMetrics";
 import { CloserRanking } from "./CloserPerformance/CloserRanking";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
 import { hasSignificantVolume, getVolumeIndicator } from "@/utils/volumeAnalysis";
+import { parseNumber } from "@/utils/field/valueParser";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceAnalysisProps {
@@ -53,7 +53,7 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       
       // CORREÇÃO: Calcular receita total (Venda Completa + recorrente)
       const receitaTotal = closerLeads
-        .filter(lead => lead.Status === 'Fechou' && lead.Status !== 'Mentorado')
+        .filter(lead => lead.Status === 'Fechou')
         .reduce((sum, lead) => {
           const vendaCompleta = parseNumber(lead['Venda Completa']) || 0;
           const recorrente = parseNumber(lead.recorrente) || 0;
