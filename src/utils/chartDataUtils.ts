@@ -105,26 +105,22 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   console.log(`📊 [ORIGIN ANALYSIS] Total de leads válidos: ${totalLeads}`);
   console.log(`📊 [ORIGIN ANALYSIS] Origens encontradas:`, Object.keys(originStats));
 
-  // Aplicar filtro de volume significativo (>5%) e manter todas as origens relevantes
-  const significantOrigins = Object.entries(originStats)
+  // REMOVER filtro de volume - mostrar TODAS as origens
+  const allOrigins = Object.entries(originStats)
     .map(([origem, stats]) => {
-      const hasSignificantVolume = totalLeads > 0 && (stats.leads / totalLeads) * 100 >= 5;
-      
       return {
         origem: origem.length > 20 ? origem.substring(0, 20) + '...' : origem,
         leads: stats.leads,
         vendas: stats.vendas,
         conversao: stats.leads > 0 ? Number(((stats.vendas / stats.leads) * 100).toFixed(1)) : 0,
         receita: stats.receita,
-        hasSignificantVolume,
         percentage: totalLeads > 0 ? Number(((stats.leads / totalLeads) * 100).toFixed(1)) : 0
       };
     })
-    .filter(origin => origin.hasSignificantVolume) // Filtrar apenas origens com volume significativo
     .sort((a, b) => b.leads - a.leads); // Ordenar por número de leads
 
-  console.log(`📊 [ORIGIN ANALYSIS] Origens após filtro de volume (>5%): ${significantOrigins.length}`);
-  console.log('📊 [ORIGIN ANALYSIS] Origens filtradas:', significantOrigins.map(o => `${o.origem} (${o.percentage}%)`));
+  console.log(`📊 [ORIGIN ANALYSIS] Mostrando TODAS as origens: ${allOrigins.length}`);
+  console.log('📊 [ORIGIN ANALYSIS] Todas as origens:', allOrigins.map(o => `${o.origem} (${o.percentage}%)`));
 
-  return significantOrigins;
+  return allOrigins;
 }

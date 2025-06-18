@@ -2,7 +2,7 @@
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Filter, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { generateOriginAnalysisData } from "@/utils/chartDataUtils";
 import type { Lead } from "@/types/lead";
 
@@ -11,16 +11,8 @@ interface OriginAnalysisProps {
 }
 
 export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
-  const { originData, totalOrigins, filteredOrigins } = useMemo(() => {
-    const filteredLeads = leads.filter(lead => lead.Status !== 'Mentorado');
-    const allOrigins = new Set(filteredLeads.map(lead => lead.origem || 'Origem Desconhecida')).size;
-    const significantOrigins = generateOriginAnalysisData(leads);
-    
-    return {
-      originData: significantOrigins,
-      totalOrigins: allOrigins,
-      filteredOrigins: significantOrigins.length
-    };
+  const originData = useMemo(() => {
+    return generateOriginAnalysisData(leads);
   }, [leads]);
 
   const formatCurrency = (value: number) => {
@@ -61,21 +53,11 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
           Análise por Origem de Campanha
           <span className="text-sm font-normal text-gray-400">(excluindo Mentorados)</span>
         </CardTitle>
-        
-        {/* Indicador de filtro de volume */}
-        {totalOrigins > filteredOrigins && (
-          <div className="flex items-center gap-2 text-sm text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-            <Filter className="w-4 h-4" />
-            <span>
-              Exibindo {filteredOrigins} de {totalOrigins} origens (filtro: mínimo 5% do volume total)
-            </span>
-          </div>
-        )}
       </CardHeader>
       <CardContent>
         {originData.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-400">Nenhuma origem atende ao critério de volume mínimo (5% do total de leads).</p>
+            <p className="text-gray-400">Nenhuma origem encontrada nos dados.</p>
           </div>
         ) : (
           <>
@@ -108,7 +90,7 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
               </BarChart>
             </ResponsiveContainer>
             
-            {/* Informações adicionais - mostrar todas as origens significativas */}
+            {/* Informações adicionais - mostrar todas as origens */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               {originData.slice(0, 6).map((item, index) => (
                 <div key={index} className="bg-gray-700/50 p-3 rounded-lg border border-gray-600/50">
