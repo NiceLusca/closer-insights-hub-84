@@ -1,10 +1,12 @@
+
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Users } from "lucide-react";
+import { Users, Filter } from "lucide-react";
 import { CloserMetricsCards } from "./CloserPerformance/CloserMetrics";
 import { CloserRanking } from "./CloserPerformance/CloserRanking";
 import { calculateStandardizedMetrics } from "@/utils/metricsDefinitions";
+import { hasSignificantVolume, getVolumeIndicator } from "@/utils/volumeAnalysis";
 import type { Lead } from "@/types/lead";
 
 interface CloserPerformanceAnalysisProps {
@@ -26,7 +28,7 @@ interface CloserMetrics {
 }
 
 export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanceAnalysisProps) => {
-  const closerData = useMemo(() => {
+  const { closerData, totalClosers, filteredClosers } = useMemo(() => {
     console.log('🎯 [CLOSER ANALYSIS] Processando', leads.length, 'leads BRUTOS (com mentorados)');
     
     // Agrupar leads por closer ANTES de qualquer filtragem
@@ -70,14 +72,27 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
       };
     }).filter(closer => closer.totalLeads > 0); // Filtrar closers sem leads válidos
 
+    // Aplicar filtro de volume significativo (>5%)
+    const totalLeadsCount = leads.filter(lead => lead.Status !== 'Mentorado').length;
+    const significantClosers = closerMetrics.filter(closer => 
+      hasSignificantVolume(closer.totalLeads, totalLeadsCount)
+    );
+
+    console.log(`📊 [VOLUME FILTER] Total de leads válidos: ${totalLeadsCount}`);
+    console.log(`📊 [VOLUME FILTER] Closers antes do filtro: ${closerMetrics.length}`);
+    console.log(`📊 [VOLUME FILTER] Closers após filtro (>5%): ${significantClosers.length}`);
+
     // Ordenar por aproveitamento (fechados/apresentações)
-    closerMetrics.sort((a, b) => b.aproveitamento - a.aproveitamento);
-    closerMetrics.forEach((closer, index) => {
+    significantClosers.sort((a, b) => b.aproveitamento - a.aproveitamento);
+    significantClosers.forEach((closer, index) => {
       closer.rank = index + 1;
     });
 
-    console.log('🎯 [CLOSER ANALYSIS] Processados', closerMetrics.length, 'closers com aproveitamento CORRIGIDO');
-    return closerMetrics;
+    return {
+      closerData: significantClosers,
+      totalClosers: closerMetrics.length,
+      filteredClosers: significantClosers.length
+    };
   }, [leads]);
 
   const chartData = useMemo(() => {
@@ -148,51 +163,69 @@ export const CloserPerformanceAnalysis = React.memo(({ leads }: CloserPerformanc
             (aproveitamento = vendas/apresentações)
           </span>
         </CardTitle>
+        
+        {/* Indicador de filtro de volume */}
+        {totalClosers > filteredClosers && (
+          <div className="flex items-center gap-2 text-sm text-orange-400 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+            <Filter className="w-4 h-4" />
+            <span>
+              Exibindo {filteredClosers} de {totalClosers} closers (filtro: mínimo 5% do volume total)
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
-        {/* Estatísticas Resumo */}
-        <CloserMetricsCards
-          topPerformer={topPerformer}
-          avgAproveitamento={avgAproveitamento}
-          totalClosers={closerData.length}
-          totalReceita={closerData.reduce((sum, c) => sum + c.receita, 0)}
-        />
+        {closerData.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Nenhum closer atende ao critério de volume mínimo (5% do total de leads).</p>
+          </div>
+        ) : (
+          <>
+            {/* Estatísticas Resumo */}
+            <CloserMetricsCards
+              topPerformer={topPerformer}
+              avgAproveitamento={avgAproveitamento}
+              totalClosers={filteredClosers}
+              totalReceita={closerData.reduce((sum, c) => sum + c.receita, 0)}
+            />
 
-        {/* Gráfico de Performance */}
-        <div className="mb-6">
-          <h4 className="text-sm font-medium text-gray-200 mb-4">Top 10 Closers por Aproveitamento (Vendas/Apresentações)</h4>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={chartData} margin={{ bottom: 80 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="closer" 
-                stroke="#9ca3af"
-                fontSize={11}
-                angle={-45}
-                textAnchor="end"
-                height={100}
-              />
-              <YAxis stroke="#9ca3af" fontSize={11} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar 
-                dataKey="apresentacoes" 
-                fill="#60a5fa" 
-                name="Apresentações"
-                radius={[1, 1, 0, 0]}
-              />
-              <Bar 
-                dataKey="fechamentos" 
-                fill="#34d399" 
-                name="Fechamentos"
-                radius={[1, 1, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+            {/* Gráfico de Performance */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-200 mb-4">Top 10 Closers por Aproveitamento (Vendas/Apresentações)</h4>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={chartData} margin={{ bottom: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="closer" 
+                    stroke="#9ca3af"
+                    fontSize={11}
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                  />
+                  <YAxis stroke="#9ca3af" fontSize={11} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar 
+                    dataKey="apresentacoes" 
+                    fill="#60a5fa" 
+                    name="Apresentações"
+                    radius={[1, 1, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="fechamentos" 
+                    fill="#34d399" 
+                    name="Fechamentos"
+                    radius={[1, 1, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* Ranking Detalhado */}
-        <CloserRanking closerData={closerData} />
+            {/* Ranking Detalhado */}
+            <CloserRanking closerData={closerData} />
+          </>
+        )}
       </CardContent>
     </Card>
   );
