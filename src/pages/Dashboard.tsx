@@ -129,9 +129,9 @@ const Dashboard = () => {
               <ChartsGrid leads={filteredLeads} />
             </div>
 
-            {/* 6. MUDANÇA CRÍTICA: Origin Analysis usando TODOS os leads */}
+            {/* 6. MUDANÇA CRÍTICA: Origin Analysis agora usando leads filtrados */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-              <OriginAnalysis leads={allLeads} />
+              <OriginAnalysis leads={filteredLeads} />
             </div>
 
             {/* 7. Alertas de Performance */}

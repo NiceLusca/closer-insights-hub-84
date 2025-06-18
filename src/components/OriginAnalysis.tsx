@@ -12,37 +12,17 @@ interface OriginAnalysisProps {
 
 export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
   const originData = useMemo(() => {
-    console.log('🔍 [ORIGIN ANALYSIS] === INVESTIGAÇÃO DETALHADA INÍCIO ===');
-    console.log('🔍 [ORIGIN ANALYSIS] Total de leads recebidos no componente:', leads.length);
+    console.log('🔍 [ORIGIN ANALYSIS] === ANÁLISE DE ORIGEM DOS LEADS ===');
+    console.log('🔍 [ORIGIN ANALYSIS] Total de leads recebidos:', leads.length);
     
-    // INVESTIGAÇÃO 1: Verificar estrutura dos primeiros leads
-    console.log('🔍 [ORIGIN ANALYSIS] Estrutura dos primeiros 3 leads:');
-    leads.slice(0, 3).forEach((lead, index) => {
-      const leadAny = lead as any;
-      console.log(`  Lead ${index + 1}:`, {
-        Nome: lead.Nome,
-        Status: lead.Status,
-        origem: lead.origem,
-        Origem: leadAny.Origem,
-        camposDisponiveis: Object.keys(leadAny).filter(key => 
-          key.toLowerCase().includes('origem') || 
-          key.toLowerCase().includes('source') || 
-          key.toLowerCase().includes('campanha')
-        ),
-        data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data'
-      });
-    });
-    
-    // INVESTIGAÇÃO 2: Buscar todos os leads com "1k" ou "plr" (case insensitive)
-    const leads1kTotal = leads.filter(lead => {
+    // Debug específico para leads de interesse (apenas os mais importantes)
+    const leads1k = leads.filter(lead => {
       const leadAny = lead as any;
       const todasOrigensTexto = [
         lead.origem || '',
         leadAny.Origem || '',
         leadAny.origem_campanha || '',
-        leadAny.source || '',
-        leadAny.utm_source || '',
-        leadAny.campaign_source || ''
+        leadAny.source || ''
       ].join(' ').toLowerCase();
       
       return todasOrigensTexto.includes('1k') || 
@@ -50,67 +30,42 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
              todasOrigensTexto.includes('dia');
     });
     
-    console.log('🔍 [ORIGIN ANALYSIS] Leads com "1k/PLR/dia" encontrados:', leads1kTotal.length);
-    console.log('🔍 [ORIGIN ANALYSIS] Detalhes desses leads:');
-    leads1kTotal.forEach((lead, index) => {
-      const leadAny = lead as any;
-      console.log(`  ${index + 1}. Nome: ${lead.Nome}`);
-      console.log(`     Status: ${lead.Status}`);
-      console.log(`     origem: "${lead.origem}"`);
-      console.log(`     Origem: "${leadAny.Origem}"`);
-      console.log(`     Data: ${lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data'}`);
-      console.log(`     Mês: ${lead.parsedDate ? lead.parsedDate.getMonth() + 1 : 'N/A'}`);
+    console.log('🔍 [ORIGIN ANALYSIS] Leads "1K por Dia" encontrados:', leads1k.length);
+    
+    // Log detalhado apenas para leads 1K com vendas
+    const leads1kComVendas = leads1k.filter(lead => {
+      const vendaCompleta = Number(lead['Venda Completa']) || 0;
+      const recorrente = Number(lead.recorrente) || 0;
+      return vendaCompleta > 0 || recorrente > 0 || lead.Status === 'Fechou';
     });
     
-    // INVESTIGAÇÃO 3: Verificar distribuição por status ANTES do filtro
-    const statusDistribution = {};
-    leads.forEach(lead => {
-      const status = lead.Status || 'Sem Status';
-      statusDistribution[status] = (statusDistribution[status] || 0) + 1;
+    console.log('🔍 [ORIGIN ANALYSIS] Leads "1K por Dia" com vendas:', leads1kComVendas.length);
+    leads1kComVendas.forEach(lead => {
+      console.log(`💰 [ORIGIN ANALYSIS] - ${lead.Nome}: Status="${lead.Status}", VendaCompleta=${lead['Venda Completa']}, Recorrente=${lead.recorrente}`);
     });
-    console.log('🔍 [ORIGIN ANALYSIS] Distribuição por status (ANTES do filtro):', statusDistribution);
     
-    // INVESTIGAÇÃO 4: Verificar quantos são mentorados
-    const mentorados = leads.filter(lead => lead.Status === 'Mentorado');
-    console.log('🔍 [ORIGIN ANALYSIS] Leads mentorados que serão filtrados:', mentorados.length);
-    
-    // INVESTIGAÇÃO 5: Verificar leads de junho especificamente
-    const leadsJunho = leads.filter(lead => {
-      if (lead.parsedDate) {
-        const month = lead.parsedDate.getMonth(); // 0-based (junho = 5)
-        return month === 5;
-      }
-      return false;
-    });
-    console.log('🔍 [ORIGIN ANALYSIS] Leads de junho encontrados:', leadsJunho.length);
-    
-    // INVESTIGAÇÃO 6: Leads de junho com "1k"
-    const leads1kJunho = leadsJunho.filter(lead => {
-      const leadAny = lead as any;
-      const todasOrigensTexto = [
-        lead.origem || '',
-        leadAny.Origem || '',
-        leadAny.origem_campanha || '',
-        leadAny.source || '',
-        leadAny.utm_source || '',
-        leadAny.campaign_source || ''
-      ].join(' ').toLowerCase();
-      
-      return todasOrigensTexto.includes('1k') || 
-             todasOrigensTexto.includes('plr') ||
-             todasOrigensTexto.includes('dia');
-    });
-    console.log('🔍 [ORIGIN ANALYSIS] Leads "1k/PLR/dia" de junho:', leads1kJunho.length);
-    
-    // Processar dados usando a função corrigida
     const data = generateOriginAnalysisData(leads);
-    console.log('🔍 [ORIGIN ANALYSIS] Dados processados retornados:', data.length);
-    console.log('🔍 [ORIGIN ANALYSIS] Top 10 origens no resultado:');
-    data.slice(0, 10).forEach((origem, index) => {
-      console.log(`  ${index + 1}. ${origem.origem}: ${origem.leads} leads (${origem.percentage}%)`);
-    });
     
-    console.log('🔍 [ORIGIN ANALYSIS] === INVESTIGAÇÃO DETALHADA FIM ===');
+    // Log específico da origem "1K por Dia"
+    const origem1k = data.find(item => 
+      item.origem.toLowerCase().includes('1k') || 
+      item.origem.toLowerCase().includes('plr') ||
+      item.origem.toLowerCase().includes('dia')
+    );
+    
+    if (origem1k) {
+      console.log('💰 [ORIGIN ANALYSIS] Faturamento "1K por Dia":', {
+        origem: origem1k.origem,
+        leads: origem1k.leads,
+        vendas: origem1k.vendas,
+        receita: origem1k.receita,
+        conversao: origem1k.conversao
+      });
+    } else {
+      console.log('⚠️ [ORIGIN ANALYSIS] Origem "1K por Dia" não encontrada no resultado final');
+    }
+    
+    console.log('🔍 [ORIGIN ANALYSIS] === FIM ANÁLISE ===');
     return data;
   }, [leads]);
 
@@ -149,24 +104,17 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-100 flex items-center gap-2">
           <TrendingUp className="w-5 h-5" />
-          Análise por Origem de Campanha
-          <span className="text-sm font-normal text-gray-400">(todos os leads válidos)</span>
+          Origem dos Leads
         </CardTitle>
       </CardHeader>
       <CardContent>
         {originData.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-400">Nenhuma origem encontrada nos dados.</p>
-            <p className="text-gray-500 text-sm mt-2">Debug: {leads.length} leads recebidos</p>
+            <p className="text-gray-400">Nenhuma origem encontrada nos dados filtrados.</p>
+            <p className="text-gray-500 text-sm mt-2">Total de leads: {leads.length}</p>
           </div>
         ) : (
           <>
-            {/* Debug info */}
-            <div className="mb-4 p-2 bg-gray-700/50 rounded text-xs text-gray-300">
-              <p>Debug: {originData.length} origens processadas de {leads.length} leads</p>
-              <p>Top 5 origens: {originData.slice(0, 5).map(o => `${o.origem} (${o.leads})`).join(', ')}</p>
-            </div>
-            
             <ResponsiveContainer width="100%" height={400}>
               <BarChart data={originData} margin={{ bottom: 80 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -197,7 +145,7 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
               </BarChart>
             </ResponsiveContainer>
             
-            {/* Mostrar TODAS as origens em cards */}
+            {/* Grid de cards das origens */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {originData.map((item, index) => (
                 <div key={index} className="bg-gray-700/50 p-3 rounded-lg border border-gray-600/50">
