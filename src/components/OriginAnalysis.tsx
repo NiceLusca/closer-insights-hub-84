@@ -15,11 +15,13 @@ export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
     console.log('🎯 [ORIGIN COMPONENT] === PROCESSANDO DADOS NO COMPONENTE ===');
     console.log('🎯 [ORIGIN COMPONENT] Leads recebidos:', leads.length);
     
-    // Log de algumas origens que chegaram ao componente
+    // Log de algumas origens que chegaram ao componente - usando tipagem correta
     const origensNoComponente = new Set();
     leads.forEach(lead => {
       if (lead.origem) origensNoComponente.add(lead.origem);
-      if (lead.Origem) origensNoComponente.add(lead.Origem);
+      // Para campos dinâmicos, usar indexação de objeto
+      const leadAny = lead as any;
+      if (leadAny.Origem) origensNoComponente.add(leadAny.Origem);
     });
     console.log('🎯 [ORIGIN COMPONENT] Origens únicas no componente:', Array.from(origensNoComponente));
     

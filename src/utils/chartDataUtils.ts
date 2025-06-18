@@ -90,14 +90,16 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   const sampleLeads = leads.slice(0, 5);
   console.log('🔍 [ORIGIN DEBUG] Amostra de leads (primeiros 5):');
   sampleLeads.forEach((lead, index) => {
+    // Use type assertion para acessar campos dinâmicos
+    const leadAny = lead as any;
     console.log(`🔍 [ORIGIN DEBUG] Lead ${index + 1}:`, {
       Nome: lead.Nome,
       Status: lead.Status,
       origem: lead.origem,
-      Origem: lead.Origem,
+      Origem: leadAny.Origem, // Campo dinâmico
       'Venda Completa': lead['Venda Completa'],
       recorrente: lead.recorrente,
-      allFields: Object.keys(lead)
+      allFields: Object.keys(leadAny)
     });
   });
   
@@ -112,9 +114,10 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   // Verificar todas as origens encontradas nos diferentes campos
   const origensEncontradas = new Set();
   filteredLeads.forEach(lead => {
+    const leadAny = lead as any;
     originFields.forEach(field => {
-      if (lead[field]) {
-        origensEncontradas.add(`${field}: ${lead[field]}`);
+      if (leadAny[field]) {
+        origensEncontradas.add(`${field}: ${leadAny[field]}`);
       }
     });
   });
@@ -122,26 +125,29 @@ export function generateOriginAnalysisData(leads: Lead[]) {
   
   // Buscar especificamente por "1k por dia" ou variações
   const leads1kPorDia = filteredLeads.filter(lead => {
+    const leadAny = lead as any;
     const origemTexto = (lead.origem || '').toLowerCase();
-    const OrigemTexto = (lead.Origem || '').toLowerCase();
+    const OrigemTexto = (leadAny.Origem || '').toLowerCase();
     return origemTexto.includes('1k') || origemTexto.includes('plr') || 
            OrigemTexto.includes('1k') || OrigemTexto.includes('plr');
   });
   console.log('🔍 [ORIGIN DEBUG] Leads encontrados com "1k" ou "plr":', leads1kPorDia.length);
   leads1kPorDia.forEach(lead => {
+    const leadAny = lead as any;
     console.log('🔍 [ORIGIN DEBUG] Lead 1k/PLR:', {
       Nome: lead.Nome,
       Status: lead.Status,
       origem: lead.origem,
-      Origem: lead.Origem
+      Origem: leadAny.Origem
     });
   });
   
   const originStats: Record<string, { leads: number; vendas: number; receita: number }> = {};
   
   filteredLeads.forEach((lead, index) => {
-    // Tentar múltiplos campos para origem
-    let origem = lead.origem || lead.Origem || lead.origem_campanha || lead.source || lead.utm_source || 'Origem Desconhecida';
+    const leadAny = lead as any;
+    // Tentar múltiplos campos para origem usando type assertion
+    let origem = lead.origem || leadAny.Origem || leadAny.origem_campanha || leadAny.source || leadAny.utm_source || 'Origem Desconhecida';
     
     // Log para leads específicos que estamos procurando
     if (index < 10 || origem.toLowerCase().includes('1k') || origem.toLowerCase().includes('plr')) {
@@ -151,10 +157,10 @@ export function generateOriginAnalysisData(leads: Lead[]) {
         origemEscolhida: origem,
         camposOrigem: {
           origem: lead.origem,
-          Origem: lead.Origem,
-          origem_campanha: lead.origem_campanha,
-          source: lead.source,
-          utm_source: lead.utm_source
+          Origem: leadAny.Origem,
+          origem_campanha: leadAny.origem_campanha,
+          source: leadAny.source,
+          utm_source: leadAny.utm_source
         }
       });
     }
