@@ -38,22 +38,22 @@ export const MonthlyRevenueHistory = ({ leads }: MonthlyRevenueHistoryProps) => 
     
     // Processar leads fechados
     const closedLeads = leads.filter(lead => 
-      lead.status === 'Fechou' && 
-      lead.dataFechamento && 
-      lead.valorContrato && 
-      lead.valorContrato > 0
+      lead.Status === 'Fechou' && 
+      lead.parsedDate && 
+      lead['Venda Completa'] && 
+      lead['Venda Completa'] > 0
     );
     
     closedLeads.forEach(lead => {
-      if (!lead.dataFechamento) return;
+      if (!lead.parsedDate) return;
       
-      const fechamentoDate = new Date(lead.dataFechamento);
+      const fechamentoDate = lead.parsedDate;
       const monthKey = `${fechamentoDate.getFullYear()}-${String(fechamentoDate.getMonth() + 1).padStart(2, '0')}`;
       
       const monthData = last12Months.find(m => m.month === monthKey);
       if (monthData) {
-        const valor = lead.valorContrato || 0;
-        const origem = lead.origemLead || 'Não informado';
+        const valor = lead['Venda Completa'] || 0;
+        const origem = lead.origem || 'Não informado';
         
         monthData.total += valor;
         monthData.byOrigin[origem] = (monthData.byOrigin[origem] || 0) + valor;
