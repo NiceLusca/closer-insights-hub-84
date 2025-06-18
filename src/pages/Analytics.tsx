@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { CloserPerformanceAnalysis } from "@/components/CloserPerformanceAnalysis";
 import { TemporalAnalysis } from "@/components/TemporalAnalysis";
 import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
+import { OriginAnalysis } from "@/components/OriginAnalysis";
 
 const Analytics = () => {
   // Estado dos dados
@@ -21,8 +22,14 @@ const Analytics = () => {
   // Estado dos filtros globais
   const { dateRange, filters } = useGlobalFilters();
 
-  // Dados processados
+  // MUDANÇA CRÍTICA: Para OriginAnalysis, usar TODOS os leads sem filtros
+  // Os dados devem vir direto do webhook conforme solicitado
   const { filteredLeads } = useFilteredLeads(allLeads, dateRange, filters, 'analytics');
+
+  console.log('📊 [ANALYTICS PAGE] Dados recebidos:');
+  console.log('📊 [ANALYTICS PAGE] - Total de leads brutos:', allLeads.length);
+  console.log('📊 [ANALYTICS PAGE] - Leads filtrados para outros componentes:', filteredLeads.length);
+  console.log('📊 [ANALYTICS PAGE] - Filtros ativos:', { dateRange, filters });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
@@ -32,7 +39,7 @@ const Analytics = () => {
           <p className="text-gray-300">Performance, tendências e insights avançados</p>
           <div className="flex items-center gap-4 mt-2">
             <p className="text-sm text-gray-400">
-              Filtros ativos: {filteredLeads.length} leads de {allLeads.length} total
+              Total: {allLeads.length} leads | Filtrados: {filteredLeads.length} leads
             </p>
             <span className={`text-xs px-2 py-1 rounded ${
               isCacheValid ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
@@ -53,13 +60,16 @@ const Analytics = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
-            {/* Performance dos Closers */}
+            {/* Análise por Origem - usando TODOS os leads */}
+            <OriginAnalysis leads={allLeads} />
+
+            {/* Performance dos Closers - usando leads filtrados */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
 
-            {/* Análise Temporal */}
+            {/* Análise Temporal - usando leads filtrados */}
             <TemporalAnalysis leads={filteredLeads} />
 
-            {/* Histórico de Faturamento Mensal - usando allLeads para não ser afetado pelos filtros */}
+            {/* Histórico de Faturamento Mensal - usando todos os leads */}
             <MonthlyRevenueHistory leads={allLeads} />
           </>
         )}
