@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -12,22 +11,62 @@ interface OriginAnalysisProps {
 
 export const OriginAnalysis = React.memo(({ leads }: OriginAnalysisProps) => {
   const originData = useMemo(() => {
-    console.log('🎯 [ORIGIN COMPONENT] === PROCESSANDO DADOS NO COMPONENTE ===');
-    console.log('🎯 [ORIGIN COMPONENT] Leads recebidos:', leads.length);
+    console.log('🔍 [ORIGIN COMPONENT] === INVESTIGAÇÃO DETALHADA ===');
+    console.log('🔍 [ORIGIN COMPONENT] Total de leads recebidos:', leads.length);
     
-    // Log de algumas origens que chegaram ao componente - usando tipagem correta
-    const origensNoComponente = new Set();
-    leads.forEach(lead => {
-      if (lead.origem) origensNoComponente.add(lead.origem);
-      // Para campos dinâmicos, usar indexação de objeto
+    // INVESTIGAÇÃO 1: Verificar se leads com "1k" chegam ao componente
+    const leads1kNoComponente = leads.filter(lead => {
       const leadAny = lead as any;
-      if (leadAny.Origem) origensNoComponente.add(leadAny.Origem);
+      const origemTexto = (lead.origem || '').toLowerCase();
+      const OrigemTexto = (leadAny.Origem || '').toLowerCase();
+      return origemTexto.includes('1k') || origemTexto.includes('plr') || 
+             OrigemTexto.includes('1k') || OrigemTexto.includes('plr');
     });
-    console.log('🎯 [ORIGIN COMPONENT] Origens únicas no componente:', Array.from(origensNoComponente));
+    console.log('🔍 [ORIGIN COMPONENT] Leads com "1k/PLR" que chegaram:', leads1kNoComponente.length);
+    
+    // INVESTIGAÇÃO 2: Verificar leads de junho especificamente
+    const leadsJunho = leads.filter(lead => {
+      if (lead.parsedDate) {
+        const month = lead.parsedDate.getMonth(); // 0-based (maio=4, junho=5)
+        return month === 5; // junho
+      }
+      return false;
+    });
+    console.log('🔍 [ORIGIN COMPONENT] Leads de junho:', leadsJunho.length);
+    
+    // INVESTIGAÇÃO 3: Leads de junho com "1k"
+    const leads1kJunho = leadsJunho.filter(lead => {
+      const leadAny = lead as any;
+      const origemTexto = (lead.origem || '').toLowerCase();
+      const OrigemTexto = (leadAny.Origem || '').toLowerCase();
+      return origemTexto.includes('1k') || origemTexto.includes('plr') || 
+             OrigemTexto.includes('1k') || OrigemTexto.includes('plr');
+    });
+    console.log('🔍 [ORIGIN COMPONENT] Leads "1k" de junho:', leads1kJunho.length);
+    
+    // INVESTIGAÇÃO 4: Status dos leads "1k"
+    console.log('🔍 [ORIGIN COMPONENT] Status dos leads "1k":');
+    leads1kNoComponente.forEach((lead, index) => {
+      if (index < 10) { // Mostrar primeiros 10
+        console.log(`  Lead ${index + 1}: ${lead.Nome} - Status: ${lead.Status} - Data: ${lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data'}`);
+      }
+    });
+    
+    // INVESTIGAÇÃO 5: Campos de origem disponíveis
+    const camposOrigemEncontrados = new Set();
+    leads.forEach(lead => {
+      const leadAny = lead as any;
+      Object.keys(leadAny).forEach(key => {
+        if (key.toLowerCase().includes('origem') || key.toLowerCase().includes('source') || key.toLowerCase().includes('campanha')) {
+          camposOrigemEncontrados.add(key);
+        }
+      });
+    });
+    console.log('🔍 [ORIGIN COMPONENT] Campos relacionados à origem encontrados:', Array.from(camposOrigemEncontrados));
     
     const data = generateOriginAnalysisData(leads);
-    console.log('🎯 [ORIGIN COMPONENT] Dados processados retornados:', data.length);
-    console.log('🎯 [ORIGIN COMPONENT] Origens no resultado:', data.map(d => d.origem));
+    console.log('🔍 [ORIGIN COMPONENT] Dados processados retornados:', data.length);
+    console.log('🔍 [ORIGIN COMPONENT] Origens no resultado:', data.map(d => `${d.origem} (${d.leads} leads)`));
     
     return data;
   }, [leads]);
