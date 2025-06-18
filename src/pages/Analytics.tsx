@@ -7,7 +7,6 @@ import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { CloserPerformanceAnalysis } from "@/components/CloserPerformanceAnalysis";
 import { TemporalAnalysis } from "@/components/TemporalAnalysis";
 import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
-import { OriginAnalysis } from "@/components/OriginAnalysis";
 
 const Analytics = () => {
   // Estado dos dados
@@ -22,13 +21,12 @@ const Analytics = () => {
   // Estado dos filtros globais
   const { dateRange, filters } = useGlobalFilters();
 
-  // MUDANÇA CRÍTICA: Para OriginAnalysis, usar TODOS os leads sem filtros
-  // Os dados devem vir direto do webhook conforme solicitado
+  // Usar leads filtrados para todos os componentes da página Analytics
   const { filteredLeads } = useFilteredLeads(allLeads, dateRange, filters, 'analytics');
 
   console.log('📊 [ANALYTICS PAGE] Dados recebidos:');
   console.log('📊 [ANALYTICS PAGE] - Total de leads brutos:', allLeads.length);
-  console.log('📊 [ANALYTICS PAGE] - Leads filtrados para outros componentes:', filteredLeads.length);
+  console.log('📊 [ANALYTICS PAGE] - Leads filtrados:', filteredLeads.length);
   console.log('📊 [ANALYTICS PAGE] - Filtros ativos:', { dateRange, filters });
 
   return (
@@ -60,9 +58,6 @@ const Analytics = () => {
         {/* Conteúdo principal apenas quando não está carregando */}
         {!isLoading && (
           <>
-            {/* Análise por Origem - usando TODOS os leads */}
-            <OriginAnalysis leads={allLeads} />
-
             {/* Performance dos Closers - usando leads filtrados */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
 
