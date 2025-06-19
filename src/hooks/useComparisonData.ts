@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { filterLeads } from "@/utils/dataFilters";
 import { calculateMetrics } from "@/utils/metricsCalculations";
 import { generateComparisonInsights } from "@/utils/comparisonUtils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import type { Lead, DateRange } from "@/types/lead";
 
 interface ComparisonParams {
@@ -11,6 +13,38 @@ interface ComparisonParams {
   selectedPeriods: { period1: DateRange; period2: DateRange };
   selectedOrigins: string[];
 }
+
+// Função auxiliar para gerar nomes descritivos dos períodos
+const getPeriodName = (dateRange: DateRange): string => {
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  
+  // Verifica se é o mês atual completo
+  if (dateRange.from.getTime() === startOfCurrentMonth.getTime() && 
+      dateRange.to.getTime() === endOfCurrentMonth.getTime()) {
+    return "Este Mês";
+  }
+  
+  // Verifica se é o mês passado completo
+  if (dateRange.from.getTime() === startOfLastMonth.getTime() && 
+      dateRange.to.getTime() === endOfLastMonth.getTime()) {
+    return "Mês Passado";
+  }
+  
+  // Verifica se é um mês completo
+  const isFullMonth = dateRange.from.getDate() === 1 && 
+                     dateRange.to.getDate() === new Date(dateRange.to.getFullYear(), dateRange.to.getMonth() + 1, 0).getDate();
+  
+  if (isFullMonth) {
+    return format(dateRange.from, "MMMM 'de' yyyy", { locale: ptBR });
+  }
+  
+  // Para períodos customizados, retorna as datas
+  return `${format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - ${format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}`;
+};
 
 export function useComparisonData({
   allLeads,
@@ -42,8 +76,8 @@ export function useComparisonData({
       case 'temporal':
         data1 = filterLeads(allLeads, selectedPeriods.period1, { status: [], closer: [], origem: [] });
         data2 = filterLeads(allLeads, selectedPeriods.period2, { status: [], closer: [], origem: [] });
-        label1 = `${selectedPeriods.period1.from.toLocaleDateString()} - ${selectedPeriods.period1.to.toLocaleDateString()}`;
-        label2 = `${selectedPeriods.period2.from.toLocaleDateString()} - ${selectedPeriods.period2.to.toLocaleDateString()}`;
+        label1 = getPeriodName(selectedPeriods.period1);
+        label2 = getPeriodName(selectedPeriods.period2);
         break;
 
       case 'origem':
