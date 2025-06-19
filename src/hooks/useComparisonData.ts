@@ -7,9 +7,8 @@ import type { Lead, DateRange } from "@/types/lead";
 
 interface ComparisonParams {
   allLeads: Lead[];
-  comparisonType: 'temporal' | 'closer' | 'origem';
+  comparisonType: 'temporal' | 'origem';
   selectedPeriods: { period1: DateRange; period2: DateRange };
-  selectedClosers: string[];
   selectedOrigins: string[];
 }
 
@@ -17,7 +16,6 @@ export function useComparisonData({
   allLeads,
   comparisonType,
   selectedPeriods,
-  selectedClosers,
   selectedOrigins
 }: ComparisonParams) {
   return useMemo(() => {
@@ -46,15 +44,6 @@ export function useComparisonData({
         data2 = filterLeads(allLeads, selectedPeriods.period2, { status: [], closer: [], origem: [] });
         label1 = `${selectedPeriods.period1.from.toLocaleDateString()} - ${selectedPeriods.period1.to.toLocaleDateString()}`;
         label2 = `${selectedPeriods.period2.from.toLocaleDateString()} - ${selectedPeriods.period2.to.toLocaleDateString()}`;
-        break;
-
-      case 'closer':
-        if (selectedClosers.length >= 2) {
-          data1 = allLeads.filter(lead => lead.Closer === selectedClosers[0]);
-          data2 = allLeads.filter(lead => lead.Closer === selectedClosers[1]);
-          label1 = selectedClosers[0];
-          label2 = selectedClosers[1];
-        }
         break;
 
       case 'origem':
@@ -89,5 +78,5 @@ export function useComparisonData({
       insights,
       isComparing: false
     };
-  }, [allLeads, comparisonType, selectedPeriods, selectedClosers, selectedOrigins]);
+  }, [allLeads, comparisonType, selectedPeriods, selectedOrigins]);
 }

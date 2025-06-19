@@ -2,11 +2,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, TrendingUp } from "lucide-react";
+import { Calendar, TrendingUp } from "lucide-react";
 
 interface ComparisonTypeSelectorProps {
-  comparisonType: 'temporal' | 'closer' | 'origem';
-  onTypeChange: (type: 'temporal' | 'closer' | 'origem') => void;
+  comparisonType: 'temporal' | 'origem';
+  onTypeChange: (type: 'temporal' | 'origem') => void;
 }
 
 export const ComparisonTypeSelector = React.memo(({ 
@@ -19,12 +19,6 @@ export const ComparisonTypeSelector = React.memo(({
       label: 'Temporal',
       description: 'Compare períodos',
       icon: Calendar
-    },
-    {
-      id: 'closer' as const,
-      label: 'Closers',
-      description: 'Compare vendedores',
-      icon: Users
     },
     {
       id: 'origem' as const,

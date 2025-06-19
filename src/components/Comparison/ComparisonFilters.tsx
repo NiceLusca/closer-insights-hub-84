@@ -17,17 +17,13 @@ interface ComparisonFiltersProps {
 export const ComparisonFilters = React.memo(({ 
   allLeads,
   comparisonType,
-  selectedClosers,
   selectedOrigins,
-  onClosersChange,
   onOriginsChange 
 }: ComparisonFiltersProps) => {
-  const { closerOptions, originOptions } = useMemo(() => {
-    const closers = [...new Set(allLeads.map(lead => lead.Closer).filter(Boolean))];
+  const { originOptions } = useMemo(() => {
     const origins = [...new Set(allLeads.map(lead => lead.origem).filter(Boolean))];
 
     return {
-      closerOptions: closers,
       originOptions: origins
     };
   }, [allLeads]);
@@ -45,23 +41,6 @@ export const ComparisonFilters = React.memo(({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {comparisonType === 'closer' && (
-          <div>
-            <FilterSelect
-              label="Closers (selecione 2 para comparar):"
-              options={closerOptions}
-              selectedValues={selectedClosers}
-              onChange={onClosersChange}
-              placeholder="Selecione closers..."
-            />
-            {selectedClosers.length > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
-                {selectedClosers.length}/2 selecionados
-              </p>
-            )}
-          </div>
-        )}
-
         {comparisonType === 'origem' && (
           <div>
             <FilterSelect

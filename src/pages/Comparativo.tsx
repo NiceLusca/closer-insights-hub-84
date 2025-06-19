@@ -12,22 +12,22 @@ import { InsightsPanel } from "@/components/Comparison/InsightsPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp } from "lucide-react";
+import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 const Comparativo = () => {
   const { allLeads, isLoading } = useLeadsData();
-  const [comparisonType, setComparisonType] = useState<'temporal' | 'closer' | 'origem'>('temporal');
+  const [comparisonType, setComparisonType] = useState<'temporal' | 'origem'>('temporal');
+  const now = new Date();
   const [selectedPeriods, setSelectedPeriods] = useState({
-    period1: { from: new Date(2024, 0, 1), to: new Date(2024, 2, 31) },
-    period2: { from: new Date(2024, 3, 1), to: new Date(2024, 5, 30) }
+    period1: { from: startOfMonth(now), to: endOfMonth(now) },
+    period2: { from: startOfMonth(subMonths(now, 1)), to: endOfMonth(subMonths(now, 1)) }
   });
-  const [selectedClosers, setSelectedClosers] = useState<string[]>([]);
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([]);
 
   const { comparisonData, insights, isComparing } = useComparisonData({
     allLeads,
     comparisonType,
     selectedPeriods,
-    selectedClosers,
     selectedOrigins
   });
 
@@ -49,7 +49,7 @@ const Comparativo = () => {
             <h1 className="text-3xl font-bold text-white">Análise Comparativa</h1>
           </div>
           <p className="text-gray-400">
-            Compare períodos, closers e origens para identificar tendências e oportunidades de melhoria
+            Compare períodos e origens para identificar tendências e oportunidades de melhoria
           </p>
         </div>
 
@@ -69,9 +69,9 @@ const Comparativo = () => {
           <ComparisonFilters
             allLeads={allLeads}
             comparisonType={comparisonType}
-            selectedClosers={selectedClosers}
+            selectedClosers={[]}
             selectedOrigins={selectedOrigins}
-            onClosersChange={setSelectedClosers}
+            onClosersChange={() => {}}
             onOriginsChange={setSelectedOrigins}
           />
         </div>

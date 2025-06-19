@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { Button } from "@/components/ui/button";
 import { Calendar, ArrowRight } from "lucide-react";
-import { subDays, subMonths } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 import type { DateRange } from "@/types/lead";
 
 interface PeriodSelectorProps {
@@ -18,21 +18,23 @@ export const PeriodSelector = React.memo(({
   onPeriodsChange, 
   comparisonType 
 }: PeriodSelectorProps) => {
+  const now = new Date();
+  
   const presetPeriods = [
     {
-      label: 'Últimos 2 meses',
-      period1: { from: subMonths(new Date(), 2), to: subMonths(new Date(), 1) },
-      period2: { from: subMonths(new Date(), 1), to: new Date() }
+      label: 'Este mês vs Mês passado',
+      period1: { from: startOfMonth(now), to: endOfMonth(now) },
+      period2: { from: startOfMonth(subMonths(now, 1)), to: endOfMonth(subMonths(now, 1)) }
     },
     {
-      label: 'Este vs Último mês',
-      period1: { from: subDays(new Date(), 30), to: new Date() },
-      period2: { from: subDays(new Date(), 60), to: subDays(new Date(), 30) }
+      label: 'Últimos 2 meses completos',
+      period1: { from: startOfMonth(subMonths(now, 1)), to: endOfMonth(subMonths(now, 1)) },
+      period2: { from: startOfMonth(subMonths(now, 2)), to: endOfMonth(subMonths(now, 2)) }
     },
     {
-      label: 'Últimas 2 semanas',
-      period1: { from: subDays(new Date(), 14), to: subDays(new Date(), 7) },
-      period2: { from: subDays(new Date(), 7), to: new Date() }
+      label: 'Trimestre atual vs anterior',
+      period1: { from: startOfMonth(subMonths(now, 2)), to: endOfMonth(now) },
+      period2: { from: startOfMonth(subMonths(now, 5)), to: endOfMonth(subMonths(now, 3)) }
     }
   ];
 
