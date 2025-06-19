@@ -36,7 +36,7 @@ export function AppSidebar() {
   const location = useLocation();
   
   return (
-    <Sidebar className="border-r border-gray-700/50 bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl w-56">
+    <Sidebar className="bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl w-56">
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
           <img 
