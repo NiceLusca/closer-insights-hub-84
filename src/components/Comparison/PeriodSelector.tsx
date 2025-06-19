@@ -70,8 +70,8 @@ export const PeriodSelector = React.memo(({
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Período 1:</label>
             <DatePickerWithRange
-              selectedRange={selectedPeriods.period1}
-              onRangeChange={(range) => range && onPeriodsChange({
+              dateRange={selectedPeriods.period1}
+              onDateRangeChange={(range) => range && onPeriodsChange({
                 ...selectedPeriods,
                 period1: range
               })}
@@ -85,8 +85,8 @@ export const PeriodSelector = React.memo(({
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Período 2:</label>
             <DatePickerWithRange
-              selectedRange={selectedPeriods.period2}
-              onRangeChange={(range) => range && onPeriodsChange({
+              dateRange={selectedPeriods.period2}
+              onDateRangeChange={(range) => range && onPeriodsChange({
                 ...selectedPeriods,
                 period2: range
               })}
