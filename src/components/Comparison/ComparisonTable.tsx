@@ -19,7 +19,7 @@ interface ComparisonTableProps {
 export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTableProps) => {
   if (!comparisonData) {
     return (
-      <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+      <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-lg">
         <CardContent className="text-center py-8">
           <p className="text-gray-400">Selecione os parâmetros para ver a comparação</p>
         </CardContent>
@@ -109,7 +109,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
 
   const getWinnerCellClass = (isWinner: boolean) => {
     if (!isWinner) return '';
-    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden';
+    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden rounded-lg';
   };
 
   const WinnerIcon = ({ show }: { show: boolean }) => {
@@ -120,7 +120,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
   };
 
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-lg animate-fade-in-up">
       <CardHeader>
         <CardTitle className="text-xl font-bold text-gray-100 text-center">
           Comparação Detalhada
@@ -160,7 +160,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
               const winner2 = isWinner(value2, value1, metric.higherIsBetter);
               
               return (
-                <TableRow key={metric.key} className="border-gray-700/30 hover:bg-gray-700/20">
+                <TableRow key={metric.key} className="border-gray-700/30 hover:bg-gray-700/20 transition-colors duration-200">
                   <TableCell className={`text-center py-4 relative ${getWinnerCellClass(winner1)}`}>
                     <span className={`font-medium ${winner1 ? 'text-cyan-300' : 'text-white'}`}>
                       {metric.format(value1)}

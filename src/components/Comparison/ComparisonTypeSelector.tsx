@@ -1,64 +1,60 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, TrendingUp } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export type ComparisonType = 'closer' | 'period' | 'origem';
 
 interface ComparisonTypeSelectorProps {
-  comparisonType: 'temporal' | 'origem';
-  onTypeChange: (type: 'temporal' | 'origem') => void;
+  selectedType: ComparisonType;
+  onTypeChange: (type: ComparisonType) => void;
 }
 
-export const ComparisonTypeSelector = React.memo(({ 
-  comparisonType, 
-  onTypeChange 
-}: ComparisonTypeSelectorProps) => {
+export const ComparisonTypeSelector = ({ selectedType, onTypeChange }: ComparisonTypeSelectorProps) => {
   const types = [
-    {
-      id: 'temporal' as const,
-      label: 'Temporal',
-      description: 'Compare períodos',
-      icon: Calendar
+    { 
+      key: 'closer' as ComparisonType, 
+      label: 'Closers',
+      description: 'Compare performance entre closers'
     },
-    {
-      id: 'origem' as const,
+    { 
+      key: 'period' as ComparisonType, 
+      label: 'Períodos',
+      description: 'Compare diferentes períodos de tempo'
+    },
+    { 
+      key: 'origem' as ComparisonType, 
       label: 'Origens',
-      description: 'Compare fontes',
-      icon: TrendingUp
+      description: 'Compare diferentes fontes/campanhas'
     }
   ];
 
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-lg">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-100">
+        <CardTitle className="text-xl font-bold text-gray-100">
           Tipo de Comparação
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {types.map((type) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {types.map(type => (
             <Button
-              key={type.id}
-              variant={comparisonType === type.id ? "default" : "outline"}
-              className={`w-full justify-start gap-3 ${
-                comparisonType === type.id
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
+              key={type.key}
+              variant={selectedType === type.key ? "default" : "outline"}
+              onClick={() => onTypeChange(type.key)}
+              className={`p-4 h-auto flex flex-col items-start text-left transition-all duration-300 rounded-lg ${
+                selectedType === type.key 
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-300 shadow-lg shadow-cyan-500/10' 
+                  : 'border-gray-600 text-gray-300 hover:bg-gradient-to-r hover:from-gray-700/30 hover:to-gray-600/30 hover:border-gray-500'
               }`}
-              onClick={() => onTypeChange(type.id)}
             >
-              <type.icon className="w-4 h-4" />
-              <div className="text-left">
-                <div className="font-medium">{type.label}</div>
-                <div className="text-xs opacity-70">{type.description}</div>
-              </div>
+              <span className="font-semibold text-base mb-1">{type.label}</span>
+              <span className="text-sm text-gray-400">{type.description}</span>
             </Button>
           ))}
         </div>
       </CardContent>
     </Card>
   );
-});
-
-ComparisonTypeSelector.displayName = 'ComparisonTypeSelector';
+};
