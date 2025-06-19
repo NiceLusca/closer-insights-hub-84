@@ -27,8 +27,8 @@ export const ComparisonFilters = React.memo(({
     const origins = [...new Set(allLeads.map(lead => lead.origem).filter(Boolean))];
 
     return {
-      closerOptions: closers.map(closer => ({ value: closer, label: closer })),
-      originOptions: origins.map(origin => ({ value: origin, label: origin }))
+      closerOptions: closers,
+      originOptions: origins
     };
   }, [allLeads]);
 
