@@ -2,33 +2,88 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
-import { LayoutDashboard, BarChart3, GitCompare, Users, FileText } from "lucide-react";
+
+// Ícones com mais personalidade usando múltiplos elementos
+const DashboardIcon = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <div className="w-5 h-5 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg opacity-80" />
+      <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-white rounded-sm opacity-90" />
+      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-sm opacity-70" />
+      <div className="absolute bottom-1 left-1 w-1.5 h-1.5 bg-white rounded-sm opacity-70" />
+      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-white rounded-sm opacity-90" />
+    </div>
+  </div>
+);
+
+const AnalyticsIcon = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <div className="w-5 h-5 relative">
+      <div className="absolute bottom-0 left-0 w-1 h-4 bg-gradient-to-t from-green-500 to-emerald-400 rounded-t" />
+      <div className="absolute bottom-0 left-2 w-1 h-3 bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t" />
+      <div className="absolute bottom-0 left-4 w-1 h-5 bg-gradient-to-t from-purple-500 to-violet-400 rounded-t" />
+      <div className="absolute top-0 right-0 w-2 h-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full shadow-lg" />
+    </div>
+  </div>
+);
+
+const CompareIcon = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <div className="w-5 h-5 relative">
+      <div className="absolute left-0 top-1 w-2 h-3 bg-gradient-to-br from-cyan-400 to-blue-500 rounded transform -rotate-12 shadow-md" />
+      <div className="absolute right-0 top-1 w-2 h-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded transform rotate-12 shadow-md" />
+      <div className="absolute inset-x-2 top-2.5 h-0.5 bg-gradient-to-r from-cyan-300 to-purple-300 rounded-full" />
+    </div>
+  </div>
+);
+
+const LeadsIcon = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <div className="w-5 h-5 relative">
+      <div className="absolute top-0 left-1 w-3 h-3 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full" />
+      <div className="absolute bottom-1 left-0 w-2 h-2 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-80" />
+      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-70" />
+      <div className="absolute top-1 right-1 w-1 h-1 bg-gradient-to-br from-purple-300 to-pink-400 rounded-full" />
+    </div>
+  </div>
+);
+
+const ReportsIcon = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`}>
+    <div className="w-5 h-5 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-400 to-gray-500 rounded-sm shadow-md" />
+      <div className="absolute top-1 left-1 right-1 h-0.5 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-full" />
+      <div className="absolute top-2.5 left-1 right-2 h-0.5 bg-gradient-to-r from-purple-300 to-pink-300 rounded-full" />
+      <div className="absolute bottom-1 left-1 right-3 h-0.5 bg-gradient-to-r from-green-300 to-emerald-300 rounded-full" />
+    </div>
+  </div>
+);
 
 const menuItems = [
   {
     title: "Dashboard",
     url: "/",
-    icon: LayoutDashboard
+    icon: DashboardIcon
   },
   {
     title: "Análises",
     url: "/analytics",
-    icon: BarChart3
+    icon: AnalyticsIcon
   },
   {
     title: "Comparativo",
     url: "/comparativo",
-    icon: GitCompare
+    icon: CompareIcon
   },
   {
     title: "Leads",
     url: "/leads",
-    icon: Users
+    icon: LeadsIcon
   },
   {
     title: "Relatórios",
     url: "/reports",
-    icon: FileText
+    icon: ReportsIcon
   }
 ];
 
@@ -78,7 +133,7 @@ export function AppSidebar() {
                     }`}
                   >
                     <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                      <item.icon className="transition-transform duration-300 group-hover:scale-110" />
                       <span className="group-hover:text-white transition-colors">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
