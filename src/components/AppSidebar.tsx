@@ -3,85 +3,87 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 
-// Ícones 3D exatos do segundo print
-const DashboardIcon = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="w-6 h-6 relative">
-      {/* Fundo principal com gradiente azul */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-lg" />
-      {/* Grade de pontos 3x3 */}
-      <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute top-1/2 transform -translate-y-1/2 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute top-1/2 transform -translate-y-1/2 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute bottom-1.5 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
-      <div className="absolute bottom-1.5 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
-      {/* Sombra 3D */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
+// Ícones 3D seguindo as especificações exatas
+const DashboardIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-md transform rotate-3">
+      <div className="absolute inset-1 bg-gray-800 rounded-md">
+        <div className="grid grid-cols-2 gap-0.5 p-1">
+          <div className="bg-gradient-to-r from-blue-300 to-blue-400 rounded-sm h-2"></div>
+          <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-sm h-2"></div>
+          <div className="bg-gradient-to-r from-blue-500 to-blue-400 rounded-sm h-1"></div>
+          <div className="bg-gradient-to-r from-blue-300 to-blue-400 rounded-sm h-1"></div>
+        </div>
+      </div>
     </div>
   </div>
 );
 
-const AnalyticsIcon = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="w-6 h-6 relative">
-      {/* Fundo verde */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-lg" />
-      {/* Barras do gráfico */}
-      <div className="absolute bottom-1.5 left-1.5 w-1 h-3 bg-white rounded-t opacity-90" />
-      <div className="absolute bottom-1.5 left-3 w-1 h-4 bg-white rounded-t opacity-90" />
-      <div className="absolute bottom-1.5 right-2 w-1 h-2 bg-white rounded-t opacity-90" />
-      {/* Sombra 3D */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
+const AnalyticsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-md transform -rotate-2">
+      <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
+        <div className="flex items-end justify-between h-full gap-0.5">
+          <div className="bg-gradient-to-t from-green-400 to-green-300 rounded-sm w-1 h-2/3"></div>
+          <div className="bg-gradient-to-t from-green-500 to-green-400 rounded-sm w-1 h-full"></div>
+          <div className="bg-gradient-to-t from-green-400 to-green-300 rounded-sm w-1 h-3/4"></div>
+          <div className="bg-gradient-to-t from-green-300 to-green-200 rounded-sm w-1 h-1/2"></div>
+        </div>
+      </div>
     </div>
   </div>
 );
 
-const CompareIcon = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="w-6 h-6 relative">
-      {/* Fundo cyan */}
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-lg" />
-      {/* Ícone de comparação (duas barras lado a lado) */}
-      <div className="absolute top-1.5 left-1.5 bottom-1.5 w-1.5 bg-white rounded opacity-90" />
-      <div className="absolute top-2 right-1.5 bottom-1.5 w-1.5 bg-white rounded opacity-90" />
-      {/* Linha conectora */}
-      <div className="absolute top-1/2 left-3.5 right-3.5 h-0.5 bg-white opacity-70" />
-      {/* Sombra 3D */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
+const ComparativoIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-md transform rotate-1">
+      <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
+        <div className="flex items-center justify-center h-full gap-0.5">
+          <div className="flex flex-col gap-0.5">
+            <div className="w-1 h-2 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
+            <div className="w-1 h-1 bg-gradient-to-t from-cyan-300 to-cyan-200 rounded-sm"></div>
+          </div>
+          <div className="w-0.5 h-1.5 bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-full"></div>
+          <div className="flex flex-col gap-0.5">
+            <div className="w-1 h-1.5 bg-gradient-to-t from-cyan-300 to-cyan-200 rounded-sm"></div>
+            <div className="w-1 h-1.5 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );
 
-const LeadsIcon = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="w-6 h-6 relative">
-      {/* Fundo laranja */}
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-lg" />
-      {/* Ícone de pessoa */}
-      <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full opacity-90" />
-      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-white rounded-t-full opacity-90" />
-      {/* Sombra 3D */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
+const LeadsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-md transform rotate-2">
+      <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex gap-0.5 mb-0.5">
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-orange-300 to-orange-400 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full"></div>
+          </div>
+          <div className="w-3 h-0.5 bg-gradient-to-r from-orange-300 to-orange-400 rounded-full"></div>
+          <div className="w-2 h-0.5 bg-gradient-to-r from-orange-400 to-orange-300 rounded-full mt-0.5"></div>
+        </div>
+      </div>
     </div>
   </div>
 );
 
-const ReportsIcon = ({ className }: { className?: string }) => (
-  <div className={`relative ${className}`}>
-    <div className="w-6 h-6 relative">
-      {/* Fundo roxo */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg" />
-      {/* Linhas do documento */}
-      <div className="absolute top-1.5 left-1.5 right-1.5 h-0.5 bg-white rounded opacity-90" />
-      <div className="absolute top-2.5 left-1.5 right-2 h-0.5 bg-white rounded opacity-90" />
-      <div className="absolute top-3.5 left-1.5 right-1.5 h-0.5 bg-white rounded opacity-90" />
-      <div className="absolute bottom-1.5 left-1.5 right-3 h-0.5 bg-white rounded opacity-90" />
-      {/* Sombra 3D */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
+const ReportsIcon3D = ({ className }: { className?: string }) => (
+  <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-md transform -rotate-1">
+      <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
+        <div className="space-y-0.5">
+          <div className="w-full h-0.5 bg-gradient-to-r from-cyan-300 to-cyan-400 rounded-full"></div>
+          <div className="w-3/4 h-0.5 bg-gradient-to-r from-cyan-400 to-cyan-300 rounded-full"></div>
+          <div className="flex gap-0.5">
+            <div className="flex-1 h-1 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
+            <div className="flex-1 h-1.5 bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-sm"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );
@@ -90,27 +92,27 @@ const menuItems = [
   {
     title: "Dashboard",
     url: "/",
-    icon: DashboardIcon
+    icon: DashboardIcon3D
   },
   {
     title: "Análises",
     url: "/analytics",
-    icon: AnalyticsIcon
+    icon: AnalyticsIcon3D
   },
   {
     title: "Comparativo",
     url: "/comparativo",
-    icon: CompareIcon
+    icon: ComparativoIcon3D
   },
   {
     title: "Leads",
     url: "/leads",
-    icon: LeadsIcon
+    icon: LeadsIcon3D
   },
   {
     title: "Relatórios",
     url: "/reports",
-    icon: ReportsIcon
+    icon: ReportsIcon3D
   }
 ];
 
