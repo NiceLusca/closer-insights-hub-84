@@ -2,6 +2,13 @@
 import type { Lead } from "@/types/lead";
 import { calculateStandardizedMetrics, validateMetricsConsistency } from "@/utils/metricsDefinitions";
 
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+}
+
 export function calculateMetrics(leads: Lead[]) {
   console.log('🔄 [LEGACY] Função calculateMetrics (usando métricas padronizadas)');
   
