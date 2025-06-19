@@ -109,7 +109,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
 
   const getWinnerCellClass = (isWinner: boolean) => {
     if (!isWinner) return '';
-    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden rounded-lg';
+    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden rounded-xl';
   };
 
   const WinnerIcon = ({ show }: { show: boolean }) => {

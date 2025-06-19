@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export type ComparisonType = 'closer' | 'period' | 'origem';
+export type ComparisonType = 'period' | 'origem';
 
 interface ComparisonTypeSelectorProps {
   selectedType: ComparisonType;
@@ -12,11 +12,6 @@ interface ComparisonTypeSelectorProps {
 
 export const ComparisonTypeSelector = ({ selectedType, onTypeChange }: ComparisonTypeSelectorProps) => {
   const types = [
-    { 
-      key: 'closer' as ComparisonType, 
-      label: 'Closers',
-      description: 'Compare performance entre closers'
-    },
     { 
       key: 'period' as ComparisonType, 
       label: 'Períodos',
@@ -37,7 +32,7 @@ export const ComparisonTypeSelector = ({ selectedType, onTypeChange }: Compariso
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {types.map(type => (
             <Button
               key={type.key}
