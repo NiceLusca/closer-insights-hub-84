@@ -47,15 +47,12 @@ export const ComparisonFilters = React.memo(({
       <CardContent className="space-y-4">
         {comparisonType === 'closer' && (
           <div>
-            <label className="text-sm text-gray-400 mb-2 block">
-              Closers (selecione 2 para comparar):
-            </label>
             <FilterSelect
+              label="Closers (selecione 2 para comparar):"
               options={closerOptions}
               selectedValues={selectedClosers}
-              onSelectionChange={onClosersChange}
+              onChange={onClosersChange}
               placeholder="Selecione closers..."
-              maxSelections={2}
             />
             {selectedClosers.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
@@ -67,15 +64,12 @@ export const ComparisonFilters = React.memo(({
 
         {comparisonType === 'origem' && (
           <div>
-            <label className="text-sm text-gray-400 mb-2 block">
-              Origens (selecione 2 para comparar):
-            </label>
             <FilterSelect
+              label="Origens (selecione 2 para comparar):"
               options={originOptions}
               selectedValues={selectedOrigins}
-              onSelectionChange={onOriginsChange}
+              onChange={onOriginsChange}
               placeholder="Selecione origens..."
-              maxSelections={2}
             />
             {selectedOrigins.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
