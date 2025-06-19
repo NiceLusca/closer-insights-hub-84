@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { useGlobalFilters } from "@/contexts/FilterContext";
+import { PageHeader } from "@/components/PageHeader";
 import { DashboardHeader } from "@/components/Dashboard/DashboardHeader";
 import { FiltersPanel } from "@/components/Dashboard/FiltersPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
@@ -79,6 +79,11 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mobile-spacing">
+        <PageHeader 
+          title="Analytics Dashboard"
+          description="Visão geral completa dos seus leads e performance"
+        />
+
         <FiltersPanel
           showFilters={showFilters}
           tempDateRange={tempDateRange}

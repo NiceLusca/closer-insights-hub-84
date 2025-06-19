@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,7 +18,7 @@ interface ComparisonTableProps {
 export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTableProps) => {
   if (!comparisonData) {
     return (
-      <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-lg">
+      <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl">
         <CardContent className="text-center py-8">
           <p className="text-gray-400">Selecione os parâmetros para ver a comparação</p>
         </CardContent>
@@ -109,7 +108,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
 
   const getWinnerCellClass = (isWinner: boolean) => {
     if (!isWinner) return '';
-    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden rounded-lg';
+    return 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-400/30 relative overflow-hidden rounded-2xl';
   };
 
   const WinnerIcon = ({ show }: { show: boolean }) => {
@@ -120,7 +119,7 @@ export const ComparisonTable = React.memo(({ comparisonData }: ComparisonTablePr
   };
 
   return (
-    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-lg animate-fade-in-up">
+    <Card className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 rounded-xl animate-fade-in-up">
       <CardHeader>
         <CardTitle className="text-xl font-bold text-gray-100 text-center">
           Comparação Detalhada

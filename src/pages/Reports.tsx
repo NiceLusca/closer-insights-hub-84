@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Download, Calendar, Construction } from 'lucide-react';
@@ -12,7 +11,6 @@ const Reports = () => {
         <PageHeader 
           title="Relatórios"
           description="Exporte dados e gere relatórios personalizados"
-          iconType="reports"
         />
 
         {/* Banner de desenvolvimento */}

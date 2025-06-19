@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLeadsData } from "@/hooks/useLeadsData";
 import { useComparisonData } from "@/hooks/useComparisonData";
+import { PageHeader } from "@/components/PageHeader";
 import { PeriodSelector } from "@/components/Comparison/PeriodSelector";
 import { ComparisonTypeSelector, type ComparisonType } from "@/components/Comparison/ComparisonTypeSelector";
 import { ComparisonFilters } from "@/components/Comparison/ComparisonFilters";
@@ -10,7 +10,6 @@ import { TrendComparison } from "@/components/Comparison/TrendComparison";
 import { PerformanceMatrix } from "@/components/Comparison/PerformanceMatrix";
 import { InsightsPanel } from "@/components/Comparison/InsightsPanel";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
-import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -25,7 +24,6 @@ const Comparativo = () => {
   });
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([]);
 
-  // Map ComparisonType to the format expected by useComparisonData
   const mappedComparisonType = comparisonType === 'period' ? 'temporal' : 'origem';
 
   const { comparisonData, insights, isComparing } = useComparisonData({
@@ -49,7 +47,6 @@ const Comparativo = () => {
         <PageHeader 
           title="Análise Comparativa"
           description="Compare períodos e origens para identificar tendências e oportunidades"
-          iconType="comparativo"
         />
         
         {/* Status card */}
