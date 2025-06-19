@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
@@ -88,6 +87,26 @@ const ReportsIcon3D = ({
     </div>
   </div>;
 
+const CompareIcon3D = ({
+  className
+}: {
+  className?: string;
+}) => <div className={`relative ${className}`} style={{
+  width: '28px',
+  height: '28px'
+}}>
+    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-md transform rotate-1">
+      <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
+        <div className="grid grid-cols-2 gap-0.5 h-full">
+          <div className="bg-gradient-to-b from-cyan-300 to-cyan-400 rounded-sm"></div>
+          <div className="bg-gradient-to-b from-cyan-500 to-cyan-400 rounded-sm"></div>
+          <div className="bg-gradient-to-b from-cyan-400 to-cyan-300 rounded-sm"></div>
+          <div className="bg-gradient-to-b from-cyan-600 to-cyan-500 rounded-sm"></div>
+        </div>
+      </div>
+    </div>
+  </div>;
+
 const menuItems = [{
   title: "Dashboard",
   url: "/",
@@ -96,6 +115,10 @@ const menuItems = [{
   title: "Análises",
   url: "/analytics",
   icon: AnalyticsIcon3D
+}, {
+  title: "Comparativo",
+  url: "/comparativo",
+  icon: CompareIcon3D
 }, {
   title: "Leads",
   url: "/leads",

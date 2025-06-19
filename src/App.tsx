@@ -16,9 +16,8 @@ import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/Leads";
 import Analytics from "@/pages/Analytics";
 import Reports from "@/pages/Reports";
+import Comparativo from "@/pages/Comparativo";
 import NotFound from "@/pages/NotFound";
-
-const queryClient = new QueryClient();
 
 function App() {
   return (
@@ -39,6 +38,7 @@ function App() {
                     <Route path="/leads" element={<Leads />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/reports" element={<Reports />} />
+                    <Route path="/comparativo" element={<Comparativo />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </SidebarInset>
