@@ -3,58 +3,85 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 
-// Ícones com mais personalidade usando múltiplos elementos
+// Ícones 3D exatos do segundo print
 const DashboardIcon = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`}>
-    <div className="w-5 h-5 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg opacity-80" />
-      <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-white rounded-sm opacity-90" />
-      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-sm opacity-70" />
-      <div className="absolute bottom-1 left-1 w-1.5 h-1.5 bg-white rounded-sm opacity-70" />
-      <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-white rounded-sm opacity-90" />
+    <div className="w-6 h-6 relative">
+      {/* Fundo principal com gradiente azul */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-lg" />
+      {/* Grade de pontos 3x3 */}
+      <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute top-1/2 transform -translate-y-1/2 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute top-1/2 transform -translate-y-1/2 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute bottom-1.5 left-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-90" />
+      <div className="absolute bottom-1.5 right-1.5 w-1 h-1 bg-white rounded-full opacity-90" />
+      {/* Sombra 3D */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
     </div>
   </div>
 );
 
 const AnalyticsIcon = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`}>
-    <div className="w-5 h-5 relative">
-      <div className="absolute bottom-0 left-0 w-1 h-4 bg-gradient-to-t from-green-500 to-emerald-400 rounded-t" />
-      <div className="absolute bottom-0 left-2 w-1 h-3 bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t" />
-      <div className="absolute bottom-0 left-4 w-1 h-5 bg-gradient-to-t from-purple-500 to-violet-400 rounded-t" />
-      <div className="absolute top-0 right-0 w-2 h-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full shadow-lg" />
+    <div className="w-6 h-6 relative">
+      {/* Fundo verde */}
+      <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-lg" />
+      {/* Barras do gráfico */}
+      <div className="absolute bottom-1.5 left-1.5 w-1 h-3 bg-white rounded-t opacity-90" />
+      <div className="absolute bottom-1.5 left-3 w-1 h-4 bg-white rounded-t opacity-90" />
+      <div className="absolute bottom-1.5 right-2 w-1 h-2 bg-white rounded-t opacity-90" />
+      {/* Sombra 3D */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
     </div>
   </div>
 );
 
 const CompareIcon = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`}>
-    <div className="w-5 h-5 relative">
-      <div className="absolute left-0 top-1 w-2 h-3 bg-gradient-to-br from-cyan-400 to-blue-500 rounded transform -rotate-12 shadow-md" />
-      <div className="absolute right-0 top-1 w-2 h-3 bg-gradient-to-br from-purple-400 to-pink-500 rounded transform rotate-12 shadow-md" />
-      <div className="absolute inset-x-2 top-2.5 h-0.5 bg-gradient-to-r from-cyan-300 to-purple-300 rounded-full" />
+    <div className="w-6 h-6 relative">
+      {/* Fundo cyan */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-lg" />
+      {/* Ícone de comparação (duas barras lado a lado) */}
+      <div className="absolute top-1.5 left-1.5 bottom-1.5 w-1.5 bg-white rounded opacity-90" />
+      <div className="absolute top-2 right-1.5 bottom-1.5 w-1.5 bg-white rounded opacity-90" />
+      {/* Linha conectora */}
+      <div className="absolute top-1/2 left-3.5 right-3.5 h-0.5 bg-white opacity-70" />
+      {/* Sombra 3D */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
     </div>
   </div>
 );
 
 const LeadsIcon = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`}>
-    <div className="w-5 h-5 relative">
-      <div className="absolute top-0 left-1 w-3 h-3 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full" />
-      <div className="absolute bottom-1 left-0 w-2 h-2 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-80" />
-      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-70" />
-      <div className="absolute top-1 right-1 w-1 h-1 bg-gradient-to-br from-purple-300 to-pink-400 rounded-full" />
+    <div className="w-6 h-6 relative">
+      {/* Fundo laranja */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-lg" />
+      {/* Ícone de pessoa */}
+      <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-white rounded-full opacity-90" />
+      <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-white rounded-t-full opacity-90" />
+      {/* Sombra 3D */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
     </div>
   </div>
 );
 
 const ReportsIcon = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`}>
-    <div className="w-5 h-5 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-400 to-gray-500 rounded-sm shadow-md" />
-      <div className="absolute top-1 left-1 right-1 h-0.5 bg-gradient-to-r from-blue-300 to-cyan-300 rounded-full" />
-      <div className="absolute top-2.5 left-1 right-2 h-0.5 bg-gradient-to-r from-purple-300 to-pink-300 rounded-full" />
-      <div className="absolute bottom-1 left-1 right-3 h-0.5 bg-gradient-to-r from-green-300 to-emerald-300 rounded-full" />
+    <div className="w-6 h-6 relative">
+      {/* Fundo roxo */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow-lg" />
+      {/* Linhas do documento */}
+      <div className="absolute top-1.5 left-1.5 right-1.5 h-0.5 bg-white rounded opacity-90" />
+      <div className="absolute top-2.5 left-1.5 right-2 h-0.5 bg-white rounded opacity-90" />
+      <div className="absolute top-3.5 left-1.5 right-1.5 h-0.5 bg-white rounded opacity-90" />
+      <div className="absolute bottom-1.5 left-1.5 right-3 h-0.5 bg-white rounded opacity-90" />
+      {/* Sombra 3D */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
     </div>
   </div>
 );
@@ -91,7 +118,7 @@ export function AppSidebar() {
   const location = useLocation();
   
   return (
-    <Sidebar className="bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl w-56">
+    <Sidebar className="bg-gradient-to-b from-gray-900/95 to-slate-900/95 backdrop-blur-xl border-r-0">
       <SidebarHeader className="p-6 border-b border-gray-700/30">
         <div className="flex items-center gap-3">
           <img 
