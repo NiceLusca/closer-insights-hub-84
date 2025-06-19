@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar";
 
-// Ícones 3D seguindo as especificações exatas
+// Ícones 3D com cores bem distintas
 const DashboardIcon3D = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
     <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg shadow-md transform rotate-3">
@@ -21,13 +20,13 @@ const DashboardIcon3D = ({ className }: { className?: string }) => (
 
 const AnalyticsIcon3D = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
-    <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 rounded-lg shadow-md transform -rotate-2">
+    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg shadow-md transform -rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="flex items-end justify-between h-full gap-0.5">
-          <div className="bg-gradient-to-t from-green-400 to-green-300 rounded-sm w-1 h-2/3"></div>
-          <div className="bg-gradient-to-t from-green-500 to-green-400 rounded-sm w-1 h-full"></div>
-          <div className="bg-gradient-to-t from-green-400 to-green-300 rounded-sm w-1 h-3/4"></div>
-          <div className="bg-gradient-to-t from-green-300 to-green-200 rounded-sm w-1 h-1/2"></div>
+          <div className="bg-gradient-to-t from-emerald-400 to-emerald-300 rounded-sm w-1 h-2/3"></div>
+          <div className="bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-sm w-1 h-full"></div>
+          <div className="bg-gradient-to-t from-emerald-400 to-emerald-300 rounded-sm w-1 h-3/4"></div>
+          <div className="bg-gradient-to-t from-emerald-300 to-emerald-200 rounded-sm w-1 h-1/2"></div>
         </div>
       </div>
     </div>
@@ -36,17 +35,17 @@ const AnalyticsIcon3D = ({ className }: { className?: string }) => (
 
 const ComparativoIcon3D = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
-    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-md transform rotate-1">
+    <div className="absolute inset-0 bg-gradient-to-br from-pink-400 to-pink-600 rounded-lg shadow-md transform rotate-1">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="flex items-center justify-center h-full gap-0.5">
           <div className="flex flex-col gap-0.5">
-            <div className="w-1 h-2 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
-            <div className="w-1 h-1 bg-gradient-to-t from-cyan-300 to-cyan-200 rounded-sm"></div>
+            <div className="w-1 h-2 bg-gradient-to-t from-pink-400 to-pink-300 rounded-sm"></div>
+            <div className="w-1 h-1 bg-gradient-to-t from-pink-300 to-pink-200 rounded-sm"></div>
           </div>
-          <div className="w-0.5 h-1.5 bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-full"></div>
+          <div className="w-0.5 h-1.5 bg-gradient-to-t from-pink-500 to-pink-400 rounded-full"></div>
           <div className="flex flex-col gap-0.5">
-            <div className="w-1 h-1.5 bg-gradient-to-t from-cyan-300 to-cyan-200 rounded-sm"></div>
-            <div className="w-1 h-1.5 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
+            <div className="w-1 h-1.5 bg-gradient-to-t from-pink-300 to-pink-200 rounded-sm"></div>
+            <div className="w-1 h-1.5 bg-gradient-to-t from-pink-400 to-pink-300 rounded-sm"></div>
           </div>
         </div>
       </div>
@@ -56,15 +55,15 @@ const ComparativoIcon3D = ({ className }: { className?: string }) => (
 
 const LeadsIcon3D = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
-    <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-md transform rotate-2">
+    <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg shadow-md transform rotate-2">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="flex flex-col items-center justify-center h-full">
           <div className="flex gap-0.5 mb-0.5">
-            <div className="w-1.5 h-1.5 bg-gradient-to-br from-orange-300 to-orange-400 rounded-full"></div>
-            <div className="w-1.5 h-1.5 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-amber-300 to-amber-400 rounded-full"></div>
+            <div className="w-1.5 h-1.5 bg-gradient-to-br from-amber-400 to-amber-500 rounded-full"></div>
           </div>
-          <div className="w-3 h-0.5 bg-gradient-to-r from-orange-300 to-orange-400 rounded-full"></div>
-          <div className="w-2 h-0.5 bg-gradient-to-r from-orange-400 to-orange-300 rounded-full mt-0.5"></div>
+          <div className="w-3 h-0.5 bg-gradient-to-r from-amber-300 to-amber-400 rounded-full"></div>
+          <div className="w-2 h-0.5 bg-gradient-to-r from-amber-400 to-amber-300 rounded-full mt-0.5"></div>
         </div>
       </div>
     </div>
@@ -73,14 +72,14 @@ const LeadsIcon3D = ({ className }: { className?: string }) => (
 
 const ReportsIcon3D = ({ className }: { className?: string }) => (
   <div className={`relative ${className}`} style={{ width: '28px', height: '28px' }}>
-    <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg shadow-md transform -rotate-1">
+    <div className="absolute inset-0 bg-gradient-to-br from-violet-400 to-violet-600 rounded-lg shadow-md transform -rotate-1">
       <div className="absolute inset-1 bg-gray-800 rounded-md p-1">
         <div className="space-y-0.5">
-          <div className="w-full h-0.5 bg-gradient-to-r from-cyan-300 to-cyan-400 rounded-full"></div>
-          <div className="w-3/4 h-0.5 bg-gradient-to-r from-cyan-400 to-cyan-300 rounded-full"></div>
+          <div className="w-full h-0.5 bg-gradient-to-r from-violet-300 to-violet-400 rounded-full"></div>
+          <div className="w-3/4 h-0.5 bg-gradient-to-r from-violet-400 to-violet-300 rounded-full"></div>
           <div className="flex gap-0.5">
-            <div className="flex-1 h-1 bg-gradient-to-t from-cyan-400 to-cyan-300 rounded-sm"></div>
-            <div className="flex-1 h-1.5 bg-gradient-to-t from-cyan-500 to-cyan-400 rounded-sm"></div>
+            <div className="flex-1 h-1 bg-gradient-to-t from-violet-400 to-violet-300 rounded-sm"></div>
+            <div className="flex-1 h-1.5 bg-gradient-to-t from-violet-500 to-violet-400 rounded-sm"></div>
           </div>
         </div>
       </div>
