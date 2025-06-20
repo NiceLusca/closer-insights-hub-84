@@ -20,27 +20,39 @@ export function useFastLeadsData() {
   const backgroundUpdateRef = useRef<boolean>(false);
   const initialLoadRef = useRef<boolean>(false);
 
-  // Carregamento inicial RÁPIDO do cache Supabase
+  // FASE 6: Carregamento do cache com validação melhorada
   const loadFromCache = async (): Promise<boolean> => {
-    console.log('🚀 [FAST-LEADS] Iniciando carregamento rápido do Supabase...');
+    console.log('🚀 [FAST-LEADS] FASE 7 - Carregamento super otimizado...');
     
     try {
       const cachedLeads = await SupabaseCache.getLeadsFromCache();
       const status = await SupabaseCache.getCacheStatus();
       
       if (cachedLeads && cachedLeads.length > 0) {
-        console.log(`⚡ [FAST-LEADS] Carregamento instantâneo: ${cachedLeads.length} leads do cache`);
+        console.log(`⚡ [FAST-LEADS] Cache encontrado: ${cachedLeads.length} leads`);
+        
+        // NOVO: Validar qualidade dos dados
+        const leadsComData = cachedLeads.filter(lead => lead.parsedDate || lead.data);
+        const leadsComValor = cachedLeads.filter(lead => 
+          (lead.Valor && lead.Valor > 0) || 
+          (lead['Venda Completa'] && lead['Venda Completa'] > 0) ||
+          (lead.recorrente && lead.recorrente > 0)
+        );
+        
+        console.log(`📊 [FAST-LEADS] Qualidade: ${leadsComData.length} c/ data, ${leadsComValor.length} c/ valor`);
+        
         setAllLeads(cachedLeads);
         setLastUpdated(status.lastUpdate);
         setCacheStatus({
           source: 'cache',
           ageMinutes: status.ageMinutes,
-          isValid: status.isValid
+          isValid: status.isValid && cachedLeads.length > 10 // Validação de quantidade mínima
         });
         setDataReady(true);
         
-        // Se o cache está válido, parar aqui
-        if (status.isValid && status.ageMinutes < 15) {
+        // FASE 6: Cache é válido se tem dados úteis, não só por idade
+        const hasUsefulData = leadsComData.length > 5 || leadsComValor.length > 2;
+        if (status.isValid && hasUsefulData && status.ageMinutes < 30) {
           setIsLoading(false);
           return true;
         }
@@ -48,237 +60,271 @@ export function useFastLeadsData() {
       
       return false;
     } catch (error) {
-      console.error('❌ [FAST-LEADS] Erro no carregamento do cache:', error);
+      console.error('❌ [FAST-LEADS] Erro no cache:', error);
       return false;
     }
   };
 
-  // Atualização em background via Edge Function - CORRIGIDO
+  // FASE 6: Atualização com retry automático melhorado
   const updateInBackground = async (): Promise<void> => {
     if (backgroundUpdateRef.current) {
-      console.log('⏳ [FAST-LEADS] Atualização em background já em andamento...');
+      console.log('⏳ [FAST-LEADS] Atualização já em andamento...');
       return;
     }
     
     backgroundUpdateRef.current = true;
-    console.log('🔄 [FAST-LEADS] Iniciando atualização silenciosa em background...');
+    console.log('🔄 [FAST-LEADS] FASE 7 - Atualização inteligente...');
     
-    try {
-      // CORREÇÃO: Usar cliente supabase diretamente
-      const { data, error } = await supabase.functions.invoke('sync-leads-data', {
-        body: { force: false }
-      });
-
-      if (error) {
-        console.error('❌ [FAST-LEADS] Erro na Edge Function:', error);
-        throw error;
-      }
-
-      console.log('✅ [FAST-LEADS] Edge Function executada:', data);
-      
-      // Pequeno delay para garantir que o cache foi atualizado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Buscar dados atualizados do cache
-      const leads = await SupabaseCache.getLeadsFromCache();
-      
-      if (leads && leads.length > 0) {
-        setAllLeads(leads);
-        setLastUpdated(new Date());
-        setCacheStatus({
-          source: 'webhook',
-          ageMinutes: 0,
-          isValid: true
-        });
-        
-        // Notificação discreta apenas se houve mudanças significativas
-        const currentCount = allLeads.length;
-        const newCount = leads.length;
-        const difference = Math.abs(newCount - currentCount);
-        
-        if (difference > 5 || currentCount === 0) {
-          toast({
-            title: "🔄 Dados atualizados",
-            description: `${leads.length} leads sincronizados (${difference > 0 ? `+${difference}` : 'sem mudanças'})`,
-            duration: 3000,
-          });
-        }
-        
-        console.log(`✅ [FAST-LEADS] Atualização em background concluída: ${leads.length} leads`);
-      }
-    } catch (error) {
-      console.error('❌ [FAST-LEADS] Erro na atualização em background:', error);
-      
-      // Implementar fallback robusto - tentar usar cache mesmo se Edge Function falhou
-      try {
-        const fallbackLeads = await SupabaseCache.getLeadsFromCache();
-        if (fallbackLeads && fallbackLeads.length > 0) {
-          console.log('🔄 [FAST-LEADS] Usando cache como fallback após erro na Edge Function');
-          setAllLeads(fallbackLeads);
-          setCacheStatus({
-            source: 'cache',
-            ageMinutes: Infinity,
-            isValid: false
-          });
-        }
-      } catch (fallbackError) {
-        console.error('❌ [FAST-LEADS] Erro até no fallback:', fallbackError);
-      }
-      
-      // Notificação discreta de erro apenas se não conseguiu nenhum dado
-      if (allLeads.length === 0) {
-        toast({
-          title: "⚠️ Problema na sincronização",
-          description: "Usando dados em cache. Alguns dados podem estar desatualizados.",
-          variant: "destructive",
-          duration: 5000,
-        });
-      }
-    } finally {
-      backgroundUpdateRef.current = false;
-    }
-  };
-
-  // Carregamento direto via Edge Function com tratamento robusto de erros
-  const loadViaEdgeFunction = async (): Promise<void> => {
-    console.log('🌐 [FAST-LEADS] Carregando dados via Edge Function...');
-    setIsLoading(true);
+    const maxRetries = 3;
+    let attempt = 0;
     
-    try {
-      // CORREÇÃO: Usar cliente supabase diretamente
-      const { data, error } = await supabase.functions.invoke('sync-leads-data', {
-        body: { force: true }
-      });
-      
-      if (error) {
-        console.error('❌ [FAST-LEADS] Erro na Edge Function:', error);
-        throw error;
-      }
-
-      console.log('✅ [FAST-LEADS] Edge Function executada com sucesso:', data);
-      
-      // Pequeno delay para garantir que o cache foi persistido
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const leads = await SupabaseCache.getLeadsFromCache();
-      
-      if (leads && leads.length > 0) {
-        setAllLeads(leads);
-        setLastUpdated(new Date());
-        setCacheStatus({
-          source: 'webhook',
-          ageMinutes: 0,
-          isValid: true
-        });
-        
-        console.log(`✅ [FAST-LEADS] ${leads.length} leads carregados via Edge Function`);
-      } else {
-        console.warn('⚠️ [FAST-LEADS] Nenhum lead retornado da Edge Function');
-        setAllLeads([]);
-      }
-    } catch (error) {
-      console.error('❌ [FAST-LEADS] Erro ao carregar via Edge Function:', error);
-      
-      // Implementar fallback robusto - tentar usar cache mesmo expirado
+    while (attempt < maxRetries) {
       try {
-        const fallbackLeads = await SupabaseCache.getLeadsFromCache();
-        if (fallbackLeads && fallbackLeads.length > 0) {
-          console.log('🔄 [FAST-LEADS] Usando dados em cache como fallback');
-          setAllLeads(fallbackLeads);
+        attempt++;
+        console.log(`🔄 [FAST-LEADS] Tentativa ${attempt}/${maxRetries}...`);
+        
+        const { data, error } = await supabase.functions.invoke('sync-leads-data', {
+          body: { force: false, attempt }
+        });
+
+        if (error) {
+          console.error(`❌ [FAST-LEADS] Erro tentativa ${attempt}:`, error);
+          if (attempt === maxRetries) throw error;
+          
+          // Delay progressivo: 2s, 5s, 10s
+          await new Promise(resolve => setTimeout(resolve, attempt * 2500));
+          continue;
+        }
+
+        console.log('✅ [FAST-LEADS] Edge Function OK:', data);
+        
+        // Aguardar cache ser atualizado
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const leads = await SupabaseCache.getLeadsFromCache();
+        
+        if (leads && leads.length > 0) {
+          const leadsComValor = leads.filter(lead => 
+            (lead.Valor && lead.Valor > 0) || 
+            (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+          );
+          
+          setAllLeads(leads);
+          setLastUpdated(new Date());
           setCacheStatus({
-            source: 'cache',
-            ageMinutes: Infinity,
-            isValid: false
+            source: 'webhook',
+            ageMinutes: 0,
+            isValid: true
           });
           
-          // Não mostrar como erro se conseguiu dados do cache
-          toast({
-            title: "⚠️ Sincronização com problemas",
-            description: `Usando ${fallbackLeads.length} leads do cache local`,
-            variant: "destructive",
-            duration: 4000,
-          });
-        } else {
-          // Só aqui é realmente um erro crítico
-          throw new Error('Nenhum dado disponível nem no cache nem via webhook');
+          const currentCount = allLeads.length;
+          const newCount = leads.length;
+          const difference = Math.abs(newCount - currentCount);
+          
+          // Notificação apenas para mudanças significativas
+          if (difference > 5 || currentCount === 0 || leadsComValor.length > 0) {
+            toast({
+              title: "🔄 Dados atualizados (Fase 7)",
+              description: `${leads.length} leads | ${leadsComValor.length} com valores`,
+              duration: 3000,
+            });
+          }
+          
+          console.log(`✅ [FAST-LEADS] Atualização FASE 7 concluída: ${leads.length} leads`);
+          break;
         }
-      } catch (fallbackError) {
-        console.error('❌ [FAST-LEADS] Erro crítico - sem dados disponíveis:', fallbackError);
-        throw fallbackError;
+      } catch (error) {
+        console.error(`❌ [FAST-LEADS] Erro tentativa ${attempt}:`, error);
+        
+        if (attempt === maxRetries) {
+          // FALLBACK: Usar cache mesmo com erro
+          try {
+            const fallbackLeads = await SupabaseCache.getLeadsFromCache();
+            if (fallbackLeads && fallbackLeads.length > 0) {
+              console.log('🔄 [FAST-LEADS] Usando cache como fallback');
+              setAllLeads(fallbackLeads);
+              setCacheStatus({
+                source: 'cache',
+                ageMinutes: Infinity,
+                isValid: false
+              });
+            }
+          } catch (fallbackError) {
+            console.error('❌ [FAST-LEADS] Erro total:', fallbackError);
+          }
+          
+          if (allLeads.length === 0) {
+            toast({
+              title: "⚠️ Sincronização com problemas",
+              description: "Tentativas de atualização falharam. Usando dados locais.",
+              variant: "destructive",
+              duration: 5000,
+            });
+          }
+        }
       }
-    } finally {
-      setIsLoading(false);
-      setDataReady(true);
     }
+    
+    backgroundUpdateRef.current = false;
   };
 
-  // Atualização manual forçada
-  const forceRefresh = async (): Promise<void> => {
-    console.log('🔄 [FAST-LEADS] Atualização manual forçada...');
+  // FASE 5: Carregamento direto com múltiplas tentativas
+  const loadViaEdgeFunction = async (): Promise<void> => {
+    console.log('🌐 [FAST-LEADS] FASE 7 - Carregamento direto robusto...');
+    setIsLoading(true);
     
-    // Invalidar cache
+    const maxRetries = 3;
+    let attempt = 0;
+    
+    while (attempt < maxRetries) {
+      try {
+        attempt++;
+        console.log(`🌐 [FAST-LEADS] Tentativa direta ${attempt}/${maxRetries}...`);
+        
+        const { data, error } = await supabase.functions.invoke('sync-leads-data', {
+          body: { force: true, attempt }
+        });
+        
+        if (error) {
+          console.error(`❌ [FAST-LEADS] Erro direto ${attempt}:`, error);
+          if (attempt === maxRetries) throw error;
+          
+          await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+          continue;
+        }
+
+        console.log('✅ [FAST-LEADS] Edge Function direta OK:', data);
+        
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        
+        const leads = await SupabaseCache.getLeadsFromCache();
+        
+        if (leads && leads.length > 0) {
+          setAllLeads(leads);
+          setLastUpdated(new Date());
+          setCacheStatus({
+            source: 'webhook',
+            ageMinutes: 0,
+            isValid: true
+          });
+          
+          console.log(`✅ [FAST-LEADS] Carregamento direto FASE 7: ${leads.length} leads`);
+          break;
+        } else {
+          console.warn('⚠️ [FAST-LEADS] Edge Function OK mas sem dados no cache');
+          if (attempt === maxRetries) {
+            setAllLeads([]);
+          }
+        }
+      } catch (error) {
+        console.error(`❌ [FAST-LEADS] Erro carregamento direto ${attempt}:`, error);
+        
+        if (attempt === maxRetries) {
+          // FALLBACK FINAL
+          try {
+            const fallbackLeads = await SupabaseCache.getLeadsFromCache();
+            if (fallbackLeads && fallbackLeads.length > 0) {
+              console.log('🔄 [FAST-LEADS] Fallback para cache existente');
+              setAllLeads(fallbackLeads);
+              setCacheStatus({
+                source: 'cache',
+                ageMinutes: Infinity,
+                isValid: false
+              });
+              
+              toast({
+                title: "⚠️ Problemas na sincronização",
+                description: `Usando ${fallbackLeads.length} leads do cache local`,
+                variant: "destructive",
+                duration: 4000,
+              });
+            } else {
+              throw new Error('Nenhum dado disponível');
+            }
+          } catch (fallbackError) {
+            console.error('💀 [FAST-LEADS] Falha total:', fallbackError);
+            setAllLeads([]);
+            throw fallbackError;
+          }
+        }
+      }
+    }
+    
+    setIsLoading(false);
+    setDataReady(true);
+  };
+
+  // FASE 5: Atualização manual super robusta
+  const forceRefresh = async (): Promise<void> => {
+    console.log('🔄 [FAST-LEADS] FASE 7 - Atualização manual forçada...');
+    
     await SupabaseCache.invalidateCache();
     
-    // Resetar estado
     setIsLoading(true);
     setDataReady(false);
     
     try {
       await loadViaEdgeFunction();
       
+      const finalCount = allLeads.length;
+      const leadsComValor = allLeads.filter(lead => 
+        (lead.Valor && lead.Valor > 0) || 
+        (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+      ).length;
+      
       toast({
-        title: "✅ Dados atualizados!",
-        description: `${allLeads.length} leads recarregados com sucesso`,
+        title: "✅ Dados recarregados (Fase 7)!",
+        description: `${finalCount} leads | ${leadsComValor} com valores monetários`,
       });
     } catch (error) {
       console.error('❌ [FAST-LEADS] Erro na atualização forçada:', error);
       toast({
         title: "❌ Erro na atualização",
-        description: "Não foi possível atualizar os dados. Verifique sua conexão.",
+        description: "Não foi possível recarregar. Tente novamente em alguns minutos.",
         variant: "destructive"
       });
     }
   };
 
-  // Efeito principal - carregamento inicial inteligente com fallbacks robustos
+  // EFEITO PRINCIPAL - FASE 6: Inicialização super inteligente
   useEffect(() => {
     if (initialLoadRef.current) return;
     initialLoadRef.current = true;
     
     const initializeData = async () => {
-      console.log('🎯 [FAST-LEADS] Inicializando sistema unificado Supabase...');
+      console.log('🎯 [FAST-LEADS] FASE 7 - Inicialização inteligente...');
       
       try {
-        // Tentar carregar do cache primeiro
         const loadedFromCache = await loadFromCache();
         
         if (loadedFromCache) {
           setIsLoading(false);
           
-          // Se cache está velho, atualizar em background (não bloquear UI)
-          const status = await SupabaseCache.getCacheStatus();
-          if (!status.isValid || status.ageMinutes >= 15) {
-            console.log('⏰ [FAST-LEADS] Cache expirado, iniciando atualização em background...');
-            setTimeout(() => updateInBackground(), 2000); // Delay maior para não sobrecarregar
+          // Se cache tem poucos dados úteis, atualizar em background
+          const leadsComValor = allLeads.filter(lead => 
+            (lead.Valor && lead.Valor > 0) || (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+          ).length;
+          
+          if (leadsComValor < 5) {
+            console.log('⏰ [FAST-LEADS] Cache com poucos dados úteis, atualizando...');
+            setTimeout(() => updateInBackground(), 3000);
           }
         } else {
-          // Se não tem cache válido, carregar via Edge Function
-          console.log('📭 [FAST-LEADS] Cache vazio/inválido, carregando via Edge Function...');
+          console.log('📭 [FAST-LEADS] Cache vazio/inválido, carregamento direto...');
           await loadViaEdgeFunction();
         }
       } catch (error) {
-        console.error('❌ [FAST-LEADS] Erro crítico na inicialização:', error);
+        console.error('❌ [FAST-LEADS] Erro na inicialização:', error);
         
-        // Fallback final - tentar qualquer coisa no cache
         try {
           const emergencyLeads = await SupabaseCache.getLeadsFromCache();
           if (emergencyLeads && emergencyLeads.length > 0) {
-            console.log('🆘 [FAST-LEADS] Usando dados de emergência do cache');
+            console.log('🆘 [FAST-LEADS] Dados de emergência encontrados');
             setAllLeads(emergencyLeads);
             setCacheStatus({ source: 'cache', ageMinutes: Infinity, isValid: false });
           }
         } catch (emergencyError) {
-          console.error('💀 [FAST-LEADS] Falha total:', emergencyError);
+          console.error('💀 [FAST-LEADS] Falha total na inicialização:', emergencyError);
         }
         
         setIsLoading(false);

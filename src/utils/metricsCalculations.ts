@@ -9,39 +9,61 @@ export function formatCurrency(value: number): string {
   });
 }
 
-// CORREÇÃO CRÍTICA: Função MUITO mais flexível para conversão monetária
+// FASE 4: Função SUPER flexível para conversão monetária
 function parseMonetaryValue(value: any): number {
   if (typeof value === 'number' && !isNaN(value)) {
     return Math.max(0, value);
   }
   
   if (typeof value === 'string' && value.trim()) {
-    // Remover tudo exceto números, vírgulas e pontos
-    let cleaned = value.replace(/[^\d,.-]/g, '');
+    let cleaned = value.trim();
     
-    // Casos especiais para formatos brasileiros
+    // CORREÇÃO FASE 7: Detectar e tratar valores zerados explicitamente
+    if (cleaned === '0' || cleaned === '-' || cleaned === 'R$ 0' || cleaned === 'R$ 0,00') {
+      return 0;
+    }
+    
+    // Remover símbolos de moeda, espaços, e caracteres especiais
+    cleaned = cleaned.replace(/[R$\s]/g, '');
+    
+    // NOVO: Lógica super robusta para formatos brasileiros e internacionais
     if (cleaned.includes(',') && cleaned.includes('.')) {
-      // Formato: 1.234,56 (brasileiro)
-      const parts = cleaned.split(',');
-      if (parts.length === 2 && parts[1].length <= 2) {
+      // Determinar qual é decimal baseado na posição
+      const lastCommaIndex = cleaned.lastIndexOf(',');
+      const lastDotIndex = cleaned.lastIndexOf('.');
+      
+      if (lastCommaIndex > lastDotIndex) {
+        // Formato brasileiro: 1.500,50
         cleaned = cleaned.replace(/\./g, '').replace(',', '.');
       } else {
-        // Formato: 1,234.56 (internacional)
+        // Formato internacional: 1,500.50
         cleaned = cleaned.replace(/,/g, '');
       }
     } else if (cleaned.includes(',')) {
-      // Se só tem vírgula, assumir decimal brasileiro
-      const parts = cleaned.split(',');
-      if (parts.length === 2 && parts[1].length <= 2) {
+      // Só vírgula presente
+      const commaParts = cleaned.split(',');
+      if (commaParts.length === 2 && commaParts[1].length <= 2) {
+        // Provável decimal: 1500,50
         cleaned = cleaned.replace(',', '.');
       } else {
-        // Múltiplas vírgulas = separador de milhares
+        // Provável separador de milhares: 1,500
         cleaned = cleaned.replace(/,/g, '');
       }
     }
     
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? 0 : Math.max(0, parsed);
+    // Tentar parsear múltiplos formatos
+    const formats = [
+      cleaned,
+      cleaned.replace(/[^\d.]/g, ''), // Só números e pontos
+      cleaned.replace(/[^\d]/g, ''), // Só números
+    ];
+    
+    for (const format of formats) {
+      const parsed = parseFloat(format);
+      if (!isNaN(parsed) && parsed > 0) {
+        return Math.max(0, parsed);
+      }
+    }
   }
   
   return 0;
@@ -77,76 +99,99 @@ function getDefaultMetrics(): Metrics {
 }
 
 export function calculateMetrics(leads: Lead[]): Metrics {
-  console.log('📊 [METRICS] === CORREÇÃO EMERGENCIAL FASE 1-2 ===');
+  console.log('📊 [METRICS] === FASE 7 - CÁLCULOS SUPER FLEXÍVEIS ===');
   console.log('📊 [METRICS] Total leads recebidos:', leads.length);
   
   if (!leads || leads.length === 0) {
     return getDefaultMetrics();
   }
 
-  // CORREÇÃO: Filtrar leads válidos (bem mais flexível)
+  // FASE 4: Filtrar leads válidos (super inclusivo)
   const validLeads = leads.filter(lead => 
-    lead.Nome?.trim() || lead.Status?.trim() || lead.origem?.trim() || lead.Closer?.trim() || lead.data?.trim()
+    lead.Nome?.trim() || 
+    lead.Status?.trim() || 
+    lead.origem?.trim() || 
+    lead.Closer?.trim() ||
+    lead.data?.trim() ||
+    lead.Cliente?.trim() ||
+    lead.Vendedor?.trim()
   );
 
   console.log('📊 [METRICS] Leads válidos para cálculo:', validLeads.length);
 
-  // CORREÇÃO CRÍTICA: Detecção de status MUITO mais flexível
+  // FASE 4: Detecção de status SUPER flexível e abrangente
+  const statusKeywords = {
+    agendado: ['agendado', 'agendamento', 'agenda', 'marcado'],
+    confirmado: ['confirmado', 'confirmação', 'confirma', 'ok', 'confirmou'],
+    noShow: ['no show', 'noshow', 'não compareceu', 'faltou', 'ausente', 'não apareceu'],
+    compareceu: ['compareceu', 'apresentou', 'atendido', 'presente', 'veio', 'participou'],
+    fechado: ['fechou', 'fechado', 'vendido', 'comprou', 'cliente', 'pago', 'venda', 'ativo', 'vendeu']
+  };
+
   const agendamentos = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['agendado', 'agendamento', 'agenda', 'marcado', 'confirmado'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return statusKeywords.agendado.some(keyword => status.includes(keyword));
   });
 
   const confirmados = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['confirmado', 'confirmação', 'confirma', 'ok'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return statusKeywords.confirmado.some(keyword => status.includes(keyword));
   });
 
   const noShows = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['no show', 'noshow', 'não compareceu', 'faltou', 'ausente', 'não apareceu'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return statusKeywords.noShow.some(keyword => status.includes(keyword));
   });
 
   const compareceram = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['compareceu', 'apresentou', 'atendido', 'presente', 'veio'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return statusKeywords.compareceu.some(keyword => status.includes(keyword));
   });
 
-  // CORREÇÃO CRÍTICA: Detecção de fechamentos MUITO mais flexível
   const fechadosPorStatus = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['fechado', 'vendido', 'comprou', 'cliente', 'pago', 'fechou', 'venda', 'ativo'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return statusKeywords.fechado.some(keyword => status.includes(keyword));
   });
 
-  // CORREÇÃO CRÍTICA: Calcular receitas com MÚLTIPLOS campos possíveis
+  // FASE 4: Calcular receitas com TODOS os campos possíveis
   let receitaCompleta = 0;
   let receitaRecorrente = 0;
   let vendasCompletas = 0;
   let vendasRecorrentes = 0;
 
   validLeads.forEach(lead => {
-    // Campos possíveis para venda completa
+    // SUPER EXPANSIVO: Todos os campos possíveis para venda completa
     const camposCompleta = [
       'Venda Completa', 'venda_completa', 'vendaCompleta', 
-      'Valor', 'valor', 'Venda', 'venda', 'Preço', 'preço'
+      'Valor', 'valor', 'Venda', 'venda', 'Preço', 'preço',
+      'Receita', 'receita', 'Receita Total', 'receita_total',
+      'Faturamento', 'faturamento',
+      '_valorOriginal' // Campo de debug
     ];
     
     let valorCompleta = 0;
     camposCompleta.forEach(campo => {
-      const valor = parseMonetaryValue(lead[campo]);
-      if (valor > valorCompleta) valorCompleta = valor;
+      if (lead[campo]) {
+        const valor = parseMonetaryValue(lead[campo]);
+        if (valor > valorCompleta) valorCompleta = valor;
+      }
     });
 
-    // Campos possíveis para recorrente
+    // SUPER EXPANSIVO: Todos os campos possíveis para recorrente
     const camposRecorrente = [
       'recorrente', 'Recorrente', 'mensalidade', 'Mensalidade',
-      'mensal', 'Mensal', 'assinatura', 'Assinatura'
+      'mensal', 'Mensal', 'assinatura', 'Assinatura',
+      'Valor Recorrente', 'valor_recorrente', 'ValorRecorrente',
+      'Subscription', 'subscription',
+      '_recorrenteOriginal' // Campo de debug
     ];
     
     let valorRecorrente = 0;
     camposRecorrente.forEach(campo => {
-      const valor = parseMonetaryValue(lead[campo]);
-      if (valor > valorRecorrente) valorRecorrente = valor;
+      if (lead[campo]) {
+        const valor = parseMonetaryValue(lead[campo]);
+        if (valor > valorRecorrente) valorRecorrente = valor;
+      }
     });
 
     if (valorCompleta > 0) {
@@ -162,18 +207,25 @@ export function calculateMetrics(leads: Lead[]): Metrics {
 
   const receitaTotal = receitaCompleta + receitaRecorrente;
 
-  // CORREÇÃO: Calcular fechamentos como máximo entre status e vendas
-  const totalFechamentos = Math.max(fechadosPorStatus.length, vendasCompletas + vendasRecorrentes);
+  // FASE 4: Calcular fechamentos como máximo entre diferentes métricas
+  const totalFechamentos = Math.max(
+    fechadosPorStatus.length, 
+    vendasCompletas + vendasRecorrentes,
+    validLeads.filter(lead => 
+      parseMonetaryValue(lead.Valor || lead['Venda Completa'] || 0) > 0 ||
+      parseMonetaryValue(lead.recorrente || lead.Recorrente || 0) > 0
+    ).length
+  );
 
   const mentorados = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['mentorado', 'cliente', 'ativo', 'aluno', 'estudante'].some(s => status.includes(s));
+    const status = (lead.Status || '').toLowerCase().trim();
+    return ['mentorado', 'cliente', 'ativo', 'aluno', 'estudante', 'member', 'membro'].some(s => status.includes(s));
   }).length;
 
-  // Calcular taxas
+  // FASE 4: Calcular taxas com lógica robusta
   const totalLeads = validLeads.length;
-  const totalCompareceram = Math.max(compareceram.length, totalFechamentos); // Quem fechou, compareceu
-  const totalAgendamentos = Math.max(agendamentos.length, totalCompareceram); // Quem compareceu, agendou
+  const totalCompareceram = Math.max(compareceram.length, totalFechamentos);
+  const totalAgendamentos = Math.max(agendamentos.length, totalCompareceram);
 
   const taxaFechamento = totalLeads > 0 ? (totalFechamentos / totalLeads) * 100 : 0;
   const taxaComparecimento = totalAgendamentos > 0 ? (totalCompareceram / totalAgendamentos) * 100 : 0;
@@ -207,8 +259,10 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     mentorados
   };
 
-  console.log('✅ [METRICS] MÉTRICAS CORRIGIDAS (EMERGENCIAL):');
+  console.log('✅ [METRICS] FASE 7 - MÉTRICAS SUPER FLEXÍVEIS:');
   console.log('💰 [METRICS] - Receita Total:', formatCurrency(receitaTotal));
+  console.log('💰 [METRICS] - Receita Completa:', formatCurrency(receitaCompleta));
+  console.log('💰 [METRICS] - Receita Recorrente:', formatCurrency(receitaRecorrente));
   console.log('📊 [METRICS] - Fechamentos:', totalFechamentos);
   console.log('📈 [METRICS] - Taxa Fechamento:', taxaFechamento.toFixed(2) + '%');
   console.log('👥 [METRICS] - Mentorados:', mentorados);
