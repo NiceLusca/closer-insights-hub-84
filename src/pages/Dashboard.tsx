@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
@@ -20,7 +19,7 @@ import { MathValidation } from "@/components/Dashboard/MathValidation";
 import { FastLoadingIndicator } from "@/components/Dashboard/FastLoadingIndicator";
 
 const Dashboard = () => {
-  // Usar novo hook de carregamento rápido
+  // MUDANÇA CRÍTICA: Usar exclusivamente novo hook unificado
   const { 
     allLeads, 
     isLoading, 
@@ -57,13 +56,14 @@ const Dashboard = () => {
     document.title = 'Clarity - Analytics Dashboard';
   }, []);
 
-  // Converter cacheStatus para string para compatibilidade com DebugInfo
-  const cacheStatusString = cacheStatus.isValid ? 'válido' : 'inválido';
+  // MUDANÇA CRÍTICA: Converter cacheStatus para string de forma segura
+  const cacheStatusString = `${cacheStatus.source} (${cacheStatus.ageMinutes.toFixed(1)}min, ${cacheStatus.isValid ? 'válido' : 'inválido'})`;
 
   console.log('🏠 [DASHBOARD] === ESTADO COMPLETO DO DASHBOARD ===');
   console.log('🏠 [DASHBOARD] Total leads brutos:', allLeads.length);
   console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
   console.log('🏠 [DASHBOARD] Cache status:', cacheStatus);
+  console.log('🏠 [DASHBOARD] Sistema unificado Supabase ativo');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 smooth-scroll">
@@ -77,7 +77,7 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mobile-spacing">
-        {/* Indicador de status de carregamento rápido */}
+        {/* MUDANÇA CRÍTICA: Indicador com dados do sistema unificado */}
         <div className="mb-6">
           <FastLoadingIndicator 
             cacheStatus={cacheStatus}
@@ -103,7 +103,7 @@ const Dashboard = () => {
         {(isLoading || isApplyingFilters) && (
           <LoadingState 
             progress={isApplyingFilters ? 100 : 75} 
-            stage={isApplyingFilters ? 'Aplicando filtros...' : 'Carregamento rápido...'}
+            stage={isApplyingFilters ? 'Aplicando filtros...' : 'Carregamento unificado Supabase...'}
           />
         )}
 

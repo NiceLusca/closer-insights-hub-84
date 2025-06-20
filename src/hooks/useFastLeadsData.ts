@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { webhookService } from "@/services/webhookService";
 import { SupabaseCache } from "@/services/supabaseCache";
 import { useToast } from "@/hooks/use-toast";
 import type { Lead } from "@/types/lead";
@@ -20,16 +19,16 @@ export function useFastLeadsData() {
   const backgroundUpdateRef = useRef<boolean>(false);
   const initialLoadRef = useRef<boolean>(false);
 
-  // Carregamento inicial RÁPIDO do cache
-  const loadFromCache = async () => {
-    console.log('🚀 Iniciando carregamento rápido...');
+  // Carregamento inicial RÁPIDO do cache Supabase
+  const loadFromCache = async (): Promise<boolean> => {
+    console.log('🚀 [FAST-LEADS] Iniciando carregamento rápido do Supabase...');
     
     try {
       const cachedLeads = await SupabaseCache.getLeadsFromCache();
       const status = await SupabaseCache.getCacheStatus();
       
       if (cachedLeads && cachedLeads.length > 0) {
-        console.log(`⚡ Carregamento instantâneo: ${cachedLeads.length} leads do cache`);
+        console.log(`⚡ [FAST-LEADS] Carregamento instantâneo: ${cachedLeads.length} leads do cache`);
         setAllLeads(cachedLeads);
         setLastUpdated(status.lastUpdate);
         setCacheStatus({
@@ -48,30 +47,36 @@ export function useFastLeadsData() {
       
       return false;
     } catch (error) {
-      console.error('❌ Erro no carregamento do cache:', error);
+      console.error('❌ [FAST-LEADS] Erro no carregamento do cache:', error);
       return false;
     }
   };
 
-  // Atualização em background sem UI de loading
-  const updateInBackground = async () => {
+  // Atualização em background via Edge Function
+  const updateInBackground = async (): Promise<void> => {
     if (backgroundUpdateRef.current) {
-      console.log('⏳ Atualização em background já em andamento...');
+      console.log('⏳ [FAST-LEADS] Atualização em background já em andamento...');
       return;
     }
     
     backgroundUpdateRef.current = true;
-    console.log('🔄 Iniciando atualização silenciosa em background...');
+    console.log('🔄 [FAST-LEADS] Iniciando atualização silenciosa em background...');
     
     try {
-      const leads = await webhookService.getAllWebhookData();
+      // Usar Edge Function para sincronização
+      const { data, error } = await SupabaseCache.supabase.functions.invoke('sync-leads-data');
+
+      if (error) {
+        console.error('❌ [FAST-LEADS] Erro na Edge Function:', error);
+        throw error;
+      }
+
+      console.log('✅ [FAST-LEADS] Edge Function executada:', data);
+      
+      // Buscar dados atualizados do cache
+      const leads = await SupabaseCache.getLeadsFromCache();
       
       if (leads && leads.length > 0) {
-        // Salvar no cache
-        const rawData = []; // Idealmente pegar os dados brutos do webhook
-        await SupabaseCache.saveLeadsToCache(rawData, leads);
-        
-        // Atualizar estado
         setAllLeads(leads);
         setLastUpdated(new Date());
         setCacheStatus({
@@ -87,10 +92,10 @@ export function useFastLeadsData() {
           duration: 3000,
         });
         
-        console.log(`✅ Atualização em background concluída: ${leads.length} leads`);
+        console.log(`✅ [FAST-LEADS] Atualização em background concluída: ${leads.length} leads`);
       }
     } catch (error) {
-      console.error('❌ Erro na atualização em background:', error);
+      console.error('❌ [FAST-LEADS] Erro na atualização em background:', error);
       
       // Notificação discreta de erro
       toast({
@@ -104,13 +109,13 @@ export function useFastLeadsData() {
     }
   };
 
-  // Carregamento inicial direto do webhook (fallback)
-  const loadFromWebhook = async () => {
-    console.log('🌐 Carregando dados diretamente do webhook...');
+  // Carregamento direto via Edge Function (fallback)
+  const loadViaEdgeFunction = async (): Promise<void> => {
+    console.log('🌐 [FAST-LEADS] Carregando dados via Edge Function...');
     setIsLoading(true);
     
     try {
-      const leads = await webhookService.getAllWebhookData();
+      const leads = await SupabaseCache.forceSyncViaEdgeFunction();
       
       if (leads && leads.length > 0) {
         setAllLeads(leads);
@@ -121,14 +126,26 @@ export function useFastLeadsData() {
           isValid: true
         });
         
-        // Salvar no cache para próxima vez
-        const rawData = []; // Idealmente pegar os dados brutos
-        await SupabaseCache.saveLeadsToCache(rawData, leads);
-        
-        console.log(`✅ ${leads.length} leads carregados do webhook`);
+        console.log(`✅ [FAST-LEADS] ${leads.length} leads carregados via Edge Function`);
+      } else {
+        console.warn('⚠️ [FAST-LEADS] Nenhum lead retornado da Edge Function');
+        setAllLeads([]);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar do webhook:', error);
+      console.error('❌ [FAST-LEADS] Erro ao carregar via Edge Function:', error);
+      
+      // Tentar usar dados em cache mesmo expirados como fallback
+      const fallbackLeads = await SupabaseCache.getLeadsFromCache();
+      if (fallbackLeads && fallbackLeads.length > 0) {
+        console.log('🔄 [FAST-LEADS] Usando dados em cache como fallback');
+        setAllLeads(fallbackLeads);
+        setCacheStatus({
+          source: 'cache',
+          ageMinutes: Infinity,
+          isValid: false
+        });
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -137,8 +154,8 @@ export function useFastLeadsData() {
   };
 
   // Atualização manual forçada
-  const forceRefresh = async () => {
-    console.log('🔄 Atualização manual forçada...');
+  const forceRefresh = async (): Promise<void> => {
+    console.log('🔄 [FAST-LEADS] Atualização manual forçada...');
     
     // Invalidar cache
     await SupabaseCache.invalidateCache();
@@ -148,11 +165,11 @@ export function useFastLeadsData() {
     setDataReady(false);
     
     try {
-      await loadFromWebhook();
+      await loadViaEdgeFunction();
       
       toast({
         title: "✅ Dados atualizados!",
-        description: `${allLeads.length} leads recarregados do webhook`,
+        description: `${allLeads.length} leads recarregados via sincronização`,
       });
     } catch (error) {
       toast({
@@ -169,24 +186,30 @@ export function useFastLeadsData() {
     initialLoadRef.current = true;
     
     const initializeData = async () => {
-      console.log('🎯 Inicializando sistema de dados rápido...');
+      console.log('🎯 [FAST-LEADS] Inicializando sistema unificado Supabase...');
       
-      // Tentar carregar do cache primeiro
-      const loadedFromCache = await loadFromCache();
-      
-      if (loadedFromCache) {
-        setIsLoading(false);
+      try {
+        // Tentar carregar do cache primeiro
+        const loadedFromCache = await loadFromCache();
         
-        // Se cache está velho, atualizar em background
-        const status = await SupabaseCache.getCacheStatus();
-        if (!status.isValid || status.ageMinutes >= 15) {
-          console.log('⏰ Cache expirado, iniciando atualização em background...');
-          setTimeout(() => updateInBackground(), 1000); // Pequeno delay
+        if (loadedFromCache) {
+          setIsLoading(false);
+          
+          // Se cache está velho, atualizar em background
+          const status = await SupabaseCache.getCacheStatus();
+          if (!status.isValid || status.ageMinutes >= 15) {
+            console.log('⏰ [FAST-LEADS] Cache expirado, iniciando atualização em background...');
+            setTimeout(() => updateInBackground(), 1000); // Pequeno delay
+          }
+        } else {
+          // Se não tem cache, carregar via Edge Function
+          console.log('📭 [FAST-LEADS] Cache vazio, carregando via Edge Function...');
+          await loadViaEdgeFunction();
         }
-      } else {
-        // Se não tem cache, carregar do webhook
-        console.log('📭 Cache vazio, carregando do webhook...');
-        await loadFromWebhook();
+      } catch (error) {
+        console.error('❌ [FAST-LEADS] Erro na inicialização:', error);
+        setIsLoading(false);
+        setDataReady(true);
       }
     };
     

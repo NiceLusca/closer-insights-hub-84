@@ -15,10 +15,71 @@ interface CacheMetadata {
 interface LeadsCache {
   id: string;
   raw_data: any;
-  processed_leads: Lead[];
+  processed_leads: any; // JSON from Supabase
   leads_count: number;
   created_at: string;
   updated_at: string;
+}
+
+// Função type-safe para converter JSON do Supabase para Lead[]
+function convertSupabaseLeadsToLocal(supabaseLeads: any[]): Lead[] {
+  if (!Array.isArray(supabaseLeads)) {
+    console.warn('⚠️ Dados do Supabase não são um array:', typeof supabaseLeads);
+    return [];
+  }
+
+  return supabaseLeads.map((item, index) => {
+    try {
+      // Conversão segura de parsedDate
+      let parsedDate: Date | undefined;
+      if (item.parsedDate) {
+        if (typeof item.parsedDate === 'string') {
+          const date = new Date(item.parsedDate);
+          parsedDate = isNaN(date.getTime()) ? undefined : date;
+        } else if (item.parsedDate instanceof Date) {
+          parsedDate = item.parsedDate;
+        }
+      }
+
+      // Construir lead com valores padrão seguros
+      const lead: Lead = {
+        row_number: item.row_number || index + 1,
+        data: item.data || '',
+        Hora: item.Hora || '',
+        Nome: item.Nome || '',
+        'e-mail': item['e-mail'] || '',
+        Whatsapp: item.Whatsapp || '',
+        origem: item.origem || '',
+        Status: item.Status || '',
+        Closer: item.Closer || '',
+        'Venda Completa': typeof item['Venda Completa'] === 'number' ? item['Venda Completa'] : 0,
+        recorrente: typeof item.recorrente === 'number' ? item.recorrente : 0,
+        Valor: item.Valor,
+        Produto: item.Produto,
+        'Coluna 1': item['Coluna 1'],
+        parsedDate
+      };
+
+      return lead;
+    } catch (error) {
+      console.error(`❌ Erro convertendo lead ${index}:`, error, item);
+      // Retornar lead básico em caso de erro
+      return {
+        row_number: index + 1,
+        data: '',
+        Hora: '',
+        Nome: item.Nome || `Lead ${index + 1}`,
+        'e-mail': '',
+        Whatsapp: '',
+        origem: '',
+        Status: '',
+        Closer: '',
+        'Venda Completa': 0,
+        recorrente: 0,
+        parsedDate: undefined
+      } as Lead;
+    }
+  }).filter(lead => lead.Nome?.trim() || lead.Status?.trim()); // Filtrar leads válidos
 }
 
 export class SupabaseCache {
@@ -35,7 +96,7 @@ export class SupabaseCache {
         .single();
 
       if (error || !data) {
-        console.log('📦 Cache metadata não encontrado');
+        console.log('📦 [SUPABASE-CACHE] Cache metadata não encontrado');
         return false;
       }
 
@@ -45,18 +106,18 @@ export class SupabaseCache {
 
       const isValid = data.is_valid && diffMinutes < this.CACHE_DURATION_MINUTES;
       
-      console.log(`📦 Cache válido: ${isValid} (${diffMinutes.toFixed(1)} min atrás)`);
+      console.log(`📦 [SUPABASE-CACHE] Cache válido: ${isValid} (${diffMinutes.toFixed(1)} min atrás)`);
       return isValid;
     } catch (error) {
-      console.error('❌ Erro ao verificar validade do cache:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao verificar validade do cache:', error);
       return false;
     }
   }
 
-  // Buscar leads do cache
+  // Buscar leads do cache com conversão type-safe
   static async getLeadsFromCache(): Promise<Lead[] | null> {
     try {
-      console.log('📦 Buscando leads do cache Supabase...');
+      console.log('📦 [SUPABASE-CACHE] Buscando leads do cache...');
       
       const { data, error } = await supabase
         .from('leads_cache')
@@ -66,24 +127,44 @@ export class SupabaseCache {
         .single();
 
       if (error || !data) {
-        console.log('📦 Cache vazio ou erro:', error?.message);
+        console.log('📦 [SUPABASE-CACHE] Cache vazio ou erro:', error?.message);
         return null;
       }
 
-      const leads = data.processed_leads as unknown as Lead[];
-      console.log(`✅ ${leads.length} leads carregados do cache (${data.updated_at})`);
+      // Validação dos dados antes da conversão
+      if (!data.processed_leads) {
+        console.warn('⚠️ [SUPABASE-CACHE] processed_leads é null/undefined');
+        return null;
+      }
+
+      // Conversão type-safe dos dados JSON para Lead[]
+      const leads = convertSupabaseLeadsToLocal(data.processed_leads as any[]);
+      
+      console.log(`✅ [SUPABASE-CACHE] ${leads.length} leads carregados do cache (${data.updated_at})`);
+      
+      // Validação final
+      if (leads.length === 0) {
+        console.warn('⚠️ [SUPABASE-CACHE] Nenhum lead válido após conversão');
+        return null;
+      }
       
       return leads;
     } catch (error) {
-      console.error('❌ Erro ao buscar leads do cache:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao buscar leads do cache:', error);
       return null;
     }
   }
 
-  // Salvar leads no cache
+  // Salvar leads no cache (já não precisamos mais desta função no frontend)
   static async saveLeadsToCache(rawData: any[], processedLeads: Lead[]): Promise<boolean> {
     try {
-      console.log(`💾 Salvando ${processedLeads.length} leads no cache...`);
+      console.log(`💾 [SUPABASE-CACHE] Salvando ${processedLeads.length} leads no cache...`);
+      
+      // Converter leads para formato JSON safe
+      const leadsForStorage = processedLeads.map(lead => ({
+        ...lead,
+        parsedDate: lead.parsedDate ? lead.parsedDate.toISOString() : undefined
+      }));
       
       // Calcular hash dos dados para detectar mudanças
       const dataHash = this.calculateHash(rawData);
@@ -93,12 +174,12 @@ export class SupabaseCache {
         .from('leads_cache')
         .insert({
           raw_data: rawData as any,
-          processed_leads: processedLeads as any,
+          processed_leads: leadsForStorage as any,
           leads_count: processedLeads.length
         });
 
       if (cacheError) {
-        console.error('❌ Erro ao salvar cache dos leads:', cacheError);
+        console.error('❌ [SUPABASE-CACHE] Erro ao salvar cache dos leads:', cacheError);
         return false;
       }
 
@@ -115,14 +196,14 @@ export class SupabaseCache {
         });
 
       if (metaError) {
-        console.error('❌ Erro ao atualizar metadata:', metaError);
+        console.error('❌ [SUPABASE-CACHE] Erro ao atualizar metadata:', metaError);
         return false;
       }
 
-      console.log('✅ Cache salvo com sucesso no Supabase');
+      console.log('✅ [SUPABASE-CACHE] Cache salvo com sucesso');
       return true;
     } catch (error) {
-      console.error('❌ Erro ao salvar no cache:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao salvar no cache:', error);
       return false;
     }
   }
@@ -135,9 +216,9 @@ export class SupabaseCache {
         .update({ is_valid: false })
         .eq('cache_type', this.CACHE_TYPE);
       
-      console.log('🗑️ Cache invalidado');
+      console.log('🗑️ [SUPABASE-CACHE] Cache invalidado');
     } catch (error) {
-      console.error('❌ Erro ao invalidar cache:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao invalidar cache:', error);
     }
   }
 
@@ -157,10 +238,10 @@ export class SupabaseCache {
           .delete()
           .in('id', idsToDelete);
         
-        console.log(`🧹 ${idsToDelete.length} registros antigos removidos do cache`);
+        console.log(`🧹 [SUPABASE-CACHE] ${idsToDelete.length} registros antigos removidos`);
       }
     } catch (error) {
-      console.error('❌ Erro ao limpar cache antigo:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao limpar cache antigo:', error);
     }
   }
 
@@ -200,7 +281,7 @@ export class SupabaseCache {
         ageMinutes
       };
     } catch (error) {
-      console.error('❌ Erro ao obter status do cache:', error);
+      console.error('❌ [SUPABASE-CACHE] Erro ao obter status do cache:', error);
       return {
         hasCache: false,
         lastUpdate: null,
@@ -208,6 +289,35 @@ export class SupabaseCache {
         isValid: false,
         ageMinutes: Infinity
       };
+    }
+  }
+
+  // Sincronização forçada via Edge Function
+  static async forceSyncViaEdgeFunction(): Promise<Lead[]> {
+    try {
+      console.log('🔄 [SUPABASE-CACHE] Forçando sincronização via Edge Function...');
+      
+      // Invalidar cache atual
+      await this.invalidateCache();
+      
+      // Chamar Edge Function para sincronizar
+      const { data, error } = await supabase.functions.invoke('sync-leads-data', {
+        body: { force: true }
+      });
+
+      if (error) {
+        console.error('❌ [SUPABASE-CACHE] Erro na Edge Function:', error);
+        throw error;
+      }
+
+      console.log('✅ [SUPABASE-CACHE] Edge Function executada com sucesso:', data);
+      
+      // Buscar dados atualizados do cache
+      const leads = await this.getLeadsFromCache();
+      return leads || [];
+    } catch (error) {
+      console.error('❌ [SUPABASE-CACHE] Erro na sincronização forçada:', error);
+      throw error;
     }
   }
 
