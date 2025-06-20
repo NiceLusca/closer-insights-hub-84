@@ -1,8 +1,25 @@
+
 import type { Lead, DateRange, Filters } from "@/types/lead";
 
 export interface FilterContext {
   isTemporalFilter?: boolean; // Para gráficos temporais
   component?: string; // Nome do componente que está filtrando
+}
+
+// Função auxiliar para converter parsedDate em Date se necessário
+function ensureDateObject(dateValue: any): Date | null {
+  if (!dateValue) return null;
+  
+  if (dateValue instanceof Date) {
+    return dateValue;
+  }
+  
+  if (typeof dateValue === 'string') {
+    const parsed = new Date(dateValue);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+  
+  return null;
 }
 
 export function filterLeads(
@@ -21,7 +38,7 @@ export function filterLeads(
   });
   console.log(`🔍 [${component.toUpperCase()}] Filtros ativos:`, filters);
   
-  // INVESTIGAÇÃO ESPECÍFICA: Buscar leads "Alexandra" e "Marcos"
+  // INVESTIGAÇÃO ESPECÍFICA: Buscar leads "Alexandra" e "Marcos" com validação segura
   const leadsAlexandra = leads.filter(lead => 
     lead.Nome && lead.Nome.toLowerCase().includes('alexandra')
   );
@@ -30,22 +47,28 @@ export function filterLeads(
   );
   
   console.log(`🔍 [${component}] LEADS ESPECÍFICOS ENCONTRADOS:`);
-  console.log(`🔍 [${component}] - Alexandra:`, leadsAlexandra.length, leadsAlexandra.map(l => ({
-    Nome: l.Nome,
-    Status: l.Status,
-    origem: l.origem,
-    data: l.parsedDate ? l.parsedDate.toISOString().split('T')[0] : 'sem data',
-    vendaCompleta: l['Venda Completa'],
-    recorrente: l.recorrente
-  })));
-  console.log(`🔍 [${component}] - Marcos:`, leadsMarcos.length, leadsMarcos.map(l => ({
-    Nome: l.Nome,
-    Status: l.Status,
-    origem: l.origem,
-    data: l.parsedDate ? l.parsedDate.toISOString().split('T')[0] : 'sem data',
-    vendaCompleta: l['Venda Completa'],
-    recorrente: l.recorrente
-  })));
+  console.log(`🔍 [${component}] - Alexandra:`, leadsAlexandra.length, leadsAlexandra.map(l => {
+    const safeDate = ensureDateObject(l.parsedDate);
+    return {
+      Nome: l.Nome,
+      Status: l.Status,
+      origem: l.origem,
+      data: safeDate ? safeDate.toISOString().split('T')[0] : 'sem data',
+      vendaCompleta: l['Venda Completa'],
+      recorrente: l.recorrente
+    };
+  }));
+  console.log(`🔍 [${component}] - Marcos:`, leadsMarcos.length, leadsMarcos.map(l => {
+    const safeDate = ensureDateObject(l.parsedDate);
+    return {
+      Nome: l.Nome,
+      Status: l.Status,
+      origem: l.origem,
+      data: safeDate ? safeDate.toISOString().split('T')[0] : 'sem data',
+      vendaCompleta: l['Venda Completa'],
+      recorrente: l.recorrente
+    };
+  }));
   
   const filtered = leads.filter(lead => {
     // MUDANÇA CRÍTICA 1: Ser menos restritivo com status
@@ -59,6 +82,7 @@ export function filterLeads(
     ));
     
     if (isTargetLead) {
+      const safeDate = ensureDateObject(lead.parsedDate);
       console.log(`🎯 [${component}] PROCESSANDO LEAD ALVO:`, {
         Nome: lead.Nome,
         Status: leadStatus,
@@ -69,7 +93,7 @@ export function filterLeads(
           key.toLowerCase().includes('source') || 
           key.toLowerCase().includes('campanha')
         ),
-        data: lead.parsedDate ? lead.parsedDate.toISOString().split('T')[0] : 'sem data',
+        data: safeDate ? safeDate.toISOString().split('T')[0] : 'sem data',
         vendaCompleta: lead['Venda Completa'],
         recorrente: lead.recorrente,
         todosOsCampos: Object.fromEntries(Object.entries(lead as any).filter(([key, value]) => 
@@ -108,9 +132,10 @@ export function filterLeads(
       }
     }
     
-    // 4. MUDANÇA CRÍTICA 2: Filtrar por data com mais flexibilidade
-    if (lead.parsedDate) {
-      const leadDate = new Date(lead.parsedDate);
+    // 4. MUDANÇA CRÍTICA 2: Filtrar por data com validação segura
+    const safeDate = ensureDateObject(lead.parsedDate);
+    if (safeDate) {
+      const leadDate = new Date(safeDate);
       const fromDate = new Date(dateRange.from);
       const toDate = new Date(dateRange.to);
       
@@ -195,7 +220,7 @@ export function filterLeads(
     return true;
   });
   
-  // Log final detalhado
+  // Log final detalhado com validação segura
   const leadsAlexandraFiltrados = filtered.filter(lead => 
     lead.Nome && lead.Nome.toLowerCase().includes('alexandra')
   );
