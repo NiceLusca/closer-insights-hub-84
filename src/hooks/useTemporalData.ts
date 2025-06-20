@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { format, parseISO, isValid, getHours, getDay, subDays, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -47,16 +46,16 @@ export interface TemporalDataResult {
 }
 
 function parseHourFromString(hourString: string): number {
-  if (!hourString) return 12; // Default fallback
+  if (!hourString) return 12;
   
-  // Remover espaços e converter para lowercase
   const cleanHour = hourString.trim().toLowerCase();
   
-  // Padrões para diferentes formatos de hora
+  // Padrões melhorados para formatos brasileiros
   const patterns = [
     /^(\d{1,2}):(\d{2})/, // 8:45, 14:30
-    /^(\d{1,2})h(\d{2})/, // 8h45, 14h30
-    /^(\d{1,2})h$/, // 8h, 14h
+    /^(\d{1,2})h(\d{0,2})/, // 8h45, 14h30, 17h
+    /^(\d{1,2})\.(\d{2})/, // 8.45, 14.30
+    /^(\d{1,2})\s*h/, // 8 h, 14h
     /^(\d{1,2})$/ // 8, 14
   ];
   
@@ -64,29 +63,31 @@ function parseHourFromString(hourString: string): number {
     const match = cleanHour.match(pattern);
     if (match) {
       const hour = parseInt(match[1]);
-      const minutes = match[2] ? parseInt(match[2]) : 0;
       
       // Validar hora
       if (hour >= 0 && hour <= 23) {
-        // Se tiver minutos >= 30, arredondar para próxima hora (opcional)
-        // Por enquanto, vamos manter a hora cheia para compatibilidade
         return hour;
       }
     }
   }
   
-  console.warn(`⚠️ Não foi possível parsear hora: "${hourString}", usando 12h como fallback`);
+  console.warn(`⚠️ Hora não parseada: "${hourString}", usando 12h`);
   return 12;
 }
 
 export function useTemporalData(leads: Lead[]): TemporalDataResult {
   return useMemo(() => {
-    const validLeads = getLeadsExcludingMentorados(leads).filter(lead => 
-      lead.parsedDate && isValid(lead.parsedDate)
-    );
+    console.log('📊 [TEMPORAL] === ANÁLISE TEMPORAL CORRIGIDA (FASE 5) ===');
+    
+    // CORREÇÃO: Ser menos restritivo - incluir leads sem data perfeita
+    const validLeads = getLeadsExcludingMentorados(leads).filter(lead => {
+      // Aceitar leads com parsedDate OU com campo data preenchido
+      return (lead.parsedDate && isValid(lead.parsedDate)) || 
+             (lead.data && lead.data.trim() !== '');
+    });
 
     const totalLeads = validLeads.length;
-    console.log(`📊 Analisando ${totalLeads} leads válidos`);
+    console.log(`📊 [TEMPORAL] Analisando ${totalLeads} leads válidos de ${leads.length} total`);
 
     // Análise por dia da semana
     const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -101,18 +102,37 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     const dayDebugCount: Record<number, number> = {};
 
     validLeads.forEach(lead => {
-      const dayIndex = getDay(lead.parsedDate!);
+      let dayIndex = 1; // Default segunda-feira
+      
+      if (lead.parsedDate && isValid(lead.parsedDate)) {
+        dayIndex = getDay(lead.parsedDate);
+      } else if (lead.data) {
+        // Tentar parsear data alternativa
+        try {
+          const altDate = new Date(lead.data);
+          if (isValid(altDate)) {
+            dayIndex = getDay(altDate);
+          }
+        } catch (e) {
+          // Usar default
+        }
+      }
+      
       dayDebugCount[dayIndex] = (dayDebugCount[dayIndex] || 0) + 1;
       dayOfWeekData[dayIndex].leads++;
-      if (lead.Status === 'Fechou') {
+      
+      // Verificar fechamento
+      if (lead.Status?.toLowerCase().includes('fechou') || 
+          lead.Status?.toLowerCase().includes('vendido') ||
+          lead.Status?.toLowerCase().includes('cliente')) {
         dayOfWeekData[dayIndex].conversoes++;
       }
     });
 
-    console.log('🗓️ Distribuição por dia da semana:');
+    console.log('🗓️ Distribuição por dia (CORRIGIDA):');
     dayNames.forEach((name, index) => {
       const count = dayDebugCount[index] || 0;
-      console.log(`  ${name} (${index}): ${count} leads`);
+      console.log(`  ${name}: ${count} leads`);
     });
 
     dayOfWeekData.forEach(day => {
@@ -132,28 +152,33 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     const hourParseErrors: string[] = [];
 
     validLeads.forEach(lead => {
-      let hour = 12; // Default fallback
+      let hour = 12; // Default meio-dia
       
       if (lead.Hora && typeof lead.Hora === 'string') {
         hour = parseHourFromString(lead.Hora);
         if (hour === 12 && lead.Hora !== '12' && lead.Hora !== '12h' && lead.Hora !== '12:00') {
           hourParseErrors.push(lead.Hora);
         }
-      } else if (lead.parsedDate) {
+      } else if (lead.parsedDate && isValid(lead.parsedDate)) {
         hour = getHours(lead.parsedDate);
       }
 
       hourDebugCount[hour] = (hourDebugCount[hour] || 0) + 1;
       hourData[hour].leads++;
-      if (lead.Status === 'Fechou') {
+      
+      if (lead.Status?.toLowerCase().includes('fechou') || 
+          lead.Status?.toLowerCase().includes('vendido') ||
+          lead.Status?.toLowerCase().includes('cliente')) {
         hourData[hour].conversoes++;
       }
     });
 
-    console.log('🕐 Distribuição por hora do dia:');
-    Object.entries(hourDebugCount).forEach(([hour, count]) => {
-      console.log(`  ${hour}h: ${count} leads`);
-    });
+    console.log('🕐 Distribuição por hora (MELHORADA):');
+    Object.entries(hourDebugCount)
+      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+      .forEach(([hour, count]) => {
+        console.log(`  ${hour}h: ${count} leads`);
+      });
 
     if (hourParseErrors.length > 0) {
       console.warn('⚠️ Horários que não puderam ser parseados (usando 12h):', 
@@ -191,30 +216,28 @@ export function useTemporalData(leads: Lead[]): TemporalDataResult {
     });
 
     // Insights com dados significativos
-    const significantDays = dayOfWeekData.filter(day => 
-      hasSignificantVolume(day.leads, totalLeads)
-    );
-    const significantHours = hourData.filter(hour => 
-      hasSignificantVolume(hour.leads, totalLeads)
-    );
+    const significantDays = dayOfWeekData.filter(day => day.leads >= 1); // Menos restritivo
+    const significantHours = hourData.filter(hour => hour.leads >= 1);
 
     const bestDay = significantDays.length > 0 
-      ? significantDays.reduce((best, day) => day.taxa > best.taxa ? day : best)
+      ? significantDays.reduce((best, day) => 
+          day.leads > best.leads ? day : best) // Baseado em volume, não só taxa
       : null;
     
     const bestHour = significantHours.length > 0
-      ? significantHours.reduce((best, hour) => hour.taxa > best.taxa ? hour : best)
+      ? significantHours.reduce((best, hour) => 
+          hour.leads > best.leads ? hour : best)
       : null;
 
     const peakHours = significantHours
-      .sort((a, b) => b.taxa - a.taxa)
+      .sort((a, b) => b.leads - a.leads) // Ordenar por volume
       .slice(0, 3);
 
-    console.log('🎯 Insights calculados:');
-    console.log('  Melhor dia:', bestDay?.day, `(${bestDay?.taxa}% conversão)`);
-    console.log('  Melhor hora:', bestHour?.hourLabel, `(${bestHour?.taxa}% conversão)`);
-    console.log('  Dias significativos:', significantDays.length, 'de 7');
-    console.log('  Horas significativas:', significantHours.length, 'de 24');
+    console.log('🎯 Insights calculados (OTIMIZADOS):');
+    console.log('  Melhor dia:', bestDay?.day, `(${bestDay?.leads} leads, ${bestDay?.taxa}% conversão)`);
+    console.log('  Melhor hora:', bestHour?.hourLabel, `(${bestHour?.leads} leads)`);
+    console.log('  Dias com dados:', significantDays.length, 'de 7');
+    console.log('  Horas com dados:', significantHours.length, 'de 24');
 
     return {
       dayOfWeekData,

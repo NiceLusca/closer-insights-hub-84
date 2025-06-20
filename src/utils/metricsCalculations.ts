@@ -9,7 +9,35 @@ export function formatCurrency(value: number): string {
   });
 }
 
-// Função auxiliar para retornar métricas padrão
+// CORREÇÃO CRÍTICA: Função melhorada para conversão monetária
+function parseMonetaryValue(value: any): number {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return Math.max(0, value);
+  }
+  
+  if (typeof value === 'string' && value.trim()) {
+    // Remover caracteres não numéricos, manter apenas números, vírgulas e pontos
+    const cleaned = value.replace(/[^\d,.-]/g, '');
+    
+    // Tratar diferentes formatos brasileiros
+    let normalized = cleaned;
+    
+    // Se tem vírgula como decimal (formato brasileiro)
+    if (normalized.includes(',') && !normalized.includes('.')) {
+      normalized = normalized.replace(',', '.');
+    }
+    // Se tem ponto e vírgula (formato: 1.234,56)
+    else if (normalized.includes('.') && normalized.includes(',')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    }
+    
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : Math.max(0, parsed);
+  }
+  
+  return 0;
+}
+
 function getDefaultMetrics(): Metrics {
   return {
     totalLeads: 0,
@@ -35,111 +63,95 @@ function getDefaultMetrics(): Metrics {
     aSerAtendido: 0,
     atendidoNaoFechou: 0,
     perdidoInativo: 0,
-    mentorados: 0 // ADICIONADO CAMPO FALTANTE
+    mentorados: 0
   };
 }
 
 export function calculateMetrics(leads: Lead[]): Metrics {
-  console.log('📊 [METRICS] === CÁLCULO CORRIGIDO DE MÉTRICAS ===');
+  console.log('📊 [METRICS] === CÁLCULO CORRIGIDO (FASE 3) ===');
   console.log('📊 [METRICS] Total leads recebidos:', leads.length);
   
   if (!leads || leads.length === 0) {
-    console.warn('⚠️ [METRICS] Nenhum lead para calcular métricas');
     return getDefaultMetrics();
   }
 
-  // CORREÇÃO: Função para conversão segura de valores monetários
-  const parseMonetaryValue = (value: any): number => {
-    if (typeof value === 'number' && !isNaN(value)) {
-      return Math.max(0, value);
-    }
-    
-    if (typeof value === 'string') {
-      const cleaned = value.replace(/[^\d,.-]/g, '').replace(',', '.');
-      const parsed = parseFloat(cleaned);
-      return isNaN(parsed) ? 0 : Math.max(0, parsed);
-    }
-    
-    return 0;
-  };
+  // CORREÇÃO: Filtrar leads válidos (com nome ou status)
+  const validLeads = leads.filter(lead => 
+    (lead.Nome && lead.Nome.trim()) || (lead.Status && lead.Status.trim())
+  );
 
-  // Separar leads por categoria com logs detalhados
-  const agendamentos = leads.filter(lead => {
+  console.log('📊 [METRICS] Leads válidos para cálculo:', validLeads.length);
+
+  // Categorizar leads por status
+  const agendamentos = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['agendado', 'agendamento'].some(s => status.includes(s));
+    return ['agendado', 'agendamento', 'agenda'].some(s => status.includes(s));
   });
 
-  const confirmados = leads.filter(lead => {
+  const confirmados = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['confirmado', 'confirmação'].some(s => status.includes(s));
+    return ['confirmado', 'confirmação', 'confirma'].some(s => status.includes(s));
   });
 
-  const noShows = leads.filter(lead => {
+  const noShows = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['no show', 'noshow', 'não compareceu', 'faltou'].some(s => status.includes(s));
+    return ['no show', 'noshow', 'não compareceu', 'faltou', 'ausente'].some(s => status.includes(s));
   });
 
-  const compareceram = leads.filter(lead => {
+  const compareceram = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['compareceu', 'apresentou', 'atendido'].some(s => status.includes(s));
+    return ['compareceu', 'apresentou', 'atendido', 'presente'].some(s => status.includes(s));
   });
 
-  // CORREÇÃO: Calcular vendas com validação rigorosa
-  const vendasCompletas = leads.filter(lead => {
-    const vendaCompleta = parseMonetaryValue(lead['Venda Completa']);
-    const isVendaCompleta = vendaCompleta > 0;
-    
-    if (isVendaCompleta) {
-      console.log(`💰 [METRICS] Venda Completa encontrada: ${lead.Nome} - R$ ${vendaCompleta}`);
-    }
-    
-    return isVendaCompleta;
+  // CORREÇÃO CRÍTICA: Calcular vendas com múltiplos campos
+  const vendasCompletas = validLeads.filter(lead => {
+    const campos = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor'];
+    return campos.some(campo => parseMonetaryValue(lead[campo]) > 0);
   });
 
-  const vendasRecorrentes = leads.filter(lead => {
-    const recorrente = parseMonetaryValue(lead.recorrente);
-    const isRecorrente = recorrente > 0;
-    
-    if (isRecorrente) {
-      console.log(`🔄 [METRICS] Venda Recorrente encontrada: ${lead.Nome} - R$ ${recorrente}`);
-    }
-    
-    return isRecorrente;
+  const vendasRecorrentes = validLeads.filter(lead => {
+    const campos = ['recorrente', 'Recorrente', 'mensalidade', 'Mensalidade'];
+    return campos.some(campo => parseMonetaryValue(lead[campo]) > 0);
   });
 
-  // CORREÇÃO: Calcular receitas com validação
-  const receitaCompleta = vendasCompletas.reduce((total, lead) => {
-    const valor = parseMonetaryValue(lead['Venda Completa']);
-    return total + valor;
+  // CORREÇÃO: Calcular receitas considerando múltiplos campos
+  const receitaCompleta = validLeads.reduce((total, lead) => {
+    const campos = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor'];
+    const valores = campos.map(campo => parseMonetaryValue(lead[campo]));
+    const maiorValor = Math.max(...valores);
+    return total + (maiorValor > 0 ? maiorValor : 0);
   }, 0);
 
-  const receitaRecorrente = vendasRecorrentes.reduce((total, lead) => {
-    const valor = parseMonetaryValue(lead.recorrente);
-    return total + valor;
+  const receitaRecorrente = validLeads.reduce((total, lead) => {
+    const campos = ['recorrente', 'Recorrente', 'mensalidade', 'Mensalidade'];
+    const valores = campos.map(campo => parseMonetaryValue(lead[campo]));
+    const maiorValor = Math.max(...valores);
+    return total + (maiorValor > 0 ? maiorValor : 0);
   }, 0);
 
   const receitaTotal = receitaCompleta + receitaRecorrente;
 
-  // CORREÇÃO: Calcular fechamentos corretamente
-  const fechamentos = vendasCompletas.length + vendasRecorrentes.length;
-  const fechados = leads.filter(lead => {
+  // Calcular fechamentos (leads que compraram)
+  const fechados = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isFechado = ['fechado', 'vendido', 'comprou'].some(s => status.includes(s));
-    const temVenda = parseMonetaryValue(lead['Venda Completa']) > 0 || parseMonetaryValue(lead.recorrente) > 0;
-    return isFechado || temVenda;
+    const statusFechado = ['fechado', 'vendido', 'comprou', 'cliente', 'pago'].some(s => status.includes(s));
+    
+    const temVenda = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor', 'recorrente', 'Recorrente'].some(campo => 
+      parseMonetaryValue(lead[campo]) > 0
+    );
+    
+    return statusFechado || temVenda;
   });
 
-  // CORREÇÃO: Calcular mentorados (novos leads que viraram clientes)
-  const mentorados = leads.filter(lead => {
+  const mentorados = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isMentorado = ['mentorado', 'cliente', 'ativo'].some(s => status.includes(s));
-    return isMentorado;
+    return ['mentorado', 'cliente', 'ativo', 'aluno'].some(s => status.includes(s));
   }).length;
 
-  // Cálculos de taxas
-  const totalLeads = leads.length;
+  // Calcular taxas
+  const totalLeads = validLeads.length;
   const totalCompareceram = compareceram.length;
-  const totalFechamentos = Math.max(fechamentos, fechados.length);
+  const totalFechamentos = Math.max(fechados.length, vendasCompletas.length + vendasRecorrentes.length);
 
   const taxaFechamento = totalLeads > 0 ? (totalFechamentos / totalLeads) * 100 : 0;
   const taxaComparecimento = agendamentos.length > 0 ? (totalCompareceram / agendamentos.length) * 100 : 0;
@@ -170,7 +182,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     aSerAtendido: 0,
     atendidoNaoFechou: 0,
     perdidoInativo: 0,
-    mentorados // INCLUÍDO CAMPO OBRIGATÓRIO
+    mentorados
   };
 
   console.log('✅ [METRICS] Métricas calculadas (CORRIGIDAS):');

@@ -18,8 +18,15 @@ import { TrendingUp, RefreshCw } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 const Comparativo = () => {
-  // Usar novo hook de carregamento rápido
-  const { allLeads, isLoading, lastUpdated, dataReady, cacheStatus, forceRefresh } = useFastLeadsData();
+  // MIGRAÇÃO COMPLETA: Usar exclusivamente useFastLeadsData
+  const { 
+    allLeads, 
+    isLoading, 
+    lastUpdated, 
+    dataReady, 
+    cacheStatus, 
+    forceRefresh 
+  } = useFastLeadsData();
   
   const [comparisonType, setComparisonType] = useState<ComparisonType>('period');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -33,13 +40,17 @@ const Comparativo = () => {
 
   const mappedComparisonType = comparisonType === 'period' ? 'temporal' : 'origem';
 
-  // Usar novo hook de comparação expandida
+  // Usar hook corrigido de comparação
   const { comparisonData, insights, isComparing } = useExpandedComparisonData({
     allLeads,
     comparisonType: mappedComparisonType,
     selectedPeriods,
     selectedOrigins
   });
+
+  console.log('📊 [COMPARATIVO] === MIGRAÇÃO COMPLETA FASE 2 ===');
+  console.log('📊 [COMPARATIVO] - Total leads:', allLeads.length);
+  console.log('📊 [COMPARATIVO] - Comparison data:', comparisonData ? 'Disponível' : 'Indisponível');
 
   useEffect(() => {
     document.title = 'Clarity - Análise Comparativa';
@@ -55,7 +66,7 @@ const Comparativo = () => {
   };
 
   if (isLoading) {
-    return <LoadingState progress={50} stage="Carregamento rápido..." />;
+    return <LoadingState progress={50} stage="Sistema unificado Supabase..." />;
   }
 
   return (
@@ -64,7 +75,7 @@ const Comparativo = () => {
         <div className="flex items-center justify-between mb-6">
           <PageHeader 
             title="Análise Comparativa"
-            description="Compare períodos e origens com métricas expandidas"
+            description="Compare períodos e origens (Sistema Unificado Supabase)"
           />
           
           <div className="flex items-center gap-4">
@@ -87,7 +98,6 @@ const Comparativo = () => {
           </div>
         </div>
         
-        {/* Status card */}
         {comparisonData && (
           <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-8 animate-fade-in">
             <CardContent className="p-4">
@@ -98,12 +108,14 @@ const Comparativo = () => {
                   {' vs '}
                   <span className="font-semibold text-purple-400">{comparisonData.dataset2.label}</span>
                 </span>
+                <span className="text-xs text-gray-500">
+                  ({comparisonData.dataset1.data.length} vs {comparisonData.dataset2.data.length} leads)
+                </span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <ComparisonTypeSelector
             selectedType={comparisonType}
@@ -126,26 +138,18 @@ const Comparativo = () => {
           />
         </div>
 
-        {/* Content */}
         {isComparing ? (
           <LoadingState progress={75} stage="Processando comparação..." />
         ) : (
           <div className="space-y-8">
-            {/* Tabela Comparativa Expandida */}
             <ExpandedComparisonTable comparisonData={comparisonData} />
-
-            {/* Insights Panel */}
             <InsightsPanel insights={insights} />
-
-            {/* Análises adicionais em grid */}
+            
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-              {/* Trend Comparison */}
               <TrendComparison
                 comparisonData={comparisonData}
                 comparisonType={mappedComparisonType}
               />
-
-              {/* Performance Matrix */}
               <PerformanceMatrix
                 comparisonData={comparisonData}
                 comparisonType={mappedComparisonType}

@@ -10,32 +10,29 @@ import { TemporalAnalysis } from "@/components/TemporalAnalysis";
 import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
 
 const Analytics = () => {
-  // MIGRAÇÃO CRÍTICA: Usar EXCLUSIVAMENTE useFastLeadsData (Sistema Unificado)
+  // MIGRAÇÃO COMPLETA: Usar EXCLUSIVAMENTE useFastLeadsData
   const { 
     allLeads, 
     isLoading, 
     lastUpdated,
-    cacheStatus
+    cacheStatus,
+    dataReady
   } = useFastLeadsData();
   
-  // Estado dos filtros globais
   const { dateRange, filters } = useGlobalFilters();
-
-  // Usar leads filtrados para todos os componentes da página Analytics
   const { filteredLeads } = useFilteredLeads(allLeads, dateRange, filters, 'analytics');
 
-  console.log('📊 [ANALYTICS PAGE] === MIGRAÇÃO PARA SISTEMA UNIFICADO ===');
-  console.log('📊 [ANALYTICS PAGE] - Total de leads brutos:', allLeads.length);
-  console.log('📊 [ANALYTICS PAGE] - Leads filtrados:', filteredLeads.length);
-  console.log('📊 [ANALYTICS PAGE] - Cache status:', cacheStatus);
-  console.log('📊 [ANALYTICS PAGE] - Sistema unificado Supabase ativo');
+  console.log('📊 [ANALYTICS] === MIGRAÇÃO COMPLETA FASE 2 ===');
+  console.log('📊 [ANALYTICS] - Total leads:', allLeads.length);
+  console.log('📊 [ANALYTICS] - Filtrados:', filteredLeads.length);
+  console.log('📊 [ANALYTICS] - Cache status:', cacheStatus);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader 
           title="Análises Detalhadas"
-          description="Performance, tendências e insights avançados"
+          description="Performance, tendências e insights avançados (Sistema Unificado)"
         />
         
         <div className="flex items-center gap-4 mb-8">
@@ -49,7 +46,6 @@ const Analytics = () => {
           </span>
         </div>
 
-        {/* Loading State unificado */}
         {isLoading && (
           <LoadingState 
             progress={75} 
@@ -57,16 +53,10 @@ const Analytics = () => {
           />
         )}
 
-        {/* Conteúdo principal apenas quando não está carregando */}
-        {!isLoading && (
+        {!isLoading && dataReady && (
           <>
-            {/* Performance dos Closers - usando leads filtrados */}
             <CloserPerformanceAnalysis leads={filteredLeads} />
-
-            {/* Análise Temporal - usando leads filtrados */}
             <TemporalAnalysis leads={filteredLeads} />
-
-            {/* Histórico de Faturamento Mensal - usando todos os leads */}
             <MonthlyRevenueHistory leads={allLeads} />
           </>
         )}
