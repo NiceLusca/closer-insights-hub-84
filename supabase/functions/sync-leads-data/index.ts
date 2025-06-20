@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -9,7 +8,7 @@ const corsHeaders = {
 
 const WEBHOOK_URL = 'https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul';
 
-// Sistema completo de processamento de leads (idêntico ao local)
+// Sistema completo de processamento de leads
 interface ProcessedLead {
   row_number: number;
   data: string;
@@ -25,7 +24,7 @@ interface ProcessedLead {
   Valor?: number | string;
   Produto?: string;
   'Coluna 1'?: string;
-  parsedDate?: string; // ISO string para JSON compatibility
+  parsedDate?: string;
 }
 
 // Função de parsing de data brasileira (replicada do sistema local)
@@ -184,27 +183,33 @@ serve(async (req) => {
   try {
     console.log('🔄 [EDGE-FUNCTION] Iniciando sincronização completa...');
 
-    // Verificar se precisa sincronizar
-    const { data: metadata } = await supabase
-      .from('cache_metadata')
-      .select('last_webhook_sync, is_valid')
-      .eq('cache_type', 'leads')
-      .single();
+    // Verificar se precisa sincronizar (apenas se não for forçado)
+    const requestBody = await req.json().catch(() => ({}));
+    const forceSync = requestBody?.force === true;
 
-    if (metadata) {
-      const lastSync = new Date(metadata.last_webhook_sync);
-      const now = new Date();
-      const diffMinutes = (now.getTime() - lastSync.getTime()) / (1000 * 60);
+    if (!forceSync) {
+      const { data: metadata } = await supabase
+        .from('cache_metadata')
+        .select('last_webhook_sync, is_valid')
+        .eq('cache_type', 'leads')
+        .maybeSingle(); // CORREÇÃO: usar maybeSingle()
 
-      if (metadata.is_valid && diffMinutes < 15) {
-        console.log(`⏰ [EDGE-FUNCTION] Cache válido (${diffMinutes.toFixed(1)} min), pulando sincronização`);
-        return new Response(
-          JSON.stringify({ 
-            message: 'Cache válido, sincronização não necessária',
-            ageMinutes: diffMinutes
-          }),
-          { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
+      if (metadata) {
+        const lastSync = new Date(metadata.last_webhook_sync);
+        const now = new Date();
+        const diffMinutes = (now.getTime() - lastSync.getTime()) / (1000 * 60);
+
+        if (metadata.is_valid && diffMinutes < 15) {
+          console.log(`⏰ [EDGE-FUNCTION] Cache válido (${diffMinutes.toFixed(1)} min), pulando sincronização`);
+          return new Response(
+            JSON.stringify({ 
+              message: 'Cache válido, sincronização não necessária',
+              ageMinutes: diffMinutes,
+              skipped: true
+            }),
+            { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+          );
+        }
       }
     }
 
@@ -219,16 +224,45 @@ serve(async (req) => {
     });
 
     if (!webhookResponse.ok) {
-      throw new Error(`Webhook retornou ${webhookResponse.status}`);
+      throw new Error(`Webhook retornou ${webhookResponse.status}: ${webhookResponse.statusText}`);
     }
 
     const rawData = await webhookResponse.json();
     const dataArray = Array.isArray(rawData) ? rawData : [rawData];
 
+    if (dataArray.length === 0) {
+      console.warn('⚠️ [EDGE-FUNCTION] Webhook retornou dados vazios');
+      return new Response(
+        JSON.stringify({
+          error: 'Webhook retornou dados vazios',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        }
+      );
+    }
+
     console.log(`📊 [EDGE-FUNCTION] Processando ${dataArray.length} registros do webhook...`);
 
     // Processar dados usando sistema completo
     const processedLeads = processRawDataToLeads(dataArray);
+
+    if (processedLeads.length === 0) {
+      console.warn('⚠️ [EDGE-FUNCTION] Nenhum lead válido após processamento');
+      return new Response(
+        JSON.stringify({
+          error: 'Nenhum lead válido processado',
+          rawCount: dataArray.length,
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+        }
+      );
+    }
 
     // Salvar no cache
     const { error: cacheError } = await supabase
@@ -244,7 +278,7 @@ serve(async (req) => {
       throw cacheError;
     }
 
-    // Atualizar metadata
+    // CORREÇÃO: Usar upsert para evitar constraint único
     const { error: metaError } = await supabase
       .from('cache_metadata')
       .upsert({
@@ -254,6 +288,8 @@ serve(async (req) => {
         webhook_hash: calculateHash(dataArray),
         total_records: processedLeads.length,
         is_valid: true
+      }, {
+        onConflict: 'cache_type'
       });
 
     if (metaError) {
@@ -285,6 +321,7 @@ serve(async (req) => {
         success: true,
         message: 'Sincronização concluída com sucesso',
         totalLeads: processedLeads.length,
+        forced: forceSync,
         timestamp: new Date().toISOString()
       }),
       { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -294,10 +331,14 @@ serve(async (req) => {
     console.error('❌ [EDGE-FUNCTION] Erro na sincronização:', error);
     
     // Marcar cache como inválido em caso de erro
-    await supabase
-      .from('cache_metadata')
-      .update({ is_valid: false })
-      .eq('cache_type', 'leads');
+    try {
+      await supabase
+        .from('cache_metadata')
+        .update({ is_valid: false })
+        .eq('cache_type', 'leads');
+    } catch (updateError) {
+      console.error('❌ [EDGE-FUNCTION] Erro ao invalidar cache:', updateError);
+    }
 
     return new Response(
       JSON.stringify({
@@ -314,12 +355,17 @@ serve(async (req) => {
 });
 
 function calculateHash(data: any): string {
-  const str = JSON.stringify(data);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+  try {
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString();
+  } catch (error) {
+    console.error('❌ [EDGE-FUNCTION] Erro ao calcular hash:', error);
+    return Date.now().toString();
   }
-  return hash.toString();
 }

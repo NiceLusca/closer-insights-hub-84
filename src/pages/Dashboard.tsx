@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
@@ -19,7 +20,7 @@ import { MathValidation } from "@/components/Dashboard/MathValidation";
 import { FastLoadingIndicator } from "@/components/Dashboard/FastLoadingIndicator";
 
 const Dashboard = () => {
-  // MUDANÇA CRÍTICA: Usar exclusivamente novo hook unificado
+  // SISTEMA UNIFICADO: Usar exclusivamente useFastLeadsData
   const { 
     allLeads, 
     isLoading, 
@@ -56,9 +57,6 @@ const Dashboard = () => {
     document.title = 'Clarity - Analytics Dashboard';
   }, []);
 
-  // MUDANÇA CRÍTICA: Converter cacheStatus para string de forma segura
-  const cacheStatusString = `${cacheStatus.source} (${cacheStatus.ageMinutes.toFixed(1)}min, ${cacheStatus.isValid ? 'válido' : 'inválido'})`;
-
   console.log('🏠 [DASHBOARD] === ESTADO COMPLETO DO DASHBOARD ===');
   console.log('🏠 [DASHBOARD] Total leads brutos:', allLeads.length);
   console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
@@ -77,7 +75,7 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mobile-spacing">
-        {/* MUDANÇA CRÍTICA: Indicador com dados do sistema unificado */}
+        {/* Indicador de status unificado */}
         <div className="mb-6">
           <FastLoadingIndicator 
             cacheStatus={cacheStatus}
@@ -103,7 +101,7 @@ const Dashboard = () => {
         {(isLoading || isApplyingFilters) && (
           <LoadingState 
             progress={isApplyingFilters ? 100 : 75} 
-            stage={isApplyingFilters ? 'Aplicando filtros...' : 'Carregamento unificado Supabase...'}
+            stage={isApplyingFilters ? 'Aplicando filtros...' : 'Sistema unificado Supabase...'}
           />
         )}
 
@@ -115,7 +113,7 @@ const Dashboard = () => {
               <MetricsCards leads={filteredLeads} />
             </div>
 
-            {/* 2. Meta Mensal - NOVA SEÇÃO */}
+            {/* 2. Meta Mensal */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <MonthlyGoalProgress allLeads={allLeads} />
             </div>
@@ -125,17 +123,17 @@ const Dashboard = () => {
               <StatusDistributionCards leads={filteredLeads} />
             </div>
 
-            {/* 4. Funil de Conversão - simplificado */}
+            {/* 4. Funil de Conversão */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
               <ConversionFunnel leads={filteredLeads} />
             </div>
 
-            {/* 5. Charts Grid - gráficos de leads/receita/closer */}
+            {/* 5. Charts Grid */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
               <ChartsGrid leads={filteredLeads} />
             </div>
 
-            {/* 6. MUDANÇA CRÍTICA: Origin Analysis agora usando leads filtrados */}
+            {/* 6. Origin Analysis */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
               <OriginAnalysis leads={filteredLeads} />
             </div>
@@ -145,23 +143,23 @@ const Dashboard = () => {
               <PerformanceAlerts leads={filteredLeads} position="bottom" />
             </div>
 
-            {/* 8. Análise Detalhada de Perdas - MOVIDA PARA O FINAL */}
+            {/* 8. Análise de Perdas */}
             <div className="animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
               <LossAnalysis leads={filteredLeads} />
             </div>
 
-            {/* 9. Validação Matemática - Para confirmar que as contas estão certas */}
+            {/* 9. Validação Matemática */}
             <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
-              <MathValidation leads={filteredLeads} />
+              <MathValidação leads={filteredLeads} />
             </div>
 
-            {/* 10. Debug Info/Validação - NO FINAL ABSOLUTO */}
+            {/* 10. Debug Info - CORRIGIDO para passar objeto cacheStatus */}
             <div className="animate-fade-in-up" style={{ animationDelay: '1.0s' }}>
               <DebugInfo 
                 allLeads={allLeads} 
                 filteredLeads={filteredLeads} 
                 dateRange={dateRange}
-                cacheStatus={cacheStatusString}
+                cacheStatus={`${cacheStatus.source} (${cacheStatus.ageMinutes.toFixed(1)}min, ${cacheStatus.isValid ? 'válido' : 'inválido'})`}
                 validation={validation}
               />
             </div>

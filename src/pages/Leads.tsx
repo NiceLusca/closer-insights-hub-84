@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useLeadsData } from "@/hooks/useLeadsData";
+import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
 import { useGlobalFilters } from "@/contexts/FilterContext";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,13 +8,12 @@ import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { LeadsTable } from "@/components/LeadsTable";
 
 const Leads = () => {
-  // Estado dos dados
+  // MIGRAÇÃO COMPLETA: Usar exclusivamente useFastLeadsData
   const { 
     allLeads, 
     isLoading, 
-    loadingProgress, 
-    loadingStage 
-  } = useLeadsData();
+    dataReady
+  } = useFastLeadsData();
   
   // Estado dos filtros globais
   const { dateRange, filters } = useGlobalFilters();
@@ -33,16 +33,16 @@ const Leads = () => {
           Mostrando: {filteredLeads.length} leads de {allLeads.length} total
         </p>
 
-        {/* Loading State com progresso */}
+        {/* Loading State */}
         {isLoading && (
           <LoadingState 
-            progress={loadingProgress} 
-            stage={loadingStage}
+            progress={75} 
+            stage="Carregando sistema unificado Supabase..."
           />
         )}
 
-        {/* Conteúdo principal apenas quando não está carregando */}
-        {!isLoading && (
+        {/* Conteúdo principal */}
+        {!isLoading && dataReady && (
           <LeadsTable leads={filteredLeads} />
         )}
       </div>

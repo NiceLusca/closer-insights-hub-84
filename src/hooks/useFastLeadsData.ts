@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { SupabaseCache } from "@/services/supabaseCache";
 import { useToast } from "@/hooks/use-toast";
 import type { Lead } from "@/types/lead";
@@ -7,7 +8,7 @@ import type { Lead } from "@/types/lead";
 export function useFastLeadsData() {
   const { toast } = useToast();
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
-  const [isLoading, setIsLoading] = useState(true);  // Começa true para primeira carga
+  const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [dataReady, setDataReady] = useState(false);
   const [cacheStatus, setCacheStatus] = useState<{
@@ -52,7 +53,7 @@ export function useFastLeadsData() {
     }
   };
 
-  // Atualização em background via Edge Function
+  // Atualização em background via Edge Function - CORRIGIDO
   const updateInBackground = async (): Promise<void> => {
     if (backgroundUpdateRef.current) {
       console.log('⏳ [FAST-LEADS] Atualização em background já em andamento...');
@@ -63,8 +64,10 @@ export function useFastLeadsData() {
     console.log('🔄 [FAST-LEADS] Iniciando atualização silenciosa em background...');
     
     try {
-      // Usar Edge Function para sincronização
-      const { data, error } = await SupabaseCache.supabase.functions.invoke('sync-leads-data');
+      // CORREÇÃO: Usar cliente supabase diretamente
+      const { data, error } = await supabase.functions.invoke('sync-leads-data', {
+        body: { force: false }
+      });
 
       if (error) {
         console.error('❌ [FAST-LEADS] Erro na Edge Function:', error);
@@ -72,6 +75,9 @@ export function useFastLeadsData() {
       }
 
       console.log('✅ [FAST-LEADS] Edge Function executada:', data);
+      
+      // Pequeno delay para garantir que o cache foi atualizado
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Buscar dados atualizados do cache
       const leads = await SupabaseCache.getLeadsFromCache();
@@ -85,37 +91,76 @@ export function useFastLeadsData() {
           isValid: true
         });
         
-        // Notificação discreta
-        toast({
-          title: "🔄 Dados atualizados",
-          description: `${leads.length} leads sincronizados em background`,
-          duration: 3000,
-        });
+        // Notificação discreta apenas se houve mudanças significativas
+        const currentCount = allLeads.length;
+        const newCount = leads.length;
+        const difference = Math.abs(newCount - currentCount);
+        
+        if (difference > 5 || currentCount === 0) {
+          toast({
+            title: "🔄 Dados atualizados",
+            description: `${leads.length} leads sincronizados (${difference > 0 ? `+${difference}` : 'sem mudanças'})`,
+            duration: 3000,
+          });
+        }
         
         console.log(`✅ [FAST-LEADS] Atualização em background concluída: ${leads.length} leads`);
       }
     } catch (error) {
       console.error('❌ [FAST-LEADS] Erro na atualização em background:', error);
       
-      // Notificação discreta de erro
-      toast({
-        title: "⚠️ Atualização em background falhou",
-        description: "Usando dados em cache. Tente atualizar manualmente.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      // Implementar fallback robusto - tentar usar cache mesmo se Edge Function falhou
+      try {
+        const fallbackLeads = await SupabaseCache.getLeadsFromCache();
+        if (fallbackLeads && fallbackLeads.length > 0) {
+          console.log('🔄 [FAST-LEADS] Usando cache como fallback após erro na Edge Function');
+          setAllLeads(fallbackLeads);
+          setCacheStatus({
+            source: 'cache',
+            ageMinutes: Infinity,
+            isValid: false
+          });
+        }
+      } catch (fallbackError) {
+        console.error('❌ [FAST-LEADS] Erro até no fallback:', fallbackError);
+      }
+      
+      // Notificação discreta de erro apenas se não conseguiu nenhum dado
+      if (allLeads.length === 0) {
+        toast({
+          title: "⚠️ Problema na sincronização",
+          description: "Usando dados em cache. Alguns dados podem estar desatualizados.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
     } finally {
       backgroundUpdateRef.current = false;
     }
   };
 
-  // Carregamento direto via Edge Function (fallback)
+  // Carregamento direto via Edge Function com tratamento robusto de erros
   const loadViaEdgeFunction = async (): Promise<void> => {
     console.log('🌐 [FAST-LEADS] Carregando dados via Edge Function...');
     setIsLoading(true);
     
     try {
-      const leads = await SupabaseCache.forceSyncViaEdgeFunction();
+      // CORREÇÃO: Usar cliente supabase diretamente
+      const { data, error } = await supabase.functions.invoke('sync-leads-data', {
+        body: { force: true }
+      });
+      
+      if (error) {
+        console.error('❌ [FAST-LEADS] Erro na Edge Function:', error);
+        throw error;
+      }
+
+      console.log('✅ [FAST-LEADS] Edge Function executada com sucesso:', data);
+      
+      // Pequeno delay para garantir que o cache foi persistido
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const leads = await SupabaseCache.getLeadsFromCache();
       
       if (leads && leads.length > 0) {
         setAllLeads(leads);
@@ -134,19 +179,33 @@ export function useFastLeadsData() {
     } catch (error) {
       console.error('❌ [FAST-LEADS] Erro ao carregar via Edge Function:', error);
       
-      // Tentar usar dados em cache mesmo expirados como fallback
-      const fallbackLeads = await SupabaseCache.getLeadsFromCache();
-      if (fallbackLeads && fallbackLeads.length > 0) {
-        console.log('🔄 [FAST-LEADS] Usando dados em cache como fallback');
-        setAllLeads(fallbackLeads);
-        setCacheStatus({
-          source: 'cache',
-          ageMinutes: Infinity,
-          isValid: false
-        });
+      // Implementar fallback robusto - tentar usar cache mesmo expirado
+      try {
+        const fallbackLeads = await SupabaseCache.getLeadsFromCache();
+        if (fallbackLeads && fallbackLeads.length > 0) {
+          console.log('🔄 [FAST-LEADS] Usando dados em cache como fallback');
+          setAllLeads(fallbackLeads);
+          setCacheStatus({
+            source: 'cache',
+            ageMinutes: Infinity,
+            isValid: false
+          });
+          
+          // Não mostrar como erro se conseguiu dados do cache
+          toast({
+            title: "⚠️ Sincronização com problemas",
+            description: `Usando ${fallbackLeads.length} leads do cache local`,
+            variant: "destructive",
+            duration: 4000,
+          });
+        } else {
+          // Só aqui é realmente um erro crítico
+          throw new Error('Nenhum dado disponível nem no cache nem via webhook');
+        }
+      } catch (fallbackError) {
+        console.error('❌ [FAST-LEADS] Erro crítico - sem dados disponíveis:', fallbackError);
+        throw fallbackError;
       }
-      
-      throw error;
     } finally {
       setIsLoading(false);
       setDataReady(true);
@@ -169,18 +228,19 @@ export function useFastLeadsData() {
       
       toast({
         title: "✅ Dados atualizados!",
-        description: `${allLeads.length} leads recarregados via sincronização`,
+        description: `${allLeads.length} leads recarregados com sucesso`,
       });
     } catch (error) {
+      console.error('❌ [FAST-LEADS] Erro na atualização forçada:', error);
       toast({
         title: "❌ Erro na atualização",
-        description: "Não foi possível atualizar os dados",
+        description: "Não foi possível atualizar os dados. Verifique sua conexão.",
         variant: "destructive"
       });
     }
   };
 
-  // Efeito principal - carregamento inicial inteligente
+  // Efeito principal - carregamento inicial inteligente com fallbacks robustos
   useEffect(() => {
     if (initialLoadRef.current) return;
     initialLoadRef.current = true;
@@ -195,19 +255,32 @@ export function useFastLeadsData() {
         if (loadedFromCache) {
           setIsLoading(false);
           
-          // Se cache está velho, atualizar em background
+          // Se cache está velho, atualizar em background (não bloquear UI)
           const status = await SupabaseCache.getCacheStatus();
           if (!status.isValid || status.ageMinutes >= 15) {
             console.log('⏰ [FAST-LEADS] Cache expirado, iniciando atualização em background...');
-            setTimeout(() => updateInBackground(), 1000); // Pequeno delay
+            setTimeout(() => updateInBackground(), 2000); // Delay maior para não sobrecarregar
           }
         } else {
-          // Se não tem cache, carregar via Edge Function
-          console.log('📭 [FAST-LEADS] Cache vazio, carregando via Edge Function...');
+          // Se não tem cache válido, carregar via Edge Function
+          console.log('📭 [FAST-LEADS] Cache vazio/inválido, carregando via Edge Function...');
           await loadViaEdgeFunction();
         }
       } catch (error) {
-        console.error('❌ [FAST-LEADS] Erro na inicialização:', error);
+        console.error('❌ [FAST-LEADS] Erro crítico na inicialização:', error);
+        
+        // Fallback final - tentar qualquer coisa no cache
+        try {
+          const emergencyLeads = await SupabaseCache.getLeadsFromCache();
+          if (emergencyLeads && emergencyLeads.length > 0) {
+            console.log('🆘 [FAST-LEADS] Usando dados de emergência do cache');
+            setAllLeads(emergencyLeads);
+            setCacheStatus({ source: 'cache', ageMinutes: Infinity, isValid: false });
+          }
+        } catch (emergencyError) {
+          console.error('💀 [FAST-LEADS] Falha total:', emergencyError);
+        }
+        
         setIsLoading(false);
         setDataReady(true);
       }
