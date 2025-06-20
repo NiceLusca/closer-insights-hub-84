@@ -9,29 +9,38 @@ export function formatCurrency(value: number): string {
   });
 }
 
-// CORREÇÃO CRÍTICA: Função melhorada para conversão monetária
+// CORREÇÃO CRÍTICA: Função MUITO mais flexível para conversão monetária
 function parseMonetaryValue(value: any): number {
   if (typeof value === 'number' && !isNaN(value)) {
     return Math.max(0, value);
   }
   
   if (typeof value === 'string' && value.trim()) {
-    // Remover caracteres não numéricos, manter apenas números, vírgulas e pontos
-    const cleaned = value.replace(/[^\d,.-]/g, '');
+    // Remover tudo exceto números, vírgulas e pontos
+    let cleaned = value.replace(/[^\d,.-]/g, '');
     
-    // Tratar diferentes formatos brasileiros
-    let normalized = cleaned;
-    
-    // Se tem vírgula como decimal (formato brasileiro)
-    if (normalized.includes(',') && !normalized.includes('.')) {
-      normalized = normalized.replace(',', '.');
+    // Casos especiais para formatos brasileiros
+    if (cleaned.includes(',') && cleaned.includes('.')) {
+      // Formato: 1.234,56 (brasileiro)
+      const parts = cleaned.split(',');
+      if (parts.length === 2 && parts[1].length <= 2) {
+        cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+      } else {
+        // Formato: 1,234.56 (internacional)
+        cleaned = cleaned.replace(/,/g, '');
+      }
+    } else if (cleaned.includes(',')) {
+      // Se só tem vírgula, assumir decimal brasileiro
+      const parts = cleaned.split(',');
+      if (parts.length === 2 && parts[1].length <= 2) {
+        cleaned = cleaned.replace(',', '.');
+      } else {
+        // Múltiplas vírgulas = separador de milhares
+        cleaned = cleaned.replace(/,/g, '');
+      }
     }
-    // Se tem ponto e vírgula (formato: 1.234,56)
-    else if (normalized.includes('.') && normalized.includes(',')) {
-      normalized = normalized.replace(/\./g, '').replace(',', '.');
-    }
     
-    const parsed = parseFloat(normalized);
+    const parsed = parseFloat(cleaned);
     return isNaN(parsed) ? 0 : Math.max(0, parsed);
   }
   
@@ -68,108 +77,121 @@ function getDefaultMetrics(): Metrics {
 }
 
 export function calculateMetrics(leads: Lead[]): Metrics {
-  console.log('📊 [METRICS] === CÁLCULO CORRIGIDO (FASE 3) ===');
+  console.log('📊 [METRICS] === CORREÇÃO EMERGENCIAL FASE 1-2 ===');
   console.log('📊 [METRICS] Total leads recebidos:', leads.length);
   
   if (!leads || leads.length === 0) {
     return getDefaultMetrics();
   }
 
-  // CORREÇÃO: Filtrar leads válidos (com nome ou status)
+  // CORREÇÃO: Filtrar leads válidos (bem mais flexível)
   const validLeads = leads.filter(lead => 
-    (lead.Nome && lead.Nome.trim()) || (lead.Status && lead.Status.trim())
+    lead.Nome?.trim() || lead.Status?.trim() || lead.origem?.trim() || lead.Closer?.trim() || lead.data?.trim()
   );
 
   console.log('📊 [METRICS] Leads válidos para cálculo:', validLeads.length);
 
-  // Categorizar leads por status
+  // CORREÇÃO CRÍTICA: Detecção de status MUITO mais flexível
   const agendamentos = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['agendado', 'agendamento', 'agenda'].some(s => status.includes(s));
+    return ['agendado', 'agendamento', 'agenda', 'marcado', 'confirmado'].some(s => status.includes(s));
   });
 
   const confirmados = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['confirmado', 'confirmação', 'confirma'].some(s => status.includes(s));
+    return ['confirmado', 'confirmação', 'confirma', 'ok'].some(s => status.includes(s));
   });
 
   const noShows = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['no show', 'noshow', 'não compareceu', 'faltou', 'ausente'].some(s => status.includes(s));
+    return ['no show', 'noshow', 'não compareceu', 'faltou', 'ausente', 'não apareceu'].some(s => status.includes(s));
   });
 
   const compareceram = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['compareceu', 'apresentou', 'atendido', 'presente'].some(s => status.includes(s));
+    return ['compareceu', 'apresentou', 'atendido', 'presente', 'veio'].some(s => status.includes(s));
   });
 
-  // CORREÇÃO CRÍTICA: Calcular vendas com múltiplos campos
-  const vendasCompletas = validLeads.filter(lead => {
-    const campos = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor'];
-    return campos.some(campo => parseMonetaryValue(lead[campo]) > 0);
+  // CORREÇÃO CRÍTICA: Detecção de fechamentos MUITO mais flexível
+  const fechadosPorStatus = validLeads.filter(lead => {
+    const status = lead.Status?.toLowerCase()?.trim() || '';
+    return ['fechado', 'vendido', 'comprou', 'cliente', 'pago', 'fechou', 'venda', 'ativo'].some(s => status.includes(s));
   });
 
-  const vendasRecorrentes = validLeads.filter(lead => {
-    const campos = ['recorrente', 'Recorrente', 'mensalidade', 'Mensalidade'];
-    return campos.some(campo => parseMonetaryValue(lead[campo]) > 0);
+  // CORREÇÃO CRÍTICA: Calcular receitas com MÚLTIPLOS campos possíveis
+  let receitaCompleta = 0;
+  let receitaRecorrente = 0;
+  let vendasCompletas = 0;
+  let vendasRecorrentes = 0;
+
+  validLeads.forEach(lead => {
+    // Campos possíveis para venda completa
+    const camposCompleta = [
+      'Venda Completa', 'venda_completa', 'vendaCompleta', 
+      'Valor', 'valor', 'Venda', 'venda', 'Preço', 'preço'
+    ];
+    
+    let valorCompleta = 0;
+    camposCompleta.forEach(campo => {
+      const valor = parseMonetaryValue(lead[campo]);
+      if (valor > valorCompleta) valorCompleta = valor;
+    });
+
+    // Campos possíveis para recorrente
+    const camposRecorrente = [
+      'recorrente', 'Recorrente', 'mensalidade', 'Mensalidade',
+      'mensal', 'Mensal', 'assinatura', 'Assinatura'
+    ];
+    
+    let valorRecorrente = 0;
+    camposRecorrente.forEach(campo => {
+      const valor = parseMonetaryValue(lead[campo]);
+      if (valor > valorRecorrente) valorRecorrente = valor;
+    });
+
+    if (valorCompleta > 0) {
+      receitaCompleta += valorCompleta;
+      vendasCompletas++;
+    }
+    
+    if (valorRecorrente > 0) {
+      receitaRecorrente += valorRecorrente;
+      vendasRecorrentes++;
+    }
   });
-
-  // CORREÇÃO: Calcular receitas considerando múltiplos campos
-  const receitaCompleta = validLeads.reduce((total, lead) => {
-    const campos = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor'];
-    const valores = campos.map(campo => parseMonetaryValue(lead[campo]));
-    const maiorValor = Math.max(...valores);
-    return total + (maiorValor > 0 ? maiorValor : 0);
-  }, 0);
-
-  const receitaRecorrente = validLeads.reduce((total, lead) => {
-    const campos = ['recorrente', 'Recorrente', 'mensalidade', 'Mensalidade'];
-    const valores = campos.map(campo => parseMonetaryValue(lead[campo]));
-    const maiorValor = Math.max(...valores);
-    return total + (maiorValor > 0 ? maiorValor : 0);
-  }, 0);
 
   const receitaTotal = receitaCompleta + receitaRecorrente;
 
-  // Calcular fechamentos (leads que compraram)
-  const fechados = validLeads.filter(lead => {
-    const status = lead.Status?.toLowerCase()?.trim() || '';
-    const statusFechado = ['fechado', 'vendido', 'comprou', 'cliente', 'pago'].some(s => status.includes(s));
-    
-    const temVenda = ['Venda Completa', 'venda_completa', 'vendaCompleta', 'Valor', 'valor', 'recorrente', 'Recorrente'].some(campo => 
-      parseMonetaryValue(lead[campo]) > 0
-    );
-    
-    return statusFechado || temVenda;
-  });
+  // CORREÇÃO: Calcular fechamentos como máximo entre status e vendas
+  const totalFechamentos = Math.max(fechadosPorStatus.length, vendasCompletas + vendasRecorrentes);
 
   const mentorados = validLeads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    return ['mentorado', 'cliente', 'ativo', 'aluno'].some(s => status.includes(s));
+    return ['mentorado', 'cliente', 'ativo', 'aluno', 'estudante'].some(s => status.includes(s));
   }).length;
 
   // Calcular taxas
   const totalLeads = validLeads.length;
-  const totalCompareceram = compareceram.length;
-  const totalFechamentos = Math.max(fechados.length, vendasCompletas.length + vendasRecorrentes.length);
+  const totalCompareceram = Math.max(compareceram.length, totalFechamentos); // Quem fechou, compareceu
+  const totalAgendamentos = Math.max(agendamentos.length, totalCompareceram); // Quem compareceu, agendou
 
   const taxaFechamento = totalLeads > 0 ? (totalFechamentos / totalLeads) * 100 : 0;
-  const taxaComparecimento = agendamentos.length > 0 ? (totalCompareceram / agendamentos.length) * 100 : 0;
+  const taxaComparecimento = totalAgendamentos > 0 ? (totalCompareceram / totalAgendamentos) * 100 : 0;
   const aproveitamentoGeral = totalCompareceram > 0 ? (totalFechamentos / totalCompareceram) * 100 : 0;
   const ticketMedio = totalFechamentos > 0 ? receitaTotal / totalFechamentos : 0;
 
   const metrics: Metrics = {
     totalLeads,
-    agendamentos: agendamentos.length,
+    agendamentos: Math.max(agendamentos.length, totalCompareceram),
     confirmados: confirmados.length,
     apresentacoes: totalCompareceram,
     compareceram: totalCompareceram,
     noShows: noShows.length,
     remarcacoes: 0,
     fechamentos: totalFechamentos,
-    fechados: fechados.length,
-    vendasCompletas: vendasCompletas.length,
-    vendasRecorrentes: vendasRecorrentes.length,
+    fechados: fechadosPorStatus.length,
+    vendasCompletas,
+    vendasRecorrentes,
     receitaTotal,
     receitaCompleta,
     receitaRecorrente,
@@ -185,11 +207,12 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     mentorados
   };
 
-  console.log('✅ [METRICS] Métricas calculadas (CORRIGIDAS):');
+  console.log('✅ [METRICS] MÉTRICAS CORRIGIDAS (EMERGENCIAL):');
   console.log('💰 [METRICS] - Receita Total:', formatCurrency(receitaTotal));
   console.log('📊 [METRICS] - Fechamentos:', totalFechamentos);
   console.log('📈 [METRICS] - Taxa Fechamento:', taxaFechamento.toFixed(2) + '%');
   console.log('👥 [METRICS] - Mentorados:', mentorados);
+  console.log('🎯 [METRICS] - Ticket Médio:', formatCurrency(ticketMedio));
 
   return metrics;
 }

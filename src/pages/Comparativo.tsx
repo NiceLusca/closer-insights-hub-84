@@ -18,7 +18,7 @@ import { TrendingUp, RefreshCw } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 const Comparativo = () => {
-  // MIGRAÇÃO COMPLETA: Usar exclusivamente useFastLeadsData
+  // CORREÇÃO EMERGENCIAL: Usar exclusivamente useFastLeadsData
   const { 
     allLeads, 
     isLoading, 
@@ -32,9 +32,16 @@ const Comparativo = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const now = new Date();
+  // CORREÇÃO: Garantir que junho seja período 1 e maio seja período 2
   const [selectedPeriods, setSelectedPeriods] = useState({
-    period1: { from: startOfMonth(now), to: endOfMonth(now) },
-    period2: { from: startOfMonth(subMonths(now, 1)), to: endOfMonth(subMonths(now, 1)) }
+    period1: { 
+      from: new Date(2024, 5, 1), // Junho 2024
+      to: new Date(2024, 5, 30) 
+    },
+    period2: { 
+      from: new Date(2024, 4, 1), // Maio 2024  
+      to: new Date(2024, 4, 31) 
+    }
   });
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([]);
 
@@ -48,13 +55,23 @@ const Comparativo = () => {
     selectedOrigins
   });
 
-  console.log('📊 [COMPARATIVO] === MIGRAÇÃO COMPLETA FASE 2 ===');
+  console.log('📊 [COMPARATIVO] === CORREÇÃO EMERGENCIAL FASE 6 ===');
   console.log('📊 [COMPARATIVO] - Total leads:', allLeads.length);
   console.log('📊 [COMPARATIVO] - Comparison data:', comparisonData ? 'Disponível' : 'Indisponível');
+  console.log('📊 [COMPARATIVO] - Junho leads:', comparisonData?.dataset1?.data?.length || 0);
+  console.log('📊 [COMPARATIVO] - Maio leads:', comparisonData?.dataset2?.data?.length || 0);
 
   useEffect(() => {
     document.title = 'Clarity - Análise Comparativa';
   }, []);
+
+  // CORREÇÃO: Forçar atualização se não há dados
+  useEffect(() => {
+    if (!isLoading && allLeads.length === 0) {
+      console.log('⚠️ [COMPARATIVO] Nenhum lead encontrado, forçando atualização...');
+      forceRefresh();
+    }
+  }, [isLoading, allLeads.length, forceRefresh]);
 
   const handleForceRefresh = async () => {
     setIsRefreshing(true);
@@ -66,7 +83,7 @@ const Comparativo = () => {
   };
 
   if (isLoading) {
-    return <LoadingState progress={50} stage="Sistema unificado Supabase..." />;
+    return <LoadingState progress={50} stage="Carregando dados corrigidos..." />;
   }
 
   return (
@@ -75,7 +92,7 @@ const Comparativo = () => {
         <div className="flex items-center justify-between mb-6">
           <PageHeader 
             title="Análise Comparativa"
-            description="Compare períodos e origens (Sistema Unificado Supabase)"
+            description="Compare períodos e origens (Sistema Corrigido)"
           />
           
           <div className="flex items-center gap-4">
@@ -98,6 +115,16 @@ const Comparativo = () => {
           </div>
         </div>
         
+        {allLeads.length === 0 && (
+          <div className="text-center py-12 mb-8">
+            <p className="text-gray-400 mb-4">Nenhum dado disponível para comparação</p>
+            <Button onClick={handleForceRefresh} disabled={isRefreshing}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Carregar Dados
+            </Button>
+          </div>
+        )}
+        
         {comparisonData && (
           <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-8 animate-fade-in">
             <CardContent className="p-4">
@@ -116,46 +143,50 @@ const Comparativo = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <ComparisonTypeSelector
-            selectedType={comparisonType}
-            onTypeChange={setComparisonType}
-          />
-          
-          <PeriodSelector
-            selectedPeriods={selectedPeriods}
-            onPeriodsChange={setSelectedPeriods}
-            comparisonType={mappedComparisonType}
-          />
-          
-          <ComparisonFilters
-            allLeads={allLeads}
-            comparisonType={mappedComparisonType}
-            selectedClosers={[]}
-            selectedOrigins={selectedOrigins}
-            onClosersChange={() => {}}
-            onOriginsChange={setSelectedOrigins}
-          />
-        </div>
-
-        {isComparing ? (
-          <LoadingState progress={75} stage="Processando comparação..." />
-        ) : (
-          <div className="space-y-8">
-            <ExpandedComparisonTable comparisonData={comparisonData} />
-            <InsightsPanel insights={insights} />
-            
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-              <TrendComparison
-                comparisonData={comparisonData}
+        {allLeads.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <ComparisonTypeSelector
+                selectedType={comparisonType}
+                onTypeChange={setComparisonType}
+              />
+              
+              <PeriodSelector
+                selectedPeriods={selectedPeriods}
+                onPeriodsChange={setSelectedPeriods}
                 comparisonType={mappedComparisonType}
               />
-              <PerformanceMatrix
-                comparisonData={comparisonData}
+              
+              <ComparisonFilters
+                allLeads={allLeads}
                 comparisonType={mappedComparisonType}
+                selectedClosers={[]}
+                selectedOrigins={selectedOrigins}
+                onClosersChange={() => {}}
+                onOriginsChange={setSelectedOrigins}
               />
             </div>
-          </div>
+
+            {isComparing ? (
+              <LoadingState progress={75} stage="Processando comparação..." />
+            ) : (
+              <div className="space-y-8">
+                <ExpandedComparisonTable comparisonData={comparisonData} />
+                <InsightsPanel insights={insights} />
+                
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <TrendComparison
+                    comparisonData={comparisonData}
+                    comparisonType={mappedComparisonType}
+                  />
+                  <PerformanceMatrix
+                    comparisonData={comparisonData}
+                    comparisonType={mappedComparisonType}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

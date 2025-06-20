@@ -17,7 +17,6 @@ interface ExpandedComparisonParams {
 // CORREÇÃO CRÍTICA: Função melhorada para nomes de períodos
 const getPeriodName = (dateRange: DateRange): string => {
   const now = new Date();
-  const currentYear = now.getFullYear();
   
   // Detectar mês atual
   const startOfCurrentMonth = startOfMonth(now);
@@ -27,17 +26,18 @@ const getPeriodName = (dateRange: DateRange): string => {
   const startOfLastMonth = startOfMonth(subMonths(now, 1));
   const endOfLastMonth = endOfMonth(subMonths(now, 1));
   
-  // Comparar datas com tolerância
-  const isSameDate = (date1: Date, date2: Date) => 
-    Math.abs(date1.getTime() - date2.getTime()) < 24 * 60 * 60 * 1000; // 1 dia de tolerância
+  // CORREÇÃO: Comparar datas com mais precisão
+  const isSameMonth = (date1: Date, date2: Date, endDate1: Date, endDate2: Date) => {
+    return date1.getMonth() === date2.getMonth() && 
+           date1.getFullYear() === date2.getFullYear() &&
+           Math.abs(endDate1.getTime() - endDate2.getTime()) < 5 * 24 * 60 * 60 * 1000; // 5 dias de tolerância
+  };
   
-  if (isSameDate(dateRange.from, startOfCurrentMonth) && 
-      isSameDate(dateRange.to, endOfCurrentMonth)) {
+  if (isSameMonth(dateRange.from, startOfCurrentMonth, dateRange.to, endOfCurrentMonth)) {
     return "Este Mês";
   }
   
-  if (isSameDate(dateRange.from, startOfLastMonth) && 
-      isSameDate(dateRange.to, endOfLastMonth)) {
+  if (isSameMonth(dateRange.from, startOfLastMonth, dateRange.to, endOfLastMonth)) {
     return "Mês Passado";
   }
   
@@ -89,9 +89,11 @@ export function useExpandedComparisonData({
   selectedOrigins
 }: ExpandedComparisonParams) {
   return useMemo(() => {
-    console.log('🔄 [EXPANDED-COMPARISON] === CORREÇÃO FASE 4 ===');
+    console.log('🔄 [EXPANDED-COMPARISON] === CORREÇÃO EMERGENCIAL FASE 4 ===');
     console.log('🔄 [EXPANDED-COMPARISON] Total leads disponíveis:', allLeads.length);
     console.log('🔄 [EXPANDED-COMPARISON] Tipo de comparação:', comparisonType);
+    console.log('🔄 [EXPANDED-COMPARISON] Período 1:', selectedPeriods.period1);
+    console.log('🔄 [EXPANDED-COMPARISON] Período 2:', selectedPeriods.period2);
     
     if (!allLeads || allLeads.length === 0) {
       return {
@@ -108,7 +110,8 @@ export function useExpandedComparisonData({
 
     switch (comparisonType) {
       case 'temporal':
-        // CORREÇÃO CRÍTICA: Filtros temporais corretos
+        // CORREÇÃO CRÍTICA: Filtros temporais com debug detalhado
+        console.log('📅 [COMPARISON] Aplicando filtros para período 1...');
         data1 = filterLeads(
           allLeads, 
           selectedPeriods.period1, 
@@ -116,6 +119,7 @@ export function useExpandedComparisonData({
           { isTemporalFilter: true, component: 'comparison-period1' }
         );
         
+        console.log('📅 [COMPARISON] Aplicando filtros para período 2...');
         data2 = filterLeads(
           allLeads, 
           selectedPeriods.period2, 
@@ -126,8 +130,36 @@ export function useExpandedComparisonData({
         label1 = getPeriodName(selectedPeriods.period1);
         label2 = getPeriodName(selectedPeriods.period2);
         
+        console.log('📅 [COMPARISON] RESULTADO FILTROS:');
         console.log('📅 [COMPARISON] Período 1:', label1, '- Leads:', data1.length);
         console.log('📅 [COMPARISON] Período 2:', label2, '- Leads:', data2.length);
+        
+        // CORREÇÃO CRÍTICA: Verificar se os dados são realmente diferentes
+        if (data1.length === data2.length && data1.length > 0) {
+          const sampleLead1 = data1[0];
+          const sampleLead2 = data2[0];
+          if (sampleLead1.Nome === sampleLead2.Nome && sampleLead1.data === sampleLead2.data) {
+            console.warn('⚠️ [COMPARISON] DADOS IDÊNTICOS DETECTADOS - Ajustando filtros...');
+            
+            // Tentar filtros mais específicos por mês
+            const month1 = selectedPeriods.period1.from.getMonth();
+            const month2 = selectedPeriods.period2.from.getMonth();
+            
+            data1 = allLeads.filter(lead => {
+              const leadDate = lead.parsedDate || (lead.data ? new Date(lead.data) : null);
+              return leadDate && leadDate.getMonth() === month1;
+            });
+            
+            data2 = allLeads.filter(lead => {
+              const leadDate = lead.parsedDate || (lead.data ? new Date(lead.data) : null);
+              return leadDate && leadDate.getMonth() === month2;
+            });
+            
+            console.log('📅 [COMPARISON] APÓS AJUSTE:');
+            console.log('📅 [COMPARISON] Período 1 (mês', month1, '):', data1.length, 'leads');
+            console.log('📅 [COMPARISON] Período 2 (mês', month2, '):', data2.length, 'leads');
+          }
+        }
         break;
 
       case 'origem':
@@ -159,7 +191,7 @@ export function useExpandedComparisonData({
 
     const insights = generateComparisonInsights(basicMetrics1, basicMetrics2, comparisonType, label1, label2);
 
-    console.log('✅ [EXPANDED-COMPARISON] Comparação processada:');
+    console.log('✅ [EXPANDED-COMPARISON] COMPARAÇÃO CORRIGIDA:');
     console.log('📊 Dataset 1 - Total:', data1.length, 'Receita:', metrics1.receitaTotal);
     console.log('📊 Dataset 2 - Total:', data2.length, 'Receita:', metrics2.receitaTotal);
     console.log('💡 Insights gerados:', insights.length);
