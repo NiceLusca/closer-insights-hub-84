@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
@@ -148,9 +147,9 @@ const Dashboard = () => {
               <LossAnalysis leads={filteredLeads} />
             </div>
 
-            {/* 9. Validação Matemática */}
+            {/* 9. Validação Matemática - FIXED: MathValidação -> MathValidation */}
             <div className="mb-6 animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
-              <MathValidação leads={filteredLeads} />
+              <MathValidation leads={filteredLeads} />
             </div>
 
             {/* 10. Debug Info - CORRIGIDO para passar objeto cacheStatus */}
