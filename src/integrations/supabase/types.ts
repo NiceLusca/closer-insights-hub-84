@@ -36,6 +36,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cache_metadata: {
+        Row: {
+          cache_type: string
+          created_at: string
+          id: string
+          is_valid: boolean | null
+          last_cache_update: string
+          last_webhook_sync: string
+          total_records: number | null
+          updated_at: string
+          webhook_hash: string | null
+        }
+        Insert: {
+          cache_type: string
+          created_at?: string
+          id?: string
+          is_valid?: boolean | null
+          last_cache_update?: string
+          last_webhook_sync?: string
+          total_records?: number | null
+          updated_at?: string
+          webhook_hash?: string | null
+        }
+        Update: {
+          cache_type?: string
+          created_at?: string
+          id?: string
+          is_valid?: boolean | null
+          last_cache_update?: string
+          last_webhook_sync?: string
+          total_records?: number | null
+          updated_at?: string
+          webhook_hash?: string | null
+        }
+        Relationships: []
+      }
       cached_tags: {
         Row: {
           api_configuration_id: string | null
@@ -67,6 +103,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads_cache: {
+        Row: {
+          created_at: string
+          id: string
+          leads_count: number
+          processed_leads: Json
+          raw_data: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leads_count?: number
+          processed_leads: Json
+          raw_data: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leads_count?: number
+          processed_leads?: Json
+          raw_data?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       processing_batches: {
         Row: {

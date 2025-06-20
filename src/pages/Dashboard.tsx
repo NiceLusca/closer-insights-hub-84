@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useLeadsData } from "@/hooks/useLeadsData";
+import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
 import { useFilterOptions } from "@/hooks/useFilterOptions";
 import { useGlobalFilters } from "@/contexts/FilterContext";
@@ -17,20 +16,19 @@ import { PerformanceAlerts } from "@/components/PerformanceAlerts";
 import { DebugInfo } from "@/components/Dashboard/DebugInfo";
 import { StatusDistributionCards } from "@/components/StatusDistributionCards";
 import { MathValidation } from "@/components/Dashboard/MathValidation";
+import { FastLoadingIndicator } from "@/components/Dashboard/FastLoadingIndicator";
 
 const Dashboard = () => {
-  // Estado dos dados
+  // Usar novo hook de carregamento rápido
   const { 
     allLeads, 
     isLoading, 
     lastUpdated, 
     dataReady, 
-    loadingProgress, 
-    loadingStage, 
-    fetchLeadsData, 
+    cacheStatus,
     forceRefresh,
-    isCacheValid
-  } = useLeadsData();
+    updateInBackground
+  } = useFastLeadsData();
   
   // Estado dos filtros globais
   const {
@@ -61,11 +59,7 @@ const Dashboard = () => {
   console.log('🏠 [DASHBOARD] === ESTADO COMPLETO DO DASHBOARD ===');
   console.log('🏠 [DASHBOARD] Total leads brutos:', allLeads.length);
   console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
-  console.log('🏠 [DASHBOARD] Filtros ativos:', { dateRange, filters });
-  console.log('🏠 [DASHBOARD] Período selecionado:', {
-    from: dateRange.from.toLocaleDateString(),
-    to: dateRange.to.toLocaleDateString()
-  });
+  console.log('🏠 [DASHBOARD] Cache status:', cacheStatus);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 smooth-scroll">
@@ -79,6 +73,14 @@ const Dashboard = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mobile-spacing">
+        {/* Indicador de status de carregamento rápido */}
+        <div className="mb-6">
+          <FastLoadingIndicator 
+            cacheStatus={cacheStatus}
+            lastUpdated={lastUpdated}
+          />
+        </div>
+
         <FiltersPanel
           showFilters={showFilters}
           tempDateRange={tempDateRange}
@@ -96,8 +98,8 @@ const Dashboard = () => {
         {/* Loading State com progresso */}
         {(isLoading || isApplyingFilters) && (
           <LoadingState 
-            progress={isApplyingFilters ? 100 : loadingProgress} 
-            stage={isApplyingFilters ? 'Aplicando filtros...' : loadingStage}
+            progress={isApplyingFilters ? 100 : 75} 
+            stage={isApplyingFilters ? 'Aplicando filtros...' : 'Carregamento rápido...'}
           />
         )}
 
@@ -155,7 +157,7 @@ const Dashboard = () => {
                 allLeads={allLeads} 
                 filteredLeads={filteredLeads} 
                 dateRange={dateRange}
-                cacheStatus={isCacheValid ? 'válido' : 'expirado'}
+                cacheStatus={cacheStatus}
                 validation={validation}
               />
             </div>

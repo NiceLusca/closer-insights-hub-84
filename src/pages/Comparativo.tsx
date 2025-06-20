@@ -1,23 +1,29 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLeadsData } from "@/hooks/useLeadsData";
-import { useComparisonData } from "@/hooks/useComparisonData";
+import { useFastLeadsData } from "@/hooks/useFastLeadsData";
+import { useExpandedComparisonData } from "@/hooks/useExpandedComparisonData";
 import { PageHeader } from "@/components/PageHeader";
 import { PeriodSelector } from "@/components/Comparison/PeriodSelector";
 import { ComparisonTypeSelector, type ComparisonType } from "@/components/Comparison/ComparisonTypeSelector";
 import { ComparisonFilters } from "@/components/Comparison/ComparisonFilters";
-import { ComparisonTable } from "@/components/Comparison/ComparisonTable";
+import { ExpandedComparisonTable } from "@/components/Comparison/ExpandedComparisonTable";
 import { TrendComparison } from "@/components/Comparison/TrendComparison";
 import { PerformanceMatrix } from "@/components/Comparison/PerformanceMatrix";
 import { InsightsPanel } from "@/components/Comparison/InsightsPanel";
+import { FastLoadingIndicator } from "@/components/Dashboard/FastLoadingIndicator";
 import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, RefreshCw } from "lucide-react";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 const Comparativo = () => {
-  const { allLeads, isLoading } = useLeadsData();
+  // Usar novo hook de carregamento rápido
+  const { allLeads, isLoading, lastUpdated, dataReady, cacheStatus, forceRefresh } = useFastLeadsData();
+  
   const [comparisonType, setComparisonType] = useState<ComparisonType>('period');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const now = new Date();
   const [selectedPeriods, setSelectedPeriods] = useState({
     period1: { from: startOfMonth(now), to: endOfMonth(now) },
@@ -27,7 +33,8 @@ const Comparativo = () => {
 
   const mappedComparisonType = comparisonType === 'period' ? 'temporal' : 'origem';
 
-  const { comparisonData, insights, isComparing } = useComparisonData({
+  // Usar novo hook de comparação expandida
+  const { comparisonData, insights, isComparing } = useExpandedComparisonData({
     allLeads,
     comparisonType: mappedComparisonType,
     selectedPeriods,
@@ -38,17 +45,47 @@ const Comparativo = () => {
     document.title = 'Clarity - Análise Comparativa';
   }, []);
 
+  const handleForceRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await forceRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (isLoading) {
-    return <LoadingState progress={50} stage="Carregando dados..." />;
+    return <LoadingState progress={50} stage="Carregamento rápido..." />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <PageHeader 
-          title="Análise Comparativa"
-          description="Compare períodos e origens para identificar tendências e oportunidades"
-        />
+        <div className="flex items-center justify-between mb-6">
+          <PageHeader 
+            title="Análise Comparativa"
+            description="Compare períodos e origens com métricas expandidas"
+          />
+          
+          <div className="flex items-center gap-4">
+            <FastLoadingIndicator 
+              cacheStatus={cacheStatus}
+              lastUpdated={lastUpdated}
+              isUpdatingInBackground={isRefreshing}
+            />
+            
+            <Button
+              onClick={handleForceRefresh}
+              disabled={isRefreshing}
+              variant="outline"
+              size="sm"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+          </div>
+        </div>
         
         {/* Status card */}
         {comparisonData && (
@@ -66,7 +103,7 @@ const Comparativo = () => {
           </Card>
         )}
 
-        {/* Controls com melhor espaçamento */}
+        {/* Controls */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <ComparisonTypeSelector
             selectedType={comparisonType}
@@ -94,8 +131,8 @@ const Comparativo = () => {
           <LoadingState progress={75} stage="Processando comparação..." />
         ) : (
           <div className="space-y-8">
-            {/* Tabela Comparativa principal */}
-            <ComparisonTable comparisonData={comparisonData} />
+            {/* Tabela Comparativa Expandida */}
+            <ExpandedComparisonTable comparisonData={comparisonData} />
 
             {/* Insights Panel */}
             <InsightsPanel insights={insights} />
