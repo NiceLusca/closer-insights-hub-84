@@ -57,6 +57,9 @@ const Dashboard = () => {
     document.title = 'Clarity - Analytics Dashboard';
   }, []);
 
+  // Converter cacheStatus para string para compatibilidade com DebugInfo
+  const cacheStatusString = cacheStatus.isValid ? 'válido' : 'inválido';
+
   console.log('🏠 [DASHBOARD] === ESTADO COMPLETO DO DASHBOARD ===');
   console.log('🏠 [DASHBOARD] Total leads brutos:', allLeads.length);
   console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
@@ -158,7 +161,7 @@ const Dashboard = () => {
                 allLeads={allLeads} 
                 filteredLeads={filteredLeads} 
                 dateRange={dateRange}
-                cacheStatus={cacheStatus}
+                cacheStatus={cacheStatusString}
                 validation={validation}
               />
             </div>
