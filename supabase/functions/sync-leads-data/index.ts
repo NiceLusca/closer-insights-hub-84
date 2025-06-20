@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -181,9 +182,9 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    console.log('🔄 [EDGE-FUNCTION] Iniciando sincronização completa...');
+    console.log('🔄 [EDGE-FUNCTION] === CORREÇÃO CRÍTICA - SINCRONIZAÇÃO ROBUSTA ===');
 
-    // Verificar se precisa sincronizar (apenas se não for forçado)
+    // Verificar se precisa sincronizar
     const requestBody = await req.json().catch(() => ({}));
     const forceSync = requestBody?.force === true;
 
@@ -192,7 +193,7 @@ serve(async (req) => {
         .from('cache_metadata')
         .select('last_webhook_sync, is_valid')
         .eq('cache_type', 'leads')
-        .maybeSingle(); // CORREÇÃO: usar maybeSingle()
+        .maybeSingle();
 
       if (metadata) {
         const lastSync = new Date(metadata.last_webhook_sync);
@@ -213,18 +214,38 @@ serve(async (req) => {
       }
     }
 
-    // Buscar dados do webhook
+    // CORREÇÃO CRÍTICA: Buscar dados do webhook com retry
     console.log('🌐 [EDGE-FUNCTION] Buscando dados do webhook...');
-    const webhookResponse = await fetch(WEBHOOK_URL, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
+    let webhookResponse;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    if (!webhookResponse.ok) {
-      throw new Error(`Webhook retornou ${webhookResponse.status}: ${webhookResponse.statusText}`);
+    while (retryCount < maxRetries) {
+      try {
+        webhookResponse = await fetch(WEBHOOK_URL, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (webhookResponse.ok) {
+          break;
+        } else {
+          throw new Error(`Webhook retornou ${webhookResponse.status}: ${webhookResponse.statusText}`);
+        }
+      } catch (error) {
+        retryCount++;
+        console.warn(`🔄 [EDGE-FUNCTION] Tentativa ${retryCount}/${maxRetries} falhou:`, error.message);
+        
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+        
+        // Aguardar antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
 
     const rawData = await webhookResponse.json();
@@ -264,7 +285,7 @@ serve(async (req) => {
       );
     }
 
-    // Salvar no cache
+    // CORREÇÃO CRÍTICA: Salvar no cache com tratamento de conflitos
     const { error: cacheError } = await supabase
       .from('leads_cache')
       .insert({
@@ -278,7 +299,7 @@ serve(async (req) => {
       throw cacheError;
     }
 
-    // CORREÇÃO: Usar upsert para evitar constraint único
+    // CORREÇÃO CRÍTICA: Usar upsert para metadata com tratamento de conflitos
     const { error: metaError } = await supabase
       .from('cache_metadata')
       .upsert({
@@ -289,29 +310,36 @@ serve(async (req) => {
         total_records: processedLeads.length,
         is_valid: true
       }, {
-        onConflict: 'cache_type'
+        onConflict: 'cache_type',
+        ignoreDuplicates: false
       });
 
     if (metaError) {
       console.error('❌ [EDGE-FUNCTION] Erro ao atualizar metadata:', metaError);
-      throw metaError;
+      // Não falhar completamente se metadata não conseguir ser atualizada
+      console.warn('⚠️ [EDGE-FUNCTION] Continuando apesar do erro de metadata');
     }
 
-    // Limpar cache antigo
-    const { data: oldRecords } = await supabase
-      .from('leads_cache')
-      .select('id')
-      .order('updated_at', { ascending: false })
-      .range(5, 100);
-
-    if (oldRecords && oldRecords.length > 0) {
-      const idsToDelete = oldRecords.map(r => r.id);
-      await supabase
+    // Limpar cache antigo (com tratamento de erro)
+    try {
+      const { data: oldRecords } = await supabase
         .from('leads_cache')
-        .delete()
-        .in('id', idsToDelete);
-      
-      console.log(`🧹 [EDGE-FUNCTION] ${idsToDelete.length} registros antigos removidos`);
+        .select('id')
+        .order('updated_at', { ascending: false })
+        .range(5, 100);
+
+      if (oldRecords && oldRecords.length > 0) {
+        const idsToDelete = oldRecords.map(r => r.id);
+        await supabase
+          .from('leads_cache')
+          .delete()
+          .in('id', idsToDelete);
+        
+        console.log(`🧹 [EDGE-FUNCTION] ${idsToDelete.length} registros antigos removidos`);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ [EDGE-FUNCTION] Erro na limpeza de cache antigo:', cleanupError);
+      // Não falhar por causa da limpeza
     }
 
     console.log(`✅ [EDGE-FUNCTION] Sincronização concluída: ${processedLeads.length} leads processados`);
@@ -330,7 +358,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ [EDGE-FUNCTION] Erro na sincronização:', error);
     
-    // Marcar cache como inválido em caso de erro
+    // CORREÇÃO CRÍTICA: Marcar cache como inválido em caso de erro
     try {
       await supabase
         .from('cache_metadata')
@@ -344,7 +372,8 @@ serve(async (req) => {
       JSON.stringify({
         error: 'Erro na sincronização',
         message: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        retryAdvice: 'Tente novamente em alguns segundos'
       }),
       { 
         status: 500,

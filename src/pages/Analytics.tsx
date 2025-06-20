@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useLeadsData } from "@/hooks/useLeadsData";
+import { useFastLeadsData } from "@/hooks/useFastLeadsData";
 import { useFilteredLeads } from "@/hooks/useFilteredLeads";
 import { useGlobalFilters } from "@/contexts/FilterContext";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,14 +10,13 @@ import { TemporalAnalysis } from "@/components/TemporalAnalysis";
 import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
 
 const Analytics = () => {
-  // Estado dos dados
+  // MIGRAÇÃO CRÍTICA: Usar EXCLUSIVAMENTE useFastLeadsData (Sistema Unificado)
   const { 
     allLeads, 
     isLoading, 
-    loadingProgress, 
-    loadingStage,
-    isCacheValid
-  } = useLeadsData();
+    lastUpdated,
+    cacheStatus
+  } = useFastLeadsData();
   
   // Estado dos filtros globais
   const { dateRange, filters } = useGlobalFilters();
@@ -24,10 +24,11 @@ const Analytics = () => {
   // Usar leads filtrados para todos os componentes da página Analytics
   const { filteredLeads } = useFilteredLeads(allLeads, dateRange, filters, 'analytics');
 
-  console.log('📊 [ANALYTICS PAGE] Dados recebidos:');
+  console.log('📊 [ANALYTICS PAGE] === MIGRAÇÃO PARA SISTEMA UNIFICADO ===');
   console.log('📊 [ANALYTICS PAGE] - Total de leads brutos:', allLeads.length);
   console.log('📊 [ANALYTICS PAGE] - Leads filtrados:', filteredLeads.length);
-  console.log('📊 [ANALYTICS PAGE] - Filtros ativos:', { dateRange, filters });
+  console.log('📊 [ANALYTICS PAGE] - Cache status:', cacheStatus);
+  console.log('📊 [ANALYTICS PAGE] - Sistema unificado Supabase ativo');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900">
@@ -42,17 +43,17 @@ const Analytics = () => {
             Total: {allLeads.length} leads | Filtrados: {filteredLeads.length} leads
           </p>
           <span className={`text-xs px-2 py-1 rounded ${
-            isCacheValid ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+            cacheStatus.isValid ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
           }`}>
-            {isCacheValid ? 'Cache válido' : 'Cache expirado'}
+            {cacheStatus.source} - {cacheStatus.ageMinutes.toFixed(1)}min
           </span>
         </div>
 
-        {/* Loading State com progresso */}
+        {/* Loading State unificado */}
         {isLoading && (
           <LoadingState 
-            progress={loadingProgress} 
-            stage={loadingStage}
+            progress={75} 
+            stage="Sistema unificado Supabase..."
           />
         )}
 
