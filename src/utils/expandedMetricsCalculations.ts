@@ -64,8 +64,8 @@ export function calculateExpandedMetrics(leads: Lead[]): ExpandedMetrics {
   const fechamentos = leads.filter(lead => 
     lead.Status && ['Fechamento', 'Fechou'].includes(lead.Status)
   );
-  const noShows = leads.filter(lead => lead.Status === 'No Show').length;
-  const remarcacoes = leads.filter(lead => lead.Status === 'Remarcado').length;
+  const noShows = leads.filter(lead => lead.Status === 'Não Apareceu' || lead.Status === 'No Show').length;
+  const remarcacoes = leads.filter(lead => lead.Status === 'Remarcou' || lead.Status === 'Remarcado').length;
 
   // Calcular receitas
   let receitaTotal = 0;
@@ -75,7 +75,7 @@ export function calculateExpandedMetrics(leads: Lead[]): ExpandedMetrics {
   let vendasCompletas = 0;
 
   fechamentos.forEach(lead => {
-    const valor = parseFloat(lead.Valor?.toString().replace(/[^\d,.-]/g, '').replace(',', '.') || '0');
+    const valor = lead.Valor ? parseFloat(lead.Valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.')) : 0;
     receitaTotal += valor;
     
     if (lead.Produto && lead.Produto.toLowerCase().includes('recorrente')) {

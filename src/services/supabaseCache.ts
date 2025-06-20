@@ -70,7 +70,7 @@ export class SupabaseCache {
         return null;
       }
 
-      const leads = data.processed_leads as Lead[];
+      const leads = data.processed_leads as unknown as Lead[];
       console.log(`✅ ${leads.length} leads carregados do cache (${data.updated_at})`);
       
       return leads;
@@ -92,8 +92,8 @@ export class SupabaseCache {
       const { error: cacheError } = await supabase
         .from('leads_cache')
         .insert({
-          raw_data: rawData,
-          processed_leads: processedLeads,
+          raw_data: rawData as any,
+          processed_leads: processedLeads as any,
           leads_count: processedLeads.length
         });
 

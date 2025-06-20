@@ -5,7 +5,7 @@ import { calculateExpandedMetrics } from "@/utils/expandedMetricsCalculations";
 import { generateComparisonInsights } from "@/utils/comparisonUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Lead, DateRange } from "@/types/lead";
+import type { Lead, DateRange, Metrics } from "@/types/lead";
 
 interface ExpandedComparisonParams {
   allLeads: Lead[];
@@ -39,6 +39,37 @@ const getPeriodName = (dateRange: DateRange): string => {
   }
   
   return `${format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} - ${format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}`;
+};
+
+// Função auxiliar para converter ExpandedMetrics para Metrics
+const convertToBasicMetrics = (expandedMetrics: any): Metrics => {
+  return {
+    totalLeads: expandedMetrics.totalLeads || 0,
+    fechamentos: expandedMetrics.fechamentos || 0,
+    receitaTotal: expandedMetrics.receitaTotal || 0,
+    taxaFechamento: expandedMetrics.taxaFechamento || 0,
+    taxaComparecimento: expandedMetrics.taxaComparecimento || 0,
+    aproveitamentoGeral: expandedMetrics.aproveitamentoGeral || 0,
+    ticketMedio: expandedMetrics.ticketMedio || 0,
+    noShows: expandedMetrics.noShows || 0,
+    remarcacoes: expandedMetrics.remarcacoes || 0,
+    receitaRecorrente: expandedMetrics.receitaRecorrente || 0,
+    receitaCompleta: expandedMetrics.receitaCompleta || 0,
+    // Valores padrão para propriedades obrigatórias faltantes
+    agendamentos: 0,
+    confirmados: 0,
+    mentorados: 0,
+    vendasCompletas: expandedMetrics.vendasCompletas || 0,
+    vendasRecorrentes: expandedMetrics.vendasRecorrentes || 0,
+    taxaDesmarque: 0,
+    taxaNaoFechamento: 0,
+    fechados: expandedMetrics.fechamentos || 0,
+    aSerAtendido: 0,
+    atendidoNaoFechou: 0,
+    perdidoInativo: 0,
+    apresentacoes: 0,
+    compareceram: 0
+  };
 };
 
 export function useExpandedComparisonData({
@@ -94,34 +125,9 @@ export function useExpandedComparisonData({
       type: comparisonType
     };
 
-    // Usar métricas básicas para insights (compatibilidade)
-    const basicMetrics1 = {
-      totalLeads: metrics1.totalLeads,
-      fechamentos: metrics1.fechamentos,
-      receitaTotal: metrics1.receitaTotal,
-      taxaFechamento: metrics1.taxaFechamento,
-      taxaComparecimento: metrics1.taxaComparecimento,
-      aproveitamentoGeral: metrics1.aproveitamentoGeral,
-      ticketMedio: metrics1.ticketMedio,
-      noShows: metrics1.noShows,
-      remarcacoes: metrics1.remarcacoes,
-      receitaRecorrente: metrics1.receitaRecorrente,
-      receitaCompleta: metrics1.receitaCompleta
-    };
-
-    const basicMetrics2 = {
-      totalLeads: metrics2.totalLeads,
-      fechamentos: metrics2.fechamentos,
-      receitaTotal: metrics2.receitaTotal,
-      taxaFechamento: metrics2.taxaFechamento,
-      taxaComparecimento: metrics2.taxaComparecimento,
-      aproveitamentoGeral: metrics2.aproveitamentoGeral,
-      ticketMedio: metrics2.ticketMedio,
-      noShows: metrics2.noShows,
-      remarcacoes: metrics2.remarcacoes,
-      receitaRecorrente: metrics2.receitaRecorrente,
-      receitaCompleta: metrics2.receitaCompleta
-    };
+    // Converter métricas expandidas para básicas para compatibilidade com insights
+    const basicMetrics1 = convertToBasicMetrics(metrics1);
+    const basicMetrics2 = convertToBasicMetrics(metrics2);
 
     const insights = generateComparisonInsights(basicMetrics1, basicMetrics2, comparisonType, label1, label2);
 
