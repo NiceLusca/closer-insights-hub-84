@@ -30,53 +30,49 @@ export function filterLeads(
 ): Lead[] {
   const { isTemporalFilter = false, component = 'unknown' } = context;
   
-  console.log(`🔍 [${component.toUpperCase()}] === FILTRO CORRIGIDO (MENOS RESTRITIVO) ===`);
+  console.log(`🔍 [${component.toUpperCase()}] === FILTRO CORRIGIDO E MENOS RESTRITIVO ===`);
   console.log(`🔍 [${component.toUpperCase()}] Total de leads recebidos:`, leads.length);
   console.log(`🔍 [${component.toUpperCase()}] Período selecionado:`, {
     from: dateRange.from.toLocaleDateString(),
     to: dateRange.to.toLocaleDateString()
   });
-  console.log(`🔍 [${component.toUpperCase()}] Filtros ativos:`, filters);
   
   const filtered = leads.filter(lead => {
-    // CORREÇÃO CRÍTICA 1: Ser MUITO menos restritivo com status
-    // Incluir leads mesmo sem status se não há filtros específicos
-    const leadStatus = lead.Status?.trim();
-    
+    // CORREÇÃO 1: Ser MUITO menos restritivo com status
     if (filters.status.length > 0) {
-      // Só filtrar por status se há filtros específicos selecionados
+      const leadStatus = lead.Status?.trim();
       if (leadStatus && !filters.status.includes(leadStatus)) {
         return false;
       }
+      // Se lead não tem status mas filtro está ativo, INCLUIR mesmo assim
     }
-    // Se não há filtros de status, incluir TODOS os leads (mesmo sem status)
     
-    // 2. Filtrar por closer (menos restritivo)
+    // CORREÇÃO 2: Filtrar por closer (menos restritivo)
     if (filters.closer.length > 0) {
       const leadCloser = lead.Closer?.trim() || '';
       if (leadCloser && !filters.closer.includes(leadCloser)) {
         return false;
       }
-      // Se lead não tem closer mas filtro está ativo, ainda incluir
+      // Se lead não tem closer, INCLUIR mesmo assim
     }
     
-    // 3. Filtrar por origem (menos restritivo)
+    // CORREÇÃO 3: Filtrar por origem (menos restritivo)
     if (filters.origem.length > 0) {
       const leadOrigem = lead.origem?.trim() || '';
       if (leadOrigem && !filters.origem.includes(leadOrigem)) {
         return false;
       }
-      // Se lead não tem origem mas filtro está ativo, ainda incluir
+      // Se lead não tem origem, INCLUIR mesmo assim
     }
     
-    // 4. CORREÇÃO CRÍTICA 2: Filtrar por data com fallbacks robustos
+    // CORREÇÃO 4: Filtrar por data com validação rigorosa de anos
     const safeDate = ensureDateObject(lead.parsedDate);
     if (safeDate) {
       const leadDate = new Date(safeDate);
       
-      // VALIDAÇÃO CRÍTICA: Rejeitar datas muito antigas (antes de 2020)
-      if (leadDate.getFullYear() < 2020) {
-        console.warn(`⚠️ [${component}] Data rejeitada por ser muito antiga:`, leadDate.toISOString().split('T')[0], 'Lead:', lead.Nome);
+      // VALIDAÇÃO CRÍTICA: Rejeitar datas muito antigas (antes de 2020) ou muito futuras
+      if (leadDate.getFullYear() < 2020 || leadDate.getFullYear() > 2030) {
+        console.warn(`⚠️ [${component}] Data rejeitada (ano inválido):`, leadDate.toISOString().split('T')[0], 'Lead:', lead.Nome);
         return false;
       }
       
@@ -93,14 +89,14 @@ export function filterLeads(
         return false;
       }
     } else {
-      // CORREÇÃO CRÍTICA 3: Tentar usar campo 'data' como fallback
+      // CORREÇÃO 5: Tentar usar campo 'data' como fallback
       if (lead.data && lead.data.trim() !== '') {
         try {
           const dataAlternativa = new Date(lead.data);
           if (!isNaN(dataAlternativa.getTime())) {
-            // VALIDAÇÃO: Rejeitar datas muito antigas
-            if (dataAlternativa.getFullYear() < 2020) {
-              console.warn(`⚠️ [${component}] Data alternativa rejeitada por ser muito antiga:`, dataAlternativa.toISOString().split('T')[0]);
+            // VALIDAÇÃO: Rejeitar datas com anos inválidos
+            if (dataAlternativa.getFullYear() < 2020 || dataAlternativa.getFullYear() > 2030) {
+              console.warn(`⚠️ [${component}] Data alternativa rejeitada (ano inválido):`, dataAlternativa.toISOString().split('T')[0]);
               return false;
             }
             
@@ -125,20 +121,21 @@ export function filterLeads(
           }
         }
       } else {
-        // Para análises temporais, excluir leads completamente sem data
+        // Para análises temporais, excluir leads sem data
         if (isTemporalFilter) {
           return false;
         }
+        // Para outras análises, INCLUIR leads sem data válida
       }
     }
     
     return true;
   });
   
-  console.log(`📊 [${component}] RESULTADO FINAL (CORRIGIDO):`);
+  console.log(`📊 [${component}] RESULTADO FINAL (MENOS RESTRITIVO):`);
   console.log(`📊 [${component}] - Total antes: ${leads.length}`);
   console.log(`📊 [${component}] - Total depois: ${filtered.length}`);
-  console.log(`📊 [${component}] - Filtros aplicados de forma menos restritiva`);
+  console.log(`📊 [${component}] - Filtros aplicados com lógica menos restritiva`);
   
   return filtered;
 }
@@ -180,14 +177,14 @@ export function validateFilters(
     return { isValid: false, warnings, suggestions };
   }
   
-  // Verificar se há leads no período (menos restritivo)
+  // Verificar se há leads no período (com validação de anos)
   const leadsInDateRange = leads.filter(lead => {
     const safeDate = ensureDateObject(lead.parsedDate);
     if (!safeDate) return false;
     
     const leadDate = new Date(safeDate);
-    // Rejeitar apenas datas obviamente inválidas
-    if (leadDate.getFullYear() < 2020) return false;
+    // Rejeitar apenas datas obviamente inválidas (anos impossíveis)
+    if (leadDate.getFullYear() < 2020 || leadDate.getFullYear() > 2030) return false;
     
     return leadDate >= dateRange.from && leadDate <= dateRange.to;
   });

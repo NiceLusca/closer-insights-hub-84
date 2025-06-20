@@ -1,15 +1,12 @@
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-const WEBHOOK_URL = 'https://bot-belas-n8n.9csrtv.easypanel.host/webhook/leads-closer-oceanoazul';
-
-// Sistema completo de processamento de leads
 interface ProcessedLead {
   row_number: number;
   data: string;
@@ -22,379 +19,274 @@ interface ProcessedLead {
   Closer: string;
   'Venda Completa': number;
   recorrente: number;
-  Valor?: number | string;
+  Valor?: any;
   Produto?: string;
   'Coluna 1'?: string;
-  parsedDate?: string;
-}
-
-// Função de parsing de data brasileira (replicada do sistema local)
-function parseBrazilianDate(dateStr: string): Date | null {
-  if (!dateStr || typeof dateStr !== 'string') return null;
-  
-  const cleaned = dateStr.trim();
-  if (!cleaned) return null;
-  
-  // Padrões de data brasileira
-  const patterns = [
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // DD/MM/YYYY
-    /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // DD-MM-YYYY
-    /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // YYYY-MM-DD
-  ];
-  
-  for (const pattern of patterns) {
-    const match = cleaned.match(pattern);
-    if (match) {
-      let day: number, month: number, year: number;
-      
-      if (pattern.source.startsWith('^(\\d{4})')) {
-        // YYYY-MM-DD
-        year = parseInt(match[1]);
-        month = parseInt(match[2]) - 1; // JavaScript months are 0-based
-        day = parseInt(match[3]);
-      } else {
-        // DD/MM/YYYY or DD-MM-YYYY
-        day = parseInt(match[1]);
-        month = parseInt(match[2]) - 1; // JavaScript months are 0-based
-        year = parseInt(match[3]);
-      }
-      
-      const date = new Date(year, month, day);
-      
-      // Validar se a data é válida
-      if (date.getFullYear() === year && 
-          date.getMonth() === month && 
-          date.getDate() === day) {
-        return date;
-      }
-    }
-  }
-  
-  // Tentar ISO date como fallback
-  try {
-    const isoDate = new Date(cleaned);
-    return isNaN(isoDate.getTime()) ? null : isoDate;
-  } catch {
-    return null;
-  }
-}
-
-// Função para encontrar data no item (replicada do sistema local)
-function findDateInItem(item: any): { dateValue: string | null; method: string } {
-  const dateFields = [
-    'data', 'Data', 'DATA',
-    'date', 'Date', 'DATE',
-    'data_lead', 'data_criacao', 'created_at',
-    'timestamp', 'Timestamp'
-  ];
-  
-  // Procurar em campos conhecidos
-  for (const field of dateFields) {
-    if (item[field] && typeof item[field] === 'string' && item[field].trim() !== '') {
-      return { dateValue: item[field].trim(), method: `campo_${field}` };
-    }
-  }
-  
-  // Procurar em qualquer campo que contenha "data" no nome
-  for (const [key, value] of Object.entries(item)) {
-    if (key.toLowerCase().includes('data') && 
-        typeof value === 'string' && 
-        value.trim() !== '') {
-      return { dateValue: value.trim(), method: `busca_${key}` };
-    }
-  }
-  
-  return { dateValue: null, method: 'not_found' };
-}
-
-// Função para construir lead (replicada do sistema local)
-function buildLead(item: any, index: number, rawDateValue: string, parsedDate: Date | null): ProcessedLead {
-  const getValue = (key: string, fallback: any = '') => {
-    return item[key] !== undefined && item[key] !== null ? item[key] : fallback;
-  };
-
-  const getNumericValue = (key: string, fallback: number = 0): number => {
-    const value = item[key];
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const parsed = parseFloat(value.replace(/[^\d,.-]/g, '').replace(',', '.'));
-      return isNaN(parsed) ? fallback : parsed;
-    }
-    return fallback;
-  };
-
-  return {
-    row_number: index + 1,
-    data: rawDateValue || getValue('data', ''),
-    Hora: getValue('Hora', getValue('hora', '')),
-    Nome: getValue('Nome', getValue('nome', '')),
-    'e-mail': getValue('e-mail', getValue('email', getValue('Email', ''))),
-    Whatsapp: getValue('Whatsapp', getValue('whatsapp', getValue('telefone', ''))),
-    origem: getValue('origem', getValue('source', getValue('Source', ''))),
-    Status: getValue('Status', getValue('status', '')),
-    Closer: getValue('Closer', getValue('closer', '')),
-    'Venda Completa': getNumericValue('Venda Completa', getNumericValue('venda_completa', 0)),
-    recorrente: getNumericValue('recorrente', getNumericValue('Recorrente', 0)),
-    Valor: getValue('Valor', getValue('valor', 0)),
-    Produto: getValue('Produto', getValue('produto', '')),
-    'Coluna 1': getValue('Coluna 1', ''),
-    parsedDate: parsedDate ? parsedDate.toISOString() : undefined
-  };
-}
-
-// Função principal de processamento
-function processRawDataToLeads(rawData: any[]): ProcessedLead[] {
-  const leads: ProcessedLead[] = [];
-  
-  console.log(`📊 [EDGE-FUNCTION] Processando ${rawData.length} registros...`);
-  
-  for (let i = 0; i < rawData.length; i++) {
-    const item = rawData[i];
-    
-    try {
-      // Encontrar data
-      const { dateValue } = findDateInItem(item);
-      const parsedDate = dateValue ? parseBrazilianDate(dateValue) : null;
-      
-      // Construir lead
-      const lead = buildLead(item, i, dateValue || '', parsedDate);
-      
-      // Validar lead (pelo menos nome ou status deve existir)
-      if (lead.Nome?.trim() || lead.Status?.trim()) {
-        leads.push(lead);
-      }
-    } catch (error) {
-      console.error(`❌ [EDGE-FUNCTION] Erro processando item ${i}:`, error);
-    }
-  }
-  
-  console.log(`✅ [EDGE-FUNCTION] ${leads.length}/${rawData.length} leads processados com sucesso`);
-  return leads;
+  parsedDate?: Date;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
 
   try {
-    console.log('🔄 [EDGE-FUNCTION] === CORREÇÃO CRÍTICA - SINCRONIZAÇÃO ROBUSTA ===');
+    console.log('🚀 [SYNC-LEADS] === INICIANDO SINCRONIZAÇÃO ===');
+    
+    const { force = false } = await req.json().catch(() => ({}));
+    console.log('🔧 [SYNC-LEADS] Modo forçado:', force);
 
-    // Verificar se precisa sincronizar
-    const requestBody = await req.json().catch(() => ({}));
-    const forceSync = requestBody?.force === true;
-
-    if (!forceSync) {
-      const { data: metadata } = await supabase
+    // CORREÇÃO 1: Verificar se cache existe e está válido
+    if (!force) {
+      const { data: cacheStatus } = await supabase
         .from('cache_metadata')
         .select('last_webhook_sync, is_valid')
         .eq('cache_type', 'leads')
         .maybeSingle();
 
-      if (metadata) {
-        const lastSync = new Date(metadata.last_webhook_sync);
+      if (cacheStatus && cacheStatus.is_valid) {
+        const lastSync = new Date(cacheStatus.last_webhook_sync);
         const now = new Date();
         const diffMinutes = (now.getTime() - lastSync.getTime()) / (1000 * 60);
 
-        if (metadata.is_valid && diffMinutes < 15) {
-          console.log(`⏰ [EDGE-FUNCTION] Cache válido (${diffMinutes.toFixed(1)} min), pulando sincronização`);
-          return new Response(
-            JSON.stringify({ 
-              message: 'Cache válido, sincronização não necessária',
-              ageMinutes: diffMinutes,
-              skipped: true
-            }),
-            { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-          );
+        if (diffMinutes < 15) {
+          console.log('⏳ [SYNC-LEADS] Cache ainda válido, retornando dados existentes');
+          
+          const { data: cachedLeads } = await supabase
+            .from('leads_cache')
+            .select('processed_leads, leads_count')
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          return new Response(JSON.stringify({
+            success: true,
+            source: 'cache',
+            totalLeads: cachedLeads?.leads_count || 0,
+            message: 'Cache válido, dados não sincronizados'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
         }
       }
     }
 
-    // CORREÇÃO CRÍTICA: Buscar dados do webhook com retry
-    console.log('🌐 [EDGE-FUNCTION] Buscando dados do webhook...');
-    let webhookResponse;
-    let retryCount = 0;
-    const maxRetries = 3;
+    // CORREÇÃO 2: Buscar dados mais recentes do webhook
+    console.log('📦 [SYNC-LEADS] Buscando dados do webhook...');
+    
+    const { data: webhookData, error: webhookError } = await supabase
+      .from('webhook_raw_data')
+      .select('raw_data, total_records, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    while (retryCount < maxRetries) {
+    if (webhookError) {
+      console.error('❌ [SYNC-LEADS] Erro ao buscar webhook:', webhookError);
+      throw new Error(`Erro no webhook: ${webhookError.message}`);
+    }
+
+    if (!webhookData || !webhookData.raw_data) {
+      console.warn('⚠️ [SYNC-LEADS] Nenhum dado encontrado no webhook');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Nenhum dado disponível no webhook',
+        totalLeads: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log(`📊 [SYNC-LEADS] Processando ${webhookData.total_records} registros...`);
+
+    // CORREÇÃO 3: Processar dados com validação rigorosa
+    const rawLeads = Array.isArray(webhookData.raw_data) ? webhookData.raw_data : [];
+    console.log('🔍 [SYNC-LEADS] Total de leads brutos:', rawLeads.length);
+
+    const processedLeads: ProcessedLead[] = [];
+    let processedCount = 0;
+    let errorCount = 0;
+
+    for (let index = 0; index < rawLeads.length; index++) {
       try {
-        webhookResponse = await fetch(WEBHOOK_URL, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        });
+        const rawLead = rawLeads[index];
+        
+        if (!rawLead || typeof rawLead !== 'object') {
+          console.warn(`⚠️ [SYNC-LEADS] Lead ${index} inválido:`, rawLead);
+          errorCount++;
+          continue;
+        }
 
-        if (webhookResponse.ok) {
-          break;
+        // CORREÇÃO 4: Conversão segura de valores monetários
+        const parseMonetaryValue = (value: any): number => {
+          if (typeof value === 'number' && !isNaN(value)) {
+            return Math.max(0, value);
+          }
+          
+          if (typeof value === 'string') {
+            const cleaned = value.replace(/[^\d,.-]/g, '').replace(',', '.');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : Math.max(0, parsed);
+          }
+          
+          return 0;
+        };
+
+        // CORREÇÃO 5: Parse de data com validação de ano
+        let parsedDate: Date | undefined;
+        
+        if (rawLead.data && typeof rawLead.data === 'string') {
+          try {
+            // Tentar parsear diferentes formatos
+            const dateStr = rawLead.data.trim();
+            
+            // Formato brasileiro: "12 fev."
+            const brazilianMatch = dateStr.match(/^(\d{1,2})\s+([a-z]+)\.?$/i);
+            if (brazilianMatch) {
+              const [, day, monthStr] = brazilianMatch;
+              const monthMap: { [key: string]: number } = {
+                'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+                'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+              };
+              
+              const month = monthMap[monthStr.toLowerCase().substring(0, 3)];
+              if (month !== undefined) {
+                const currentYear = new Date().getFullYear();
+                const testDate = new Date(currentYear, month, parseInt(day));
+                
+                // Se a data seria no futuro, usar ano anterior
+                if (testDate > new Date()) {
+                  testDate.setFullYear(currentYear - 1);
+                }
+                
+                // VALIDAÇÃO CRÍTICA: Rejeitar anos impossíveis
+                if (testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+                  parsedDate = testDate;
+                  console.log(`📅 [SYNC-LEADS] Data brasileira parseada: ${dateStr} → ${testDate.toISOString().split('T')[0]}`);
+                }
+              }
+            } else {
+              // Tentar outros formatos
+              const testDate = new Date(dateStr);
+              if (!isNaN(testDate.getTime()) && testDate.getFullYear() >= 2020 && testDate.getFullYear() <= 2030) {
+                parsedDate = testDate;
+              }
+            }
+          } catch (dateError) {
+            console.warn(`⚠️ [SYNC-LEADS] Erro ao parsear data do lead ${index}:`, dateError);
+          }
+        }
+
+        // Construir lead processado com validação
+        const processedLead: ProcessedLead = {
+          row_number: index +1,
+          data: String(rawLead.data || ''),
+          Hora: String(rawLead.Hora || rawLead.hora || ''),
+          Nome: String(rawLead.Nome || rawLead.nome || ''),
+          'e-mail': String(rawLead['e-mail'] || rawLead.email || ''),
+          Whatsapp: String(rawLead.Whatsapp || rawLead.whatsapp || rawLead.telefone || ''),
+          origem: String(rawLead.origem || rawLead.origem || rawLead.source || ''),
+          Status: String(rawLead.Status || rawLead.status || ''),
+          Closer: String(rawLead.Closer || rawLead.closer || ''),
+          'Venda Completa': parseMonetaryValue(rawLead['Venda Completa'] || rawLead.vendaCompleta || rawLead.venda_completa),
+          recorrente: parseMonetaryValue(rawLead.recorrente || rawLead.recorrente),
+          Valor: rawLead.Valor || rawLead.valor,
+          Produto: String(rawLead.Produto || rawLead.produto || ''),
+          'Coluna 1': String(rawLead['Coluna 1'] || rawLead.coluna1 || ''),
+          parsedDate
+        };
+
+        // Validação mínima: pelo menos Nome ou Status deve existir
+        if (processedLead.Nome?.trim() || processedLead.Status?.trim()) {
+          processedLeads.push(processedLead);
+          processedCount++;
         } else {
-          throw new Error(`Webhook retornou ${webhookResponse.status}: ${webhookResponse.statusText}`);
+          console.warn(`⚠️ [SYNC-LEADS] Lead ${index} rejeitado - sem Nome nem Status válidos`);
+          errorCount++;
         }
-      } catch (error) {
-        retryCount++;
-        console.warn(`🔄 [EDGE-FUNCTION] Tentativa ${retryCount}/${maxRetries} falhou:`, error.message);
-        
-        if (retryCount >= maxRetries) {
-          throw error;
-        }
-        
-        // Aguardar antes de tentar novamente
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+
+      } catch (leadError) {
+        console.error(`❌ [SYNC-LEADS] Erro processando lead ${index}:`, leadError);
+        errorCount++;
       }
     }
 
-    const rawData = await webhookResponse.json();
-    const dataArray = Array.isArray(rawData) ? rawData : [rawData];
-
-    if (dataArray.length === 0) {
-      console.warn('⚠️ [EDGE-FUNCTION] Webhook retornou dados vazios');
-      return new Response(
-        JSON.stringify({
-          error: 'Webhook retornou dados vazios',
-          timestamp: new Date().toISOString()
-        }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-        }
-      );
-    }
-
-    console.log(`📊 [EDGE-FUNCTION] Processando ${dataArray.length} registros do webhook...`);
-
-    // Processar dados usando sistema completo
-    const processedLeads = processRawDataToLeads(dataArray);
+    console.log(`✅ [SYNC-LEADS] Processamento concluído: ${processedCount} sucessos, ${errorCount} erros`);
 
     if (processedLeads.length === 0) {
-      console.warn('⚠️ [EDGE-FUNCTION] Nenhum lead válido após processamento');
-      return new Response(
-        JSON.stringify({
-          error: 'Nenhum lead válido processado',
-          rawCount: dataArray.length,
-          timestamp: new Date().toISOString()
-        }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-        }
-      );
+      throw new Error('Nenhum lead válido foi processado');
     }
 
-    // CORREÇÃO CRÍTICA: Salvar no cache com tratamento de conflitos
-    const { error: cacheError } = await supabase
+    // CORREÇÃO 6: Salvar no cache com metadata atualizada
+    console.log('💾 [SYNC-LEADS] Salvando no cache...');
+
+    // Converter datas para ISO string antes de salvar
+    const leadsForStorage = processedLeads.map(lead => ({
+      ...lead,
+      parsedDate: lead.parsedDate ? lead.parsedDate.toISOString() : undefined
+    }));
+
+    // Inserir cache dos leads
+    const { error: cacheInsertError } = await supabase
       .from('leads_cache')
       .insert({
-        raw_data: dataArray,
-        processed_leads: processedLeads,
+        raw_data: rawLeads,
+        processed_leads: leadsForStorage,
         leads_count: processedLeads.length
       });
 
-    if (cacheError) {
-      console.error('❌ [EDGE-FUNCTION] Erro ao salvar cache:', cacheError);
-      throw cacheError;
+    if (cacheInsertError) {
+      console.error('❌ [SYNC-LEADS] Erro ao inserir cache:', cacheInsertError);
+      throw new Error(`Erro no cache: ${cacheInsertError.message}`);
     }
 
-    // CORREÇÃO CRÍTICA: Usar upsert para metadata com tratamento de conflitos
-    const { error: metaError } = await supabase
+    // Atualizar metadata
+    const { error: metadataError } = await supabase
       .from('cache_metadata')
       .upsert({
         cache_type: 'leads',
         last_webhook_sync: new Date().toISOString(),
         last_cache_update: new Date().toISOString(),
-        webhook_hash: calculateHash(dataArray),
+        webhook_hash: `hash-${Date.now()}`,
         total_records: processedLeads.length,
         is_valid: true
       }, {
-        onConflict: 'cache_type',
-        ignoreDuplicates: false
+        onConflict: 'cache_type'
       });
 
-    if (metaError) {
-      console.error('❌ [EDGE-FUNCTION] Erro ao atualizar metadata:', metaError);
-      // Não falhar completamente se metadata não conseguir ser atualizada
-      console.warn('⚠️ [EDGE-FUNCTION] Continuando apesar do erro de metadata');
+    if (metadataError) {
+      console.error('❌ [SYNC-LEADS] Erro ao atualizar metadata:', metadataError);
     }
 
-    // Limpar cache antigo (com tratamento de erro)
-    try {
-      const { data: oldRecords } = await supabase
-        .from('leads_cache')
-        .select('id')
-        .order('updated_at', { ascending: false })
-        .range(5, 100);
+    console.log('🎉 [SYNC-LEADS] Sincronização concluída com sucesso!');
 
-      if (oldRecords && oldRecords.length > 0) {
-        const idsToDelete = oldRecords.map(r => r.id);
-        await supabase
-          .from('leads_cache')
-          .delete()
-          .in('id', idsToDelete);
-        
-        console.log(`🧹 [EDGE-FUNCTION] ${idsToDelete.length} registros antigos removidos`);
-      }
-    } catch (cleanupError) {
-      console.warn('⚠️ [EDGE-FUNCTION] Erro na limpeza de cache antigo:', cleanupError);
-      // Não falhar por causa da limpeza
-    }
-
-    console.log(`✅ [EDGE-FUNCTION] Sincronização concluída: ${processedLeads.length} leads processados`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Sincronização concluída com sucesso',
-        totalLeads: processedLeads.length,
-        forced: forceSync,
-        timestamp: new Date().toISOString()
-      }),
-      { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      source: 'webhook',
+      totalLeads: processedLeads.length,
+      processedCount,
+      errorCount,
+      message: 'Dados sincronizados com sucesso'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
 
   } catch (error) {
-    console.error('❌ [EDGE-FUNCTION] Erro na sincronização:', error);
+    console.error('💥 [SYNC-LEADS] Erro crítico:', error);
     
-    // CORREÇÃO CRÍTICA: Marcar cache como inválido em caso de erro
-    try {
-      await supabase
-        .from('cache_metadata')
-        .update({ is_valid: false })
-        .eq('cache_type', 'leads');
-    } catch (updateError) {
-      console.error('❌ [EDGE-FUNCTION] Erro ao invalidar cache:', updateError);
-    }
-
-    return new Response(
-      JSON.stringify({
-        error: 'Erro na sincronização',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        retryAdvice: 'Tente novamente em alguns segundos'
-      }),
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-      }
-    );
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message,
+      details: error.stack
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });
-
-function calculateHash(data: any): string {
-  try {
-    const str = JSON.stringify(data);
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString();
-  } catch (error) {
-    console.error('❌ [EDGE-FUNCTION] Erro ao calcular hash:', error);
-    return Date.now().toString();
-  }
-}

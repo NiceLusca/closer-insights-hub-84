@@ -1,4 +1,13 @@
+
 import type { Lead, Metrics } from "@/types/lead";
+
+// Função auxiliar para formatação monetária - EXPORTADA
+export function formatCurrency(value: number): string {
+  return value.toLocaleString('pt-BR', { 
+    style: 'currency', 
+    currency: 'BRL' 
+  });
+}
 
 // Função auxiliar para retornar métricas padrão
 function getDefaultMetrics(): Metrics {
@@ -25,12 +34,13 @@ function getDefaultMetrics(): Metrics {
     taxaNaoFechamento: 0,
     aSerAtendido: 0,
     atendidoNaoFechou: 0,
-    perdidoInativo: 0
+    perdidoInativo: 0,
+    mentorados: 0 // ADICIONADO CAMPO FALTANTE
   };
 }
 
 export function calculateMetrics(leads: Lead[]): Metrics {
-  console.log('📊 [METRICS] === CORREÇÃO CRÍTICA DOS CÁLCULOS ===');
+  console.log('📊 [METRICS] === CÁLCULO CORRIGIDO DE MÉTRICAS ===');
   console.log('📊 [METRICS] Total leads recebidos:', leads.length);
   
   if (!leads || leads.length === 0) {
@@ -38,14 +48,13 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     return getDefaultMetrics();
   }
 
-  // CORREÇÃO CRÍTICA: Função para conversão segura de valores monetários
+  // CORREÇÃO: Função para conversão segura de valores monetários
   const parseMonetaryValue = (value: any): number => {
     if (typeof value === 'number' && !isNaN(value)) {
-      return Math.max(0, value); // Garantir que não seja negativo
+      return Math.max(0, value);
     }
     
     if (typeof value === 'string') {
-      // Remover símbolos monetários e converter
       const cleaned = value.replace(/[^\d,.-]/g, '').replace(',', '.');
       const parsed = parseFloat(cleaned);
       return isNaN(parsed) ? 0 : Math.max(0, parsed);
@@ -57,29 +66,25 @@ export function calculateMetrics(leads: Lead[]): Metrics {
   // Separar leads por categoria com logs detalhados
   const agendamentos = leads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isAgendado = ['agendado', 'agendamento'].some(s => status.includes(s));
-    return isAgendado;
+    return ['agendado', 'agendamento'].some(s => status.includes(s));
   });
 
   const confirmados = leads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isConfirmado = ['confirmado', 'confirmação'].some(s => status.includes(s));
-    return isConfirmado;
+    return ['confirmado', 'confirmação'].some(s => status.includes(s));
   });
 
   const noShows = leads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isNoShow = ['no show', 'noshow', 'não compareceu', 'faltou'].some(s => status.includes(s));
-    return isNoShow;
+    return ['no show', 'noshow', 'não compareceu', 'faltou'].some(s => status.includes(s));
   });
 
   const compareceram = leads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
-    const isCompareceu = ['compareceu', 'apresentou', 'atendido'].some(s => status.includes(s));
-    return isCompareceu;
+    return ['compareceu', 'apresentou', 'atendido'].some(s => status.includes(s));
   });
 
-  // CORREÇÃO CRÍTICA: Calcular vendas com validação rigorosa
+  // CORREÇÃO: Calcular vendas com validação rigorosa
   const vendasCompletas = leads.filter(lead => {
     const vendaCompleta = parseMonetaryValue(lead['Venda Completa']);
     const isVendaCompleta = vendaCompleta > 0;
@@ -102,7 +107,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     return isRecorrente;
   });
 
-  // CORREÇÃO CRÍTICA: Calcular receitas com validação
+  // CORREÇÃO: Calcular receitas com validação
   const receitaCompleta = vendasCompletas.reduce((total, lead) => {
     const valor = parseMonetaryValue(lead['Venda Completa']);
     return total + valor;
@@ -115,7 +120,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
 
   const receitaTotal = receitaCompleta + receitaRecorrente;
 
-  // CORREÇÃO CRÍTICA: Calcular fechamentos corretamente
+  // CORREÇÃO: Calcular fechamentos corretamente
   const fechamentos = vendasCompletas.length + vendasRecorrentes.length;
   const fechados = leads.filter(lead => {
     const status = lead.Status?.toLowerCase()?.trim() || '';
@@ -123,6 +128,13 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     const temVenda = parseMonetaryValue(lead['Venda Completa']) > 0 || parseMonetaryValue(lead.recorrente) > 0;
     return isFechado || temVenda;
   });
+
+  // CORREÇÃO: Calcular mentorados (novos leads que viraram clientes)
+  const mentorados = leads.filter(lead => {
+    const status = lead.Status?.toLowerCase()?.trim() || '';
+    const isMentorado = ['mentorado', 'cliente', 'ativo'].some(s => status.includes(s));
+    return isMentorado;
+  }).length;
 
   // Cálculos de taxas
   const totalLeads = leads.length;
@@ -157,13 +169,15 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     taxaNaoFechamento: 0,
     aSerAtendido: 0,
     atendidoNaoFechou: 0,
-    perdidoInativo: 0
+    perdidoInativo: 0,
+    mentorados // INCLUÍDO CAMPO OBRIGATÓRIO
   };
 
   console.log('✅ [METRICS] Métricas calculadas (CORRIGIDAS):');
-  console.log('💰 [METRICS] - Receita Total:', receitaTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  console.log('💰 [METRICS] - Receita Total:', formatCurrency(receitaTotal));
   console.log('📊 [METRICS] - Fechamentos:', totalFechamentos);
   console.log('📈 [METRICS] - Taxa Fechamento:', taxaFechamento.toFixed(2) + '%');
+  console.log('👥 [METRICS] - Mentorados:', mentorados);
 
   return metrics;
 }

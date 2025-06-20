@@ -17,15 +17,26 @@ const MESES_BRASILEIROS = {
   'dez.': '12', 'dez': '12'
 };
 
-// CORREÇÃO CRÍTICA: Função para determinar ano correto
+// CORREÇÃO CRÍTICA: Função para determinar ano correto (CORRIGIDA)
 function determineCorrectYear(month: number, day: number): number {
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1; // JavaScript months are 0-based
+  const currentMonth = now.getMonth() + 1;
   const currentDay = now.getDate();
   
-  // Se a data seria no futuro, usar ano anterior
-  if (month > currentMonth || (month === currentMonth && day > currentDay)) {
+  // CORREÇÃO: Lógica mais inteligente para determinar o ano
+  // Se estamos no início do ano (jan-mar) e a data é de final do ano (out-dez), usar ano anterior
+  if (currentMonth <= 3 && month >= 10) {
+    return currentYear - 1;
+  }
+  
+  // Se estamos no final do ano (nov-dez) e a data é de início do ano (jan-mar), usar ano atual
+  if (currentMonth >= 11 && month <= 3) {
+    return currentYear;
+  }
+  
+  // Para outros casos, se a data seria muito no futuro (mais de 1 mês), usar ano anterior
+  if (month > currentMonth + 1 || (month === currentMonth + 1 && day > currentDay + 7)) {
     return currentYear - 1;
   }
   
@@ -67,9 +78,16 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
     if (monthNumber) {
       const month = parseInt(monthNumber);
       const year = determineCorrectYear(month, day);
+      
+      // VALIDAÇÃO CRÍTICA: Rejeitar anos absurdos
+      if (year < 2020 || year > 2030) {
+        console.log(`❌ Ano calculado inválido: ${year} para data "${dateValue}"`);
+        return null;
+      }
+      
       const convertedDate = `${year}-${monthNumber}-${dayStr.padStart(2, '0')}`;
       
-      console.log(`🇧🇷 [CORREÇÃO CRÍTICA] Convertendo data brasileira: "${dateValue}" → "${convertedDate}" (ano determinado: ${year})`);
+      console.log(`🇧🇷 [CORREÇÃO] Convertendo data brasileira: "${dateValue}" → "${convertedDate}" (ano: ${year})`);
       return convertedDate;
     } else {
       console.log(`❌ Mês brasileiro não reconhecido: "${monthStr}" (chave: "${monthKey}")`);
@@ -77,7 +95,6 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
   }
   
   // Tentar outros padrões comuns brasileiros
-  // Formato: "dia/mês" assumindo ANO CORRETO
   const shortPattern = /^(\d{1,2})\/(\d{1,2})$/;
   const shortMatch = cleanValue.match(shortPattern);
   
@@ -86,16 +103,23 @@ export function convertBrazilianDateFormat(dateValue: string): string | null {
     const day = parseInt(dayStr);
     const month = parseInt(monthStr);
     
-    // CORREÇÃO CRÍTICA: Validar mês válido (1-12)
+    // Validar mês válido (1-12)
     if (month < 1 || month > 12) {
       console.log(`❌ Mês inválido: ${month}`);
       return null;
     }
     
     const year = determineCorrectYear(month, day);
+    
+    // VALIDAÇÃO CRÍTICA: Rejeitar anos absurdos
+    if (year < 2020 || year > 2030) {
+      console.log(`❌ Ano calculado inválido: ${year} para data "${dateValue}"`);
+      return null;
+    }
+    
     const convertedDate = `${year}-${monthStr.padStart(2, '0')}-${dayStr.padStart(2, '0')}`;
     
-    console.log(`🇧🇷 [CORREÇÃO CRÍTICA] Convertendo data curta: "${dateValue}" → "${convertedDate}" (ano determinado: ${year})`);
+    console.log(`🇧🇷 [CORREÇÃO] Convertendo data curta: "${dateValue}" → "${convertedDate}" (ano: ${year})`);
     return convertedDate;
   }
   
