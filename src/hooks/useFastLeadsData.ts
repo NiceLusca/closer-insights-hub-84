@@ -34,9 +34,9 @@ export function useFastLeadsData() {
         // NOVO: Validar qualidade dos dados
         const leadsComData = cachedLeads.filter(lead => lead.parsedDate || lead.data);
         const leadsComValor = cachedLeads.filter(lead => 
-          (lead.Valor && lead.Valor > 0) || 
-          (lead['Venda Completa'] && lead['Venda Completa'] > 0) ||
-          (lead.recorrente && lead.recorrente > 0)
+          (lead.Valor && Number(lead.Valor) > 0) || 
+          (lead['Venda Completa'] && Number(lead['Venda Completa']) > 0) ||
+          (lead.recorrente && Number(lead.recorrente) > 0)
         );
         
         console.log(`📊 [FAST-LEADS] Qualidade: ${leadsComData.length} c/ data, ${leadsComValor.length} c/ valor`);
@@ -105,8 +105,8 @@ export function useFastLeadsData() {
         
         if (leads && leads.length > 0) {
           const leadsComValor = leads.filter(lead => 
-            (lead.Valor && lead.Valor > 0) || 
-            (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+            (lead.Valor && Number(lead.Valor) > 0) || 
+            (lead['Venda Completa'] && Number(lead['Venda Completa']) > 0)
           );
           
           setAllLeads(leads);
@@ -268,8 +268,8 @@ export function useFastLeadsData() {
       
       const finalCount = allLeads.length;
       const leadsComValor = allLeads.filter(lead => 
-        (lead.Valor && lead.Valor > 0) || 
-        (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+        (lead.Valor && Number(lead.Valor) > 0) || 
+        (lead['Venda Completa'] && Number(lead['Venda Completa']) > 0)
       ).length;
       
       toast({
@@ -302,7 +302,7 @@ export function useFastLeadsData() {
           
           // Se cache tem poucos dados úteis, atualizar em background
           const leadsComValor = allLeads.filter(lead => 
-            (lead.Valor && lead.Valor > 0) || (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+            (lead.Valor && Number(lead.Valor) > 0) || (lead['Venda Completa'] && Number(lead['Venda Completa']) > 0)
           ).length;
           
           if (leadsComValor < 5) {

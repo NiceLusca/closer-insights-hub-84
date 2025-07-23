@@ -8,6 +8,7 @@ import { LoadingState } from "@/components/Dashboard/LoadingState";
 import { CloserPerformanceAnalysis } from "@/components/CloserPerformanceAnalysis";
 import { TemporalAnalysis } from "@/components/TemporalAnalysis";
 import { MonthlyRevenueHistory } from "@/components/MonthlyRevenueHistory";
+import { LossReasonAnalysis } from "@/components/LossAnalysis/LossReasonAnalysis";
 
 const Analytics = () => {
   // CORREÇÃO EMERGENCIAL: Usar EXCLUSIVAMENTE useFastLeadsData
@@ -86,6 +87,7 @@ const Analytics = () => {
           <>
             <CloserPerformanceAnalysis leads={filteredLeads} />
             <TemporalAnalysis leads={filteredLeads} />
+            <LossReasonAnalysis leads={filteredLeads} />
             <MonthlyRevenueHistory leads={allLeads} />
           </>
         )}

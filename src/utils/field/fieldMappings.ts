@@ -96,5 +96,13 @@ export const FIELD_MAPPINGS = {
     'Valor Recorrente', 'Receita Recorrente', 'Mensalidade', 'Monthly Revenue',
     'mrr_value', 'mrrValue', 'subscription_value', 'subscriptionValue',
     'valor_mensal', 'valorMensal', 'receita_mensal', 'receitaMensal'
+  ],
+  objecaoPrincipal: [
+    'Objeção Principal', 'objecao_principal', 'objecaoPrincipal', 'ObjecaoPrincipal',
+    'objection', 'Objection', 'OBJECTION', 'motivo_recusa', 'motivoRecusa',
+    'razao_nao_fechou', 'razaoNaoFechou', 'reason_not_closed', 'reasonNotClosed',
+    'main_objection', 'mainObjection', 'primary_objection', 'primaryObjection',
+    'Motivo da Recusa', 'Razão da Recusa', 'Principal Objeção', 'Objeção',
+    'objecao', 'Objection Reason', 'Loss Reason', 'Not Closed Reason'
   ]
 } as const;

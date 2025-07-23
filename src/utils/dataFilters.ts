@@ -33,11 +33,7 @@ function hasMinimumData(lead: Lead): boolean {
     lead.data?.trim() ||
     lead.Valor ||
     lead['Venda Completa'] ||
-    lead.recorrente ||
-    lead.Cliente?.trim() ||
-    lead.Vendedor?.trim() ||
-    lead.Source?.trim() ||
-    lead.Situacao?.trim()
+    lead.recorrente
   );
 }
 
@@ -59,7 +55,7 @@ export function filterLeads(
   const filtered = validLeads.filter(lead => {
     // CORREÇÃO: Filtrar por status (super flexível)
     if (filters.status.length > 0) {
-      const leadStatus = (lead.Status?.trim() || lead.Situacao?.trim() || '').toLowerCase();
+      const leadStatus = (lead.Status?.trim() || '').toLowerCase();
       const matchesStatus = filters.status.some(filterStatus => 
         leadStatus.includes(filterStatus.toLowerCase()) ||
         filterStatus.toLowerCase().includes(leadStatus)
@@ -71,7 +67,7 @@ export function filterLeads(
     
     // Filtrar por closer (flexível)
     if (filters.closer.length > 0) {
-      const leadCloser = (lead.Closer?.trim() || lead.Vendedor?.trim() || lead.vendedor?.trim() || '').toLowerCase();
+      const leadCloser = (lead.Closer?.trim() || '').toLowerCase();
       const matchesCloser = filters.closer.some(filterCloser =>
         leadCloser.includes(filterCloser.toLowerCase()) ||
         filterCloser.toLowerCase().includes(leadCloser)
@@ -83,7 +79,7 @@ export function filterLeads(
     
     // Filtrar por origem (flexível)
     if (filters.origem.length > 0) {
-      const leadOrigem = (lead.origem?.trim() || lead.Origem?.trim() || lead.Source?.trim() || lead.source?.trim() || '').toLowerCase();
+      const leadOrigem = (lead.origem?.trim() || '').toLowerCase();
       const matchesOrigem = filters.origem.some(filterOrigem =>
         leadOrigem.includes(filterOrigem.toLowerCase()) ||
         filterOrigem.toLowerCase().includes(leadOrigem)

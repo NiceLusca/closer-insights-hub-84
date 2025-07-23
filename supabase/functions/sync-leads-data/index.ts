@@ -189,6 +189,7 @@ serve(async (req) => {
           origem: lead.origem || lead.Origem || lead.source || lead.Source || 'Não informado',
           Closer: lead.Closer || lead.closer || lead.Vendedor || lead.vendedor || 'Não atribuído',
           data: lead.data || lead.Data || (parsedDate ? parsedDate.toISOString().split('T')[0] : ''),
+          'Objeção Principal': lead['Objeção Principal'] || lead.objecao_principal || lead.objection || lead.motivo_recusa || '',
           // NOVO: Campos para debugging
           _originalData: lead.data || lead.Data,
           _parsedSuccess: !!parsedDate,

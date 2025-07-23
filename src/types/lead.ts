@@ -11,6 +11,7 @@ export interface Lead {
   Closer: string;
   'Venda Completa': number;
   recorrente: number;
+  'Objeção Principal'?: string;
   Valor?: number | string;
   Produto?: string;
   'Coluna 1'?: string;

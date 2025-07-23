@@ -18,6 +18,7 @@ export function buildLead(item: any, index: number, dateValue: string, parsedDat
     origem: findFieldValue(item, FIELD_MAPPINGS.origem, ''),
     'Venda Completa': parseNumber(findFieldValue(item, FIELD_MAPPINGS.vendaCompleta, 0)),
     recorrente: parseNumber(findFieldValue(item, FIELD_MAPPINGS.recorrente, 0)),
+    'Objeção Principal': findFieldValue(item, FIELD_MAPPINGS.objecaoPrincipal, ''),
     parsedDate: parsedDate,
   };
 }

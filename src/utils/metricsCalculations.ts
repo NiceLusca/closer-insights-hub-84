@@ -112,9 +112,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     lead.Status?.trim() || 
     lead.origem?.trim() || 
     lead.Closer?.trim() ||
-    lead.data?.trim() ||
-    lead.Cliente?.trim() ||
-    lead.Vendedor?.trim()
+    lead.data?.trim()
   );
 
   console.log('📊 [METRICS] Leads válidos para cálculo:', validLeads.length);
@@ -213,7 +211,7 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     vendasCompletas + vendasRecorrentes,
     validLeads.filter(lead => 
       parseMonetaryValue(lead.Valor || lead['Venda Completa'] || 0) > 0 ||
-      parseMonetaryValue(lead.recorrente || lead.Recorrente || 0) > 0
+      parseMonetaryValue(lead.recorrente || 0) > 0
     ).length
   );
 

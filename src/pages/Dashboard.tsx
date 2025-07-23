@@ -61,8 +61,8 @@ const Dashboard = () => {
   console.log('🏠 [DASHBOARD] Leads filtrados:', filteredLeads.length);
   console.log('🏠 [DASHBOARD] Cache:', `${cacheStatus.source} (${cacheStatus.ageMinutes.toFixed(1)}min)`);
   console.log('🏠 [DASHBOARD] Leads com valor:', allLeads.filter(lead => 
-    (lead.Valor && lead.Valor > 0) || 
-    (lead['Venda Completa'] && lead['Venda Completa'] > 0)
+    (lead.Valor && Number(lead.Valor) > 0) || 
+    (lead['Venda Completa'] && Number(lead['Venda Completa']) > 0)
   ).length);
 
   // NOVO: Efeito para forçar atualização se dados estão vazios
