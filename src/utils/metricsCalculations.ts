@@ -126,47 +126,43 @@ export function calculateMetrics(leads: Lead[]): Metrics {
     fechado: ['fechou', 'fechado', 'vendido', 'comprou', 'cliente', 'pago', 'venda', 'ativo', 'vendeu']
   };
 
-  const agendamentos = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return statusKeywords.agendado.some(keyword => status.includes(keyword));
-  });
+  const statusCounts = {
+    agendamentos: 0,
+    confirmados: 0,
+    noShows: 0,
+    compareceram: 0,
+    fechadosPorStatus: 0,
+    mentorados: 0,
+    fechamentosPorValor: 0
+  };
 
-  const confirmados = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return statusKeywords.confirmado.some(keyword => status.includes(keyword));
-  });
-
-  const noShows = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return statusKeywords.noShow.some(keyword => status.includes(keyword));
-  });
-
-  const compareceram = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return statusKeywords.compareceu.some(keyword => status.includes(keyword));
-  });
-
-  const fechadosPorStatus = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return statusKeywords.fechado.some(keyword => status.includes(keyword));
-  });
-
-  // FASE 4: Calcular receitas com TODOS os campos possíveis
+  // FASE 4: Calcular receitas e contagens de status em uma única iteração
   let receitaCompleta = 0;
   let receitaRecorrente = 0;
   let vendasCompletas = 0;
   let vendasRecorrentes = 0;
 
   validLeads.forEach(lead => {
+    const status = (lead.Status || '').toLowerCase().trim();
+
+    if (statusKeywords.agendado.some(keyword => status.includes(keyword))) statusCounts.agendamentos++;
+    if (statusKeywords.confirmado.some(keyword => status.includes(keyword))) statusCounts.confirmados++;
+    if (statusKeywords.noShow.some(keyword => status.includes(keyword))) statusCounts.noShows++;
+    if (statusKeywords.compareceu.some(keyword => status.includes(keyword))) statusCounts.compareceram++;
+    if (statusKeywords.fechado.some(keyword => status.includes(keyword))) statusCounts.fechadosPorStatus++;
+    if (['mentorado', 'cliente', 'ativo', 'aluno', 'estudante', 'member', 'membro'].some(s => status.includes(s))) {
+      statusCounts.mentorados++;
+    }
+
     // SUPER EXPANSIVO: Todos os campos possíveis para venda completa
     const camposCompleta = [
-      'Venda Completa', 'venda_completa', 'vendaCompleta', 
+      'Venda Completa', 'venda_completa', 'vendaCompleta',
       'Valor', 'valor', 'Venda', 'venda', 'Preço', 'preço',
       'Receita', 'receita', 'Receita Total', 'receita_total',
       'Faturamento', 'faturamento',
-      '_valorOriginal' // Campo de debug
+      '_valorOriginal'
     ];
-    
+
     let valorCompleta = 0;
     camposCompleta.forEach(campo => {
       if (lead[campo]) {
@@ -181,9 +177,9 @@ export function calculateMetrics(leads: Lead[]): Metrics {
       'mensal', 'Mensal', 'assinatura', 'Assinatura',
       'Valor Recorrente', 'valor_recorrente', 'ValorRecorrente',
       'Subscription', 'subscription',
-      '_recorrenteOriginal' // Campo de debug
+      '_recorrenteOriginal'
     ];
-    
+
     let valorRecorrente = 0;
     camposRecorrente.forEach(campo => {
       if (lead[campo]) {
@@ -196,34 +192,38 @@ export function calculateMetrics(leads: Lead[]): Metrics {
       receitaCompleta += valorCompleta;
       vendasCompletas++;
     }
-    
+
     if (valorRecorrente > 0) {
       receitaRecorrente += valorRecorrente;
       vendasRecorrentes++;
+    }
+
+    if (valorCompleta > 0 || valorRecorrente > 0) {
+      statusCounts.fechamentosPorValor++;
     }
   });
 
   const receitaTotal = receitaCompleta + receitaRecorrente;
 
+  const fechadosPorStatus = statusCounts.fechadosPorStatus;
+  const agendamentos = statusCounts.agendamentos;
+  const confirmados = statusCounts.confirmados;
+  const noShows = statusCounts.noShows;
+  const compareceram = statusCounts.compareceram;
+
   // FASE 4: Calcular fechamentos como máximo entre diferentes métricas
   const totalFechamentos = Math.max(
-    fechadosPorStatus.length, 
+    fechadosPorStatus,
     vendasCompletas + vendasRecorrentes,
-    validLeads.filter(lead => 
-      parseMonetaryValue(lead.Valor || lead['Venda Completa'] || 0) > 0 ||
-      parseMonetaryValue(lead.recorrente || 0) > 0
-    ).length
+    statusCounts.fechamentosPorValor
   );
 
-  const mentorados = validLeads.filter(lead => {
-    const status = (lead.Status || '').toLowerCase().trim();
-    return ['mentorado', 'cliente', 'ativo', 'aluno', 'estudante', 'member', 'membro'].some(s => status.includes(s));
-  }).length;
+  const mentorados = statusCounts.mentorados;
 
   // FASE 4: Calcular taxas com lógica robusta
   const totalLeads = validLeads.length;
-  const totalCompareceram = Math.max(compareceram.length, totalFechamentos);
-  const totalAgendamentos = Math.max(agendamentos.length, totalCompareceram);
+  const totalCompareceram = Math.max(compareceram, totalFechamentos);
+  const totalAgendamentos = Math.max(agendamentos, totalCompareceram);
 
   const taxaFechamento = totalLeads > 0 ? (totalFechamentos / totalLeads) * 100 : 0;
   const taxaComparecimento = totalAgendamentos > 0 ? (totalCompareceram / totalAgendamentos) * 100 : 0;
@@ -232,14 +232,14 @@ export function calculateMetrics(leads: Lead[]): Metrics {
 
   const metrics: Metrics = {
     totalLeads,
-    agendamentos: Math.max(agendamentos.length, totalCompareceram),
-    confirmados: confirmados.length,
+    agendamentos: Math.max(agendamentos, totalCompareceram),
+    confirmados,
     apresentacoes: totalCompareceram,
     compareceram: totalCompareceram,
-    noShows: noShows.length,
+    noShows,
     remarcacoes: 0,
     fechamentos: totalFechamentos,
-    fechados: fechadosPorStatus.length,
+    fechados: fechadosPorStatus,
     vendasCompletas,
     vendasRecorrentes,
     receitaTotal,
